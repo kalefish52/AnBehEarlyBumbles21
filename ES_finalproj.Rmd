@@ -1,0 +1,94 @@
+---
+title: "Queen Time Budgeting"
+output: html_notebook
+---
+
+## Proposed Topic
+Bumble bee queen task repertoire and time budget in response to the social environment.
+
+## Acquired Data
+Data includes several spreadsheets (each spreadsheet corresponding to a single colony) with the following variables:
+-Observation ID
+-Observaton date
+-Subject
+-Behavior
+-Modifiers
+-Behavior Type
+-Start 
+-Stop 
+-Comments
+
+
+### Questions to answer
+Does the social environment impact bumble bee queen task repertoire?
+-Do solitary queens perform different behaviors than social queens?
+
+Does the social environment impact bumble bee queen time allocation? 
+-Do social queens spend proportionally less time on certain tasks than solitary queens?
+-Do social queens spend absolutely less time on certain tasks than solitary queens?
+
+
+
+
+
+# Load Data
+```{r}
+## create a list of all the files in the BORISfiles directory. these are all the files we want to import
+borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+
+## loop over the files and import all of them 
+lapply(borisfiles, read.csv(header = TRUE))
+
+## do this to all the things 
+do.call(rbind(filename))
+
+
+
+## load a subset of data to test
+events <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "subject", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
+head(events)
+
+```
+
+
+
+
+
+# Clean Data
+```{r}
+
+## give a vector, will split it based on argument (ie. Space) split=“[ ]” 
+Strsplit(split = "[]")
+events$nestID <- sapply(strsplit(events$obsID, ""), function(x){ 
+x[2]
+} )
+
+events$obsID
+asdf
+```
+
+
+
+
+
+# Visualize Data
+pie charts with propotional time, bar graphs with absolute
+```{r}
+## saves plot
+ggsave(xxxx.pdf)
+
+```
+
+
+
+
+
+# Analyze Data
+```{r}
+
+```
+
+
+
+
+
