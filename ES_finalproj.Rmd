@@ -3,10 +3,10 @@ title: "Queen Time Budgeting"
 output: html_notebook
 ---
 
-## Proposed Topic
+### Proposed Topic
 Bumble bee queen task repertoire and time budget in response to the social environment.
 
-## Acquired Data
+### Acquired Data
 Data includes several spreadsheets (each spreadsheet corresponding to a single colony) with the following variables:
 -Observation ID
 -Observaton date
@@ -29,15 +29,19 @@ Does the social environment impact bumble bee queen time allocation?
 
 
 
-
+## Load Packages
+```{r}
+library(tidyverse)
+```
 
 # Load Data
 ```{r}
+
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
 borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
 
-## loop over the files and import all of them 
-lapply(borisfiles, read.csv(header = TRUE))
+## loop over the files and import all of them. rename column names to remove "." and make shorter
+lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
 ## do this to all the things 
 do.call(rbind(filename))
@@ -45,8 +49,8 @@ do.call(rbind(filename))
 
 
 ## load a subset of data to test
-events <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "subject", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
-head(events)
+all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
+head(all_data)
 
 ```
 
@@ -57,14 +61,51 @@ head(events)
 # Clean Data
 ```{r}
 
-## give a vector, will split it based on argument (ie. Space) split=“[ ]” 
-Strsplit(split = "[]")
-events$nestID <- sapply(strsplit(events$obsID, ""), function(x){ 
-x[2]
-} )
+## convert columns to character to better manipulate
+all_data$beeID <- as.character(all_data$beeID)
+all_data$obsID <- as.character(all_data$obsID)
 
-events$obsID
-asdf
+## split out obsID into camID, nestID, dateID and hourID
+all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){
+                            x[1]
+                            } )
+
+all_data$nestID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){
+                            x[2]
+                            } )
+
+all_data$dateID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){ 
+                            x[3]
+                            } )
+
+all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){ 
+                            x[4]
+                            } )
+
+## subset to only queens
+queen_data <- subset(all_data, startsWith(all_data$beeID, "Queen"))
+
+## group by subject
+#   **change all_data to queen_data
+subj_data <- group_by(all_data, beeID)
+
+## group by behavior
+#   **change all_data to queen_data
+behav_data <- group_by(subj_data, behav)
+
+## calculate absolute amount of time spent on each behav
+#for each subject: sum time carrying out each task, divide by total time 
+#for total time:
+#   **need to account for videos with 0 data. make sure boris output includes those
+#   **need to account for multiple events in a single video -- can only sum unique obsIDs
+
+
+## caclulate proportion of time spent on each behav
+
 ```
 
 
