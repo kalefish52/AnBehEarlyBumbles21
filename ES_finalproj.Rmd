@@ -1,12 +1,32 @@
 ---
-title: "Queen Time Budgeting"
+title: "Bumble Bee Queen Time Budgeting and Task Repertoire"
 output: html_notebook
 ---
 
-### Proposed Topic
-Bumble bee queen task repertoire and time budget in response to the social environment.
+# Proposed Topic
+How does the social environment affect bumble bee queen task repertoire and time budget?
 
-### Acquired Data
+
+# Background
+Bumble bees have an annual life cycle
+-contains both a solitary phase and a social phase
+
+Solitary Phase: queens exhibit broad task repertoire, carry out brood care, nest maintenance, and foraging tasks independently
+
+Social Phase: queens transition to focusing almost exclusively on reproduction. workers take over brood care and foraging tasks
+
+
+# Data Collection Methods
+-Q0 queens (solitary)
+-Q3 queens (with 3 workers)
+-Q5 queens (with 5 workers)
+
+-2 time points per colony (early + late)
+
+-score behavioral data in videos
+
+
+# Video Data
 Data includes several spreadsheets (each spreadsheet corresponding to a single colony) with the following variables:
 -Observation ID
 -Observaton date
@@ -19,22 +39,23 @@ Data includes several spreadsheets (each spreadsheet corresponding to a single c
 -Comments
 
 
-### Questions to answer
-Does the social environment impact bumble bee queen task repertoire?
--Do solitary queens perform different behaviors than social queens?
+# Questions to answer
 
-Does the social environment impact bumble bee queen time allocation? 
--Do social queens spend proportionally less time on certain tasks than solitary queens?
--Do social queens spend absolutely less time on certain tasks than solitary queens?
+1-Do solitary queens perform different behaviors than social queens?
+
+2-Do social queens spend proportionately more/less time on certain tasks than solitary queens?
+
+3-Do social queens spend absolutely more/less time on certain tasks than solitary queens?
 
 
+# Data Analyses
 
-## Load Packages
+### Load Packages
 ```{r}
 library(tidyverse)
 ```
 
-# Load Data
+### Load Data
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
@@ -48,6 +69,8 @@ do.call(rbind(filename))
 
 
 
+
+##
 ## load a subset of data to test
 all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
 head(all_data)
@@ -58,10 +81,10 @@ head(all_data)
 
 
 
-# Clean Data
+### Clean Data
 ```{r}
 
-## convert columns to character to better manipulate
+## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
 all_data$beeID <- as.character(all_data$beeID)
 all_data$obsID <- as.character(all_data$obsID)
 
@@ -85,26 +108,69 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                           function(x){ 
                             x[4]
                             } )
+```
 
-## subset to only queens
-queen_data <- subset(all_data, startsWith(all_data$beeID, "Queen"))
+```{r}
+## group data by beeID, then by behavior, then count the number of instances of each behavior
 
-## group by subject
-#   **change all_data to queen_data
+## this is grouping properly by behavior, but not separating out beeIDs
+all_data %>%
+  group_by(beeID) %>%
+  group_by(behav) %>%
+  summarise(count = sum(all_data$behav == behav))
+
+## this for loop is only returning the last beeID, not the earlier ones
+all_data$beeID <- as.factor(all_data$beeID)
+for(i in 1:length(levels(all_data$beeID))) {
+  beeID_data <- subset(all_data, beeID == levels(all_data$beeID)[i])
+  return(beeID_data)
+}
+
+## but it properly outputs the behavior counts here for the last beeID
+beeID_data %>%
+  group_by(behav) %>%
+  summarise(count = sum(beeID_data$behav == behav))
+
+
+```
+
+```{r}
+## group data by subject
 subj_data <- group_by(all_data, beeID)
 
-## group by behavior
-#   **change all_data to queen_data
+## group data by behavior
 behav_data <- group_by(subj_data, behav)
 
 ## calculate absolute amount of time spent on each behav
-#for each subject: sum time carrying out each task, divide by total time 
-#for total time:
+#  for each subject: sum time carrying out each task, divide by total time watched for that nestID
+#  when calculating total time:
 #   **need to account for videos with 0 data. make sure boris output includes those
 #   **need to account for multiple events in a single video -- can only sum unique obsIDs
 
+## for each beeID, count the number of unique behaviors
+sapply(behav_data$beeID, sapply(behav_data$behav, count(behav_data$behav)))
+
+for (i in levels(behav_data$beeID)) {
+  behav_beeID <- subset(behav_data, beeID = i)
+  num_feeds <- sum(behav_beeID$behav == "feedsbrood")
+  return(num_feeds)
+}
+
+num_feeds
+
+
+       for (all unique subjects) {
+  for (all unique behaviors) {
+    sum number of behav
+    sum time of dur
+  }
+}
+    
 
 ## caclulate proportion of time spent on each behav
+
+## subset to only queens
+queen_data <- subset(behav_data, startsWith(all_data$beeID, "Queen"))
 
 ```
 
@@ -112,7 +178,7 @@ behav_data <- group_by(subj_data, behav)
 
 
 
-# Visualize Data
+### Visualize Data
 pie charts with propotional time, bar graphs with absolute
 ```{r}
 ## saves plot
@@ -124,7 +190,7 @@ ggsave(xxxx.pdf)
 
 
 
-# Analyze Data
+### Analyze Data
 ```{r}
 
 ```
