@@ -1,0 +1,121 @@
+---
+title: "CleanData"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Packages
+```{r}
+library(tidyverse)
+```
+
+# Load Data
+```{r}
+
+## create a list of all the files in the BORISfiles directory. these are all the files we want to import
+borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+
+## loop over the files and import all of them. rename column names to remove "." and make shorter
+lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+
+## do this to all the things 
+do.call(rbind(filename))
+
+
+
+
+##
+## load a subset of data to test
+all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
+head(all_data)
+
+```
+
+# Clean Data
+```{r}
+
+## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
+all_data$beeID <- as.character(all_data$beeID)
+all_data$obsID <- as.character(all_data$obsID)
+
+## split out obsID into camID, nestID, dateID and hourID
+all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){
+                            x[1]
+                            } )
+
+all_data$nestID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){
+                            x[2]
+                            } )
+
+all_data$dateID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){ 
+                            x[3]
+                            } )
+
+all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"), 
+                          function(x){ 
+                            x[4]
+                            } )
+```
+
+```{r}
+## group data by beeID, then by behavior, then count the number of instances of each behavior
+
+## this is grouping properly by behavior, but not separating out beeIDs
+all_data %>%
+  group_by(beeID) %>%
+  group_by(behav) %>%
+  summarise(count = sum(all_data$behav == behav))
+
+## this for loop is only returning the last beeID, not the earlier ones
+all_data$beeID <- as.factor(all_data$beeID)
+for(i in 1:length(levels(all_data$beeID))) {
+  beeID_data <- subset(all_data, beeID == levels(all_data$beeID)[i])
+  return(beeID_data)
+}
+
+## but it properly outputs the behavior counts here for the last beeID
+beeID_data %>%
+  group_by(behav) %>%
+  summarise(count = sum(beeID_data$behav == behav))
+
+
+```
+
+```{r}
+## group data by subject
+subj_data <- group_by(all_data, beeID)
+
+## group data by behavior
+behav_data <- group_by(subj_data, behav)
+
+## calculate absolute amount of time spent on each behav
+#  for each subject: sum time carrying out each task, divide by total time watched for that nestID
+#  when calculating total time:
+#   **need to account for videos with 0 data. make sure boris output includes those
+#   **need to account for multiple events in a single video -- can only sum unique obsIDs
+
+## for each beeID, count the number of unique behaviors
+sapply(behav_data$beeID, sapply(behav_data$behav, count(behav_data$behav)))
+
+for (i in levels(behav_data$beeID)) {
+  behav_beeID <- subset(behav_data, beeID = i)
+  num_feeds <- sum(behav_beeID$behav == "feedsbrood")
+  return(num_feeds)
+}
+
+num_feeds
+
+
+       for (all unique subjects) {
+  for (all unique behaviors) {
+    sum number of behav
+    sum time of dur
+  }
+}
+    
