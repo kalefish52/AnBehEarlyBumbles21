@@ -1,0 +1,10 @@
+---
+title: "kMeans"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# K Means Cluster Analyses -- determine whether points cluster into two or more groups
