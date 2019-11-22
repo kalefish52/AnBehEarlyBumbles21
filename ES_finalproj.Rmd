@@ -111,10 +111,10 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
 ```
 
 ```{r}
-## group data by beeID, then by behavior, then count the number of instances of each behavior
-
-## this is grouping properly by behavior, but not separating out beeIDs
+## group data by beeID, then by behavior, then count the number of instances of each behavior for each individual
+## this is grouping properly by behavior, but not separating out beeIDs or nestIDs
 all_data %>%
+  group_by(nestID) %>%
   group_by(beeID) %>%
   group_by(behav) %>%
   summarise(count = sum(all_data$behav == behav))
