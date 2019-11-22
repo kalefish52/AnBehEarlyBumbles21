@@ -1,0 +1,184 @@
+---
+title: "Division of Labor Project Code"
+output: html_document
+---
+
+```{r}
+setwd("/Volumes/GoogleDrive/My Drive/Kaleigh.Shared/Research Projects/Chapter Three/Division of Labor Experiments/Awesome Summer Experiments/Foraging_Analysis_1119")
+data<-read.csv("NMDS_1119.csv")
+library(vegan)
+library(scatterplot3d)
+library(ggplot2)
+head(data)
+##Subset data into different microcolony groups
+NT<-data[1:27,]
+QT<-data[28:53,]
+
+## Change first column into a header 
+library(tidyverse)
+NT_mat<-NT %>% remove_rownames %>% column_to_rownames(var="X")
+QT_mat<-QT%>% remove_rownames %>% column_to_rownames(var="X")
+
+##Make data frame into a matrix
+mat_NT<-as.matrix(NT_mat)
+mat_QT<-as.matrix(QT_mat)
+
+##NMDS 
+NMDS_NT=metaMDS(mat_NT, k=2)
+NMDS_QT=metaMDS(mat_QT, k=2)
+
+## Cannot have rows with only 0s, removed workers that did not have any observations
+
+##Check for stress, want low stress 
+stressplot(NMDS_NT)
+stressplot(NMDS_QT)
+
+
+
+
+
+
+
+```
+```{r}
+
+##Make NMDS graph in ggplot2 for NT groups
+
+##Get colony groups as data frame 
+NMDS_scores<-as.data.frame(scores(NMDS_NT))
+head(NMDS_scores)
+NMDS_scores
+
+#Make vector with nest names 
+nests<-c("NT02", "NT02", "NT02", "NT03", "NT03", "NT03", "NT04", "NT04", "NT04", "NT05", "NT05", "NT05", "NT06", "NT06", "NT06", "NT07", "NT07", "NT07", "NT10", "NT10", "NT10", "NT11", "NT11", "NT11", "NT13", "NT13", "NT13")
+
+##Add vector to NMDS value dataframe
+NMDS_scores$nests<-nests
+NMDS_scores$site<-rownames(NMDS_scores)
+head(NMDS_scores)
+
+
+##Get behaviors as data frame 
+NMDS_behav<-as.data.frame(scores(NMDS_NT, "species"))
+NMDS_behav$behavs<-rownames(NMDS_behav)
+head(NMDS_behav)
+
+
+
+
+
+library(tidyverse)
+##Graph data as NMDS around behaviors for NT plot 
+ggplot() + 
+  geom_text(data=NMDS_behav,aes(x=NMDS1,y=NMDS2,label=behavs),alpha=1, nudge_x=-.2) +  #add behavior labels
+  geom_point(data=NMDS_scores,aes(x=NMDS1,y=NMDS2, colour=nests), size=3, alpha=0.4) + # add points 
+  theme_bw() + 
+  coord_equal() 
+  
+
+
+
+
+```
+
+```{r}
+
+##Make NMDS graph in ggplot2 for QT groups
+
+##Get colony groups as data frame 
+NMDS_scores_QT<-as.data.frame(scores(NMDS_QT))
+head(NMDS_scores_QT)
+NMDS_scores_QT
+
+#Make vector with nest names 
+nests<-c("QT01", "QT01", "QT01", "QT02", "QT02", "QT02", "QT02", "QT03", "QT03", "QT03", "QT03", "QT11", "QT11", "QT11", "QT11", "QT12", "QT12", "QT12", "QT12", "QT13", "QT13", "QT13", "QT15", "QT15", "QT15", "QT15") 
+
+##Add vector to NMDS value dataframe
+NMDS_scores_QT$nests<-nests
+NMDS_scores_QT$site<-rownames(NMDS_scores_QT)
+head(NMDS_scores_QT)
+
+##Get behaviors as data frame 
+NMDS_behav_QT<-as.data.frame(scores(NMDS_QT, "species"))
+NMDS_behav_QT$behavs<-rownames(NMDS_behav_QT)
+head(NMDS_behav_QT)
+
+library(tidyverse)
+##Graph data as NMDS around behaviors for NT plot 
+ggplot() + 
+  geom_text(data=NMDS_behav_QT,aes(x=NMDS1,y=NMDS2,label=behavs),alpha=1) +  #add behavior labels
+  geom_point(data=NMDS_scores_QT,aes(x=NMDS1,y=NMDS2, colour=nests), size=3) + # add points 
+  theme_bw() + 
+  coord_equal() 
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+```{r}
+
+All<-data%>% remove_rownames %>% column_to_rownames(var="X")
+mat_all<-as.matrix(All)
+
+NMDS_all=metaMDS(mat_all, k=2)
+stressplot(NMDS_all)
+
+nests3<-c("NT02", "NT02", "NT02", "NT03", "NT03", "NT03", "NT04", "NT04", "NT04", "NT05", "NT05", "NT05", "NT06", "NT06", "NT06", "NT07", "NT07", "NT07", "NT10", "NT10", "NT10", "NT11", "NT11", "NT11", "NT13", "NT13", "NT13", "QT01", "QT01", "QT01", "QT02", "QT02", "QT02", "QT02", "QT03", "QT03", "QT03", "QT03", "QT11", "QT11", "QT11", "QT11", "QT12", "QT12", "QT12", "QT12", "QT13", "QT13", "QT13", "QT15", "QT15", "QT15", "QT15") 
+
+treatment<-c("NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "NT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT", "QT")
+
+
+all_scores<-as.data.frame(scores(NMDS_all))
+head(all_scores)
+NMDS_scores
+
+##Add vector to NMDS value dataframe
+all_scores$nests3<-nests3
+all_scores$site<-rownames(all_scores)
+all_scores$treatment<-treatment
+head(all_scores)
+
+
+anosim_all = anosim(mat_all, all_scores$treatment)
+ anosim_all # take a look at results
+ summary(anosim_all)
+ plot(anosim_all)
+
+
+
+```
+
+
+
+```{r}
+
+# Make scatter plots 
+library(scatterplot3d)
+scatdata<-read.csv("scatter_1119.csv")
+head(scatdata)
+
+NT_scat<-scatdata[1:27,]
+QT_scat<-scatdata[28:53,]
+
+colors<-c("#999999", "#000000", "#006600", "#3399FF", "#FF9900", "#CC6666", "#990033")
+colors<-colors[as.numeric(QT_scat$X)]
+d=scatterplot3d(x=Feeding, y=Foraging, z=Egg.Laying, pch=16, color=colors)
+
+
+
+
+```
+
+
