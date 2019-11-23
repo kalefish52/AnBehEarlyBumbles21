@@ -3,6 +3,9 @@ title: "Division of Labor Project Code"
 output: html_document
 ---
 
+Write how the data needs to be formatted and what columns you need for the analysis
+
+
 ```{r}
 setwd("/Volumes/GoogleDrive/My Drive/Kaleigh.Shared/Research Projects/Chapter Three/Division of Labor Experiments/Awesome Summer Experiments/Foraging_Analysis_1119")
 data<-read.csv("NMDS_1119.csv")
