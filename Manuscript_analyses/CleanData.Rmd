@@ -16,7 +16,9 @@ library(tidyverse)
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+## directory will change depending on user, to find your file path, use command "pwd" 
+borisfiles <- list.files("/Users/kaleighfisher/Google Drive File Stream/My Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw Data") 
+
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))

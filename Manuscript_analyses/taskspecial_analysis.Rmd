@@ -53,6 +53,9 @@ head(NMDS_scores)
 NMDS_scores
 
 #Make vector with nest names 
+## Think we need to do strsplit here 
+
+
 nests<-c("NT02", "NT02", "NT02", "NT03", "NT03", "NT03", "NT04", "NT04", "NT04", "NT05", "NT05", "NT05", "NT06", "NT06", "NT06", "NT07", "NT07", "NT07", "NT10", "NT10", "NT10", "NT11", "NT11", "NT11", "NT13", "NT13", "NT13")
 
 ##Add vector to NMDS value dataframe
