@@ -23,7 +23,8 @@ borisfiles <- list.files("/Users/kaleighfisher/Google Drive File Stream/My Drive
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
-## do this to all the things 
+## merge the files into one dataframe (do.call does stuff to all the things)
+## this is NOT CORRECT! need to edit to make it work
 do.call(rbind(filename))
 
 
@@ -43,22 +44,23 @@ head(all_data)
 all_data$beeID <- as.character(all_data$beeID)
 all_data$obsID <- as.character(all_data$obsID)
 
-## split out obsID into camID, nestID, dateID and hourID
+## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
+## element 1 is camID
 all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
                           function(x){
                             x[1]
                             } )
-
+## element 2 is nestID
 all_data$nestID <- sapply(strsplit(all_data$obsID, "\t"), 
                           function(x){
                             x[2]
                             } )
-
+## element 3 is dateID
 all_data$dateID <- sapply(strsplit(all_data$obsID, "\t"), 
                           function(x){ 
                             x[3]
                             } )
-
+## element 4 is hourID
 all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"), 
                           function(x){ 
                             x[4]
@@ -66,25 +68,13 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
 ```
 
 ```{r}
-## group data by beeID, then by behavior, then count the number of instances of each behavior
-
-## this is grouping properly by behavior, but not separating out beeIDs
-all_data %>%
-  group_by(beeID) %>%
-  group_by(behav) %>%
-  summarise(count = sum(all_data$behav == behav))
-
-## this for loop is only returning the last beeID, not the earlier ones
-all_data$beeID <- as.factor(all_data$beeID)
-for(i in 1:length(levels(all_data$beeID))) {
-  beeID_data <- subset(all_data, beeID == levels(all_data$beeID)[i])
-  return(beeID_data)
-}
-
-## but it properly outputs the behavior counts here for the last beeID
-beeID_data %>%
-  group_by(behav) %>%
-  summarise(count = sum(beeID_data$behav == behav))
+## collapse the dataframe to count the number of instances doing each behavior
+## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
+#  (and any other behaviors recorded), with counts for each behavior in as values
+## produces error: Values in `dur` are not uniquely identified; output will contain list-cols. 
+new_data <- all_data %>%
+  pivot_wider(id_cols = c("nestID", "beeID"), names_from = "behav", values_from = "dur") 
+new_data
 
 
 ```
