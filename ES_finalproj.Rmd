@@ -64,18 +64,16 @@ library(dplyr)
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+#borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
-lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+#lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
 ## do this to all the things 
-do.call(rbind(filename))
+#do.call(rbind(filename))
+```
 
-
-
-
-##
+```{r}
 ## load a subset of data to test
 all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
 head(all_data)
@@ -120,11 +118,28 @@ output df with each bee as a single row, behaviors as columns, count of frequenc
 ## collapse the dataframe to count the number of instances doing each behavior
 ## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
 #  (and any other behaviors recorded), with counts for each behavior in as values
-## produces error: Values in `dur` are not uniquely identified; output will contain list-cols. 
-#  but seems to be working anyway? table doesn't always show up with values (sometimes says <S3: vctrs_list_of>), 
-#  but when you pull out a specific value (ie. count_data[3,4]) it comes up with the right number
-count_data <- all_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), names_from = behav, values_from = dur)
+## assumes that no two behaviors stopped at the exact same time. cannot handle duplicate stop times. 
+#  not sure how to fix that...
+count_data <- all_data
+count_data$count <- 1
+count_data <- count_data %>%
+  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
+              names_from = stop, 
+              values_from = count)
+
+## add column for sum of counts for each behav
+count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
+
+## subset dataframe so that all is left is nestID, beeID, behav, and totDur
+count_data <- count_data %>%
+  select(nestID, beeID, behav, totCount)
+
+## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
+count_data <- count_data %>%
+  pivot_wider(id_cols = c("nestID", "beeID"), 
+              names_from = behav, 
+              values_from = totCount)
+
 count_data
 
 ```
@@ -140,8 +155,13 @@ for (i in 1:nrow(time_data)) {
 
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
+## produces error: Values in `dur` are not uniquely identified; output will contain list-cols. 
+#  table showing values as <S3: vctrs_list_of> 
 dur_data <- time_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), names_from = stop, values_from = dur)
+  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
+              names_from = stop, 
+              values_from = dur, 
+              names_repair = "minimal")
 
 ## add column for sum of duration for each behav
 dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
@@ -152,7 +172,9 @@ dur_data <- dur_data %>%
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), names_from = behav, values_from = totDur)
+  pivot_wider(id_cols = c("nestID", "beeID"), 
+              names_from = behav, 
+              values_from = totDur)
 
 dur_data
 ```
@@ -200,9 +222,7 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   forSum <- sum(for_data$totalLen)
   nestSum <- sum(subNest_data$totalLen)
   camSum <- forSum + nestSum
-  camDur$nestID[i] <- sub_data$nestID[i] 
-  camDur$totalLen[i] <- camSum
-  return(camDur)
+  camDur <- rbind(camDur, c(sub_data$nestID[i], camSum))
 }
 camDur
 ```
