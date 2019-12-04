@@ -224,6 +224,9 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   camSum <- forSum + nestSum
   camDur <- rbind(camDur, c(sub_data$nestID[i], camSum))
 }
+
+## remove NA row initially created
+camDur <- camDur[2:nrow(camDur),]
 camDur
 ```
 
@@ -234,9 +237,25 @@ camDur
 ### Visualize Data
 pie charts with propotional time, bar graphs with absolute
 ```{r}
-## saves plot
-ggsave(xxxx.pdf)
+## saves plot ggsave(xxxx.pdf)
+## 2xN df with nestID and totalLen as columns // totalLen value is total observed time (sec)
+camDur
 
+## NxN df with nestID, beeID, behaviors x y z etc as columns // individual bees as rows // total duration of behaviors (sec)
+dur_data
+
+## subset only queen data ******(do this earlier when i run it for real)******
+queen_data <- dur_data[grep("Queen", dur_data$beeID), ]
+queen_data
+
+## add column to queen data that includes total duration of observed time 
+## first order both dataframes to make sure they are in the same order
+queen_data <- queen_data[order(queen_data$nestID),] 
+camDur <- camDur[order(camDur$nestID),]
+## then add the column
+queen_data$totalLen <- camDur$totalLen
+
+queen_data
 ```
 
 
