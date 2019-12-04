@@ -104,6 +104,10 @@ dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
 dur_data <- dur_data %>%
   select(nestID, beeID, behav, totDur)
 
+## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
+dur_data <- dur_data %>%
+  pivot_wider(id_cols = c("nestID", "beeID"), names_from = behav, values_from = totDur)
+
 dur_data
 ```
 
