@@ -39,6 +39,7 @@ head(all_data)
 ```
 
 # Clean Data
+split obsID column into its component parts to enable manipulation by camera/colony/time/date
 ```{r}
 
 ## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
@@ -67,7 +68,7 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                             x[4]
                             } )
 ```
-
+output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
 ```{r}
 ## collapse the dataframe to count the number of instances doing each behavior
 ## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
@@ -80,7 +81,7 @@ count_data <- all_data %>%
 count_data
 
 ```
-
+output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
 ```{r}
 ## make duration of all brood feeding events 1 second duration to enable duration comparisons
 time_data <- all_data
@@ -89,9 +90,7 @@ for (i in 1:nrow(time_data)) {
     time_data$dur[i] <- 1
   }
 }
-```
 
-```{r}
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
 dur_data <- time_data %>%
