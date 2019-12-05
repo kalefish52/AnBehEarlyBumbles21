@@ -55,6 +55,7 @@ Data includes several spreadsheets (each spreadsheet corresponding to a single c
 library(tidyverse)
 library(dplyr)
 library(plyr)
+if(!require(ggplot2)){install.packages("ggplot2")}
 ```
 
 
@@ -263,24 +264,67 @@ queen_data[is.na(queen_data)] <- 0
 ## add column for treatment (separate treatment from colID in nestID column)
 queen_data$treat <- substr(queen_data$nestID, start = 1, stop = 2)
 
+## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
+queen_data$treat <- factor(queen_data$treat, levels = c("QA", "QT", "QF"))
+
+## make new column for total time spent doing nothing
+## ********make more inclusive of all behaviors************
+queen_data$totalLen <- as.numeric(queen_data$totalLen)
+queen_data$non <- NA
+for (i in 1:nrow(queen_data)) {
+  queen_data$non[i] <- queen_data$totalLen[i] - 
+                          queen_data$feedsbrood[i] - 
+                          queen_data$pollenforaging[i] - 
+                          queen_data$nectarforaging[i] 
+}
+
 queen_data
+
+
+```
+gather data so it's one row per individual-behavior combo
+```{r}
+## gather the data so it's got one row per individual-behavior combo
+## ******** need to make this more inclusive of all behaviors i'm coding *********
+gath_data <- queen_data %>%
+  gather(feedsbrood, pollenforaging, nectarforaging, non, key = "behav", value = "time")
+
+gath_data
 ```
 pie charts with propotional time
 ```{r}
+## call it prop_data to make it distinct
+prop_data <- gath_data
+
+## add column called prop that calculates proportion of total time per behavior
+prop_data$prop <- NA
+for (i in 1:nrow(prop_data)) {
+  prop_data$prop[i] <- prop_data$time[i]/prop_data$totalLen[i]
+}
+prop_data
+
+## subset to make pie graph of QF groups
+qf_prop <- subset(prop_data, prop_data$treat == "QF")
+qf_prop
+
+## summarize over all the qf groups
+dfSumm <- ddply(qf_prop, 
+                c("behav"), 
+                summarise,
+                mean = mean(prop), 
+                sd = sd(prop),
+                sem = sd(prop)/sqrt(length(prop)))
+dfSumm
+
+bp <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0)
+bp
 ```
-bar graphs with absolute time
+bar graphs with absolute time. bar height = mean, error = sem, grouped by behavior, colored by social group
 ```{r}
-## gather the data
-
-
-## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
-abs_data <- queen_data
-abs_data$treat <- factor(abs_data$treat, levels = c("QA", "QT", "QF"))
-
-## gather the data so it's got one row per individual-behavior combo
-## ******** need to make this more inclusive of all behaviors i'm coding *********
-abs_data <- abs_data %>%
-  gather(feedsbrood, pollenforaging, nectarforaging, key = "behav", value = "time")
+## call it abs_data to make distinct
+abs_data <- gath_data
 
 ## summarize the data and calculate mean, sd, sem
 dfSumm <- ddply(abs_data, 
