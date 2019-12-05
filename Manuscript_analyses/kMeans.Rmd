@@ -10,117 +10,52 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Load Packages
 ```{r}
 library(tidyverse)
-library(dplyr)
-```
-```{r}
-## load a subset of data to test
-all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
-head(all_data)
-
-```
-
-
-
-
-
-### Clean Data
-split obsID column into its component parts to enable manipulation by camera/colony/time/date
-```{r clean obsID column}
-## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
-all_data$beeID <- as.character(all_data$beeID)
-all_data$obsID <- as.character(all_data$obsID)
-
-## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
-## element 1 is camID
-all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){
-                            x[1]
-                            } )
-## element 2 is nestID
-all_data$nestID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){
-                            x[2]
-                            } )
-## element 3 is dateID
-all_data$dateID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){ 
-                            x[3]
-                            } )
-## element 4 is hourID
-all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){ 
-                            x[4]
-                            } )
-```
-output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
-```{r Counts of behaviors for each individual}
-## collapse the dataframe to count the number of instances doing each behavior
-## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
-#  (and any other behaviors recorded), with counts for each behavior in as values
-## assumes that no two behaviors stopped at the exact same time. cannot handle duplicate stop times. 
-#  not sure how to fix that...
-count_data <- all_data
-count_data$count <- 1
-count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
-              names_from = stop, 
-              values_from = count)
-
-## add column for sum of counts for each behav
-count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
-
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
-count_data <- count_data %>%
-  select(nestID, beeID, behav, totCount)
-
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), 
-              names_from = behav, 
-              values_from = totCount)
-
-## change NA values to 0
-count_data[is.na(count_data)] <- 0
-
-count_data
+if(!require(plotly)){install.packages("plotly")}
+library(plotly)
 ```
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
 
-```{r}
-## The data parameter is the numeric dataset to be analyzed, 
-## nc is the maximum number of clusters to consider, 
-## seed is a random number seed.
-wssplot <- function(data, nc=15, seed=1234){
-               wss <- (nrow(data)-1)*sum(apply(data,2,var))
-               for (i in 2:nc){
-                    set.seed(seed)
-                    wss[i] <- sum(kmeans(data, centers=i)$withinss)}
-                plot(1:nc, wss, type="b", xlab="Number of Clusters",
-                     ylab="Within groups sum of squares")}
-wssplot(data = count_data)
-```
-```{r}
-## run k means analysis seed set i don't really understand....
-## count_data[,3:5] selects the counts of each behavior (ie. 3d plot in space)
-## 3 means we're forcing 3 clusters. *******need to figure out how to test for number of clusters********
-set.seed(20)
-test <- kmeans(count_data[, 3:5], 3, nstart = 20)
-test
+```{r find number of clusters in k means}
+## Elbow Method for finding the optimal number of clusters
+## dunno waht this does
+set.seed(123)
 
+## Compute and plot total within sum of squares for k = 2 to k = 10.
+k.max <- 10
+data <- count_data[, 3:5]
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=50, iter.max = 7)$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+```{r run k means analysis}
+## dunno what this means
+set.seed(20)
+
+## set k based on where elbow is in above graph
+k <- 2
+
+## run k means test
+test <- kmeans(count_data[, 3:5], k, nstart = 20)
+test
+```
+
+```{r graph k means analysis} 
 ## make cluster a factor so we can graph with it
-test$cluster <- as.factor(test$cluster)
+count_data$cluster <- as.factor(test$cluster)
 
 ## graph the data in 3d
-install.packages("plotly")
-library(plotly)
-
 plot_ly(x = count_data$feedsbrood, 
         y = count_data$nectarforaging, 
         z = count_data$pollenforaging, 
         type="scatter3d", 
         mode="markers", 
-        color = test$cluster)%>%
+        color = count_data$cluster)%>%
   layout(
     title = "k means clustering",
     scene = list(
