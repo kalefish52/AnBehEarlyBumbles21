@@ -100,4 +100,34 @@ wssplot <- function(data, nc=15, seed=1234){
                      ylab="Within groups sum of squares")}
 wssplot(data = count_data)
 ```
+```{r}
+## run k means analysis seed set i don't really understand....
+## count_data[,3:5] selects the counts of each behavior (ie. 3d plot in space)
+## 3 means we're forcing 3 clusters. *******need to figure out how to test for number of clusters********
+set.seed(20)
+test <- kmeans(count_data[, 3:5], 3, nstart = 20)
+test
+
+## make cluster a factor so we can graph with it
+test$cluster <- as.factor(test$cluster)
+
+## graph the data in 3d
+install.packages("plotly")
+library(plotly)
+
+plot_ly(x = count_data$feedsbrood, 
+        y = count_data$nectarforaging, 
+        z = count_data$pollenforaging, 
+        type="scatter3d", 
+        mode="markers", 
+        color = test$cluster)%>%
+  layout(
+    title = "k means clustering",
+    scene = list(
+      xaxis = list(title = "feedsbrood"),
+      yaxis = list(title = "nectarforaging"),
+      zaxis = list(title = "pollenforaging")
+      )
+  )
+```
                      
