@@ -54,6 +54,7 @@ Data includes several spreadsheets (each spreadsheet corresponding to a single c
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(plyr)
 ```
 
 
@@ -177,6 +178,7 @@ dur_data <- dur_data %>%
               values_from = totDur)
 
 dur_data
+all_data
 ```
 output df with total duration of video watched per colony. columns = nestID and totalLen
 ```{r}
@@ -209,6 +211,8 @@ totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 totalLen_data <- totalLen_data %>%
   select(camID, timeID, nestID, totalLen)
 
+totalLen_data
+
 ## for each nestID, remove nest videos that have a matching foraging video (i.e. watched twice)
 #  sum totalLen for all the for videos + nest videos that do not have a matching for video
 camDur <- data.frame(nestID = NA,
@@ -222,9 +226,8 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   forSum <- sum(for_data$totalLen)
   nestSum <- sum(subNest_data$totalLen)
   camSum <- forSum + nestSum
-  camDur <- rbind(camDur, c(sub_data$nestID[i], camSum))
+  camDur <- rbind(camDur, c(sub_data$nestID[1], camSum))
 }
-
 ## remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
 camDur
@@ -235,7 +238,6 @@ camDur
 
 
 ### Visualize Data
-pie charts with propotional time, bar graphs with absolute
 ```{r}
 ## saves plot ggsave(xxxx.pdf)
 ## 2xN df with nestID and totalLen as columns // totalLen value is total observed time (sec)
@@ -255,10 +257,58 @@ camDur <- camDur[order(camDur$nestID),]
 ## then add the column
 queen_data$totalLen <- camDur$totalLen
 
+## replace NA values with 0
+queen_data[is.na(queen_data)] <- 0
+
+## add column for treatment (separate treatment from colID in nestID column)
+queen_data$treat <- substr(queen_data$nestID, start = 1, stop = 2)
+
 queen_data
 ```
+pie charts with propotional time
+```{r}
+```
+bar graphs with absolute time
+```{r}
+## gather the data
 
 
+## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
+abs_data <- queen_data
+abs_data$treat <- factor(abs_data$treat)
+
+## gather the data so it's got one row per individual-behavior combo
+abs_data <- abs_data %>%
+  gather(feedsbrood, pollenforaging, nectarforaging, key = "behav", value = "time")
+
+## summarize the data and calculate mean, sd, sem
+dfSumm <- ddply(abs_data, 
+                c("behav", "treat"), 
+                summarise,
+                mean = mean(time), 
+                sd = sd(time),
+                sem = sd(time)/sqrt(length(time)))
+dfSumm
+
+## plot the summarized data in a barplot with error bars equal to sem
+## important that error bar position_dodge = geom_bar width
+p <- ggplot(dfSumm, aes(x = behav, 
+                   y = mean, 
+                   fill = treat,
+                   ymin = mean - sem,
+                   ymax = mean + sem)) + 
+  geom_bar(position = position_dodge(),
+           stat="identity",
+           width = 0.5) +
+  geom_errorbar(position=position_dodge(0.5), 
+                width=0.1) +
+  theme(text = element_text(size=20)) +
+  theme(legend.position="top") +
+  labs(x = "behavior", 
+       y = "absolute time (sec)",
+       legend = "queen ID")
+p
+```
 
 
 
