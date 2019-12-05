@@ -14,20 +14,21 @@ library(dplyr)
 ```
 
 
-
-
-
 ### Load Data
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-#borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+#filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
-#lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+#borisfiles <- lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
 ## do this to all the things 
-#do.call(rbind(filename))
+#all_data <- dataframe()
+#for (i in 1:length(borisfiles)) {
+ # all_data <- rbind(all_data, borisfiles[i])
+#}
+#do.call(rbind(borisfiles))
 ```
 
 ```{r}
@@ -97,6 +98,12 @@ count_data <- count_data %>%
               names_from = behav, 
               values_from = totCount)
 
+## replace NA values with 0
+count_data[is.na(count_data)] <- 0
+
+## sum rows excluding first two (nestID and beeID) to see total number of behaviors carried out by each indiv
+count_data$nBehavs <- rowSums(count_data[, 3:ncol(count_data)], na.rm = TRUE)
+
 count_data
 
 ```
@@ -133,6 +140,9 @@ dur_data <- dur_data %>%
               names_from = behav, 
               values_from = totDur)
 
+## replace NA values with 0
+dur_data[is.na(dur_data)] <- 0
+
 dur_data
 ```
 output df with total duration of video watched per colony. columns = nestID and totalLen
@@ -166,6 +176,8 @@ totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 totalLen_data <- totalLen_data %>%
   select(camID, timeID, nestID, totalLen)
 
+totalLen_data
+
 ## for each nestID, remove nest videos that have a matching foraging video (i.e. watched twice)
 #  sum totalLen for all the for videos + nest videos that do not have a matching for video
 camDur <- data.frame(nestID = NA,
@@ -179,8 +191,10 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   forSum <- sum(for_data$totalLen)
   nestSum <- sum(subNest_data$totalLen)
   camSum <- forSum + nestSum
-  camDur <- rbind(camDur, c(sub_data$nestID[i], camSum))
+  camDur <- rbind(camDur, c(sub_data$nestID[1], camSum))
 }
+## remove NA row initially created
+camDur <- camDur[2:nrow(camDur),]
 camDur
 ```
 
