@@ -275,9 +275,10 @@ bar graphs with absolute time
 
 ## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
 abs_data <- queen_data
-abs_data$treat <- factor(abs_data$treat)
+abs_data$treat <- factor(abs_data$treat, levels = c("QA", "QT", "QF"))
 
 ## gather the data so it's got one row per individual-behavior combo
+## ******** need to make this more inclusive of all behaviors i'm coding *********
 abs_data <- abs_data %>%
   gather(feedsbrood, pollenforaging, nectarforaging, key = "behav", value = "time")
 
