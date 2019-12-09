@@ -20,6 +20,7 @@ We have to manually download each project file from Boris. Each project is a sin
 4) Select all subjects then all behaviors, press ok 
 5) Group selected events into one file 
 6) Save file as nest name eg. "QF01" as a .csv file in the BORISfiles directory 
+*Note: all state events must be paired to export as an aggregated file 
 
 ### Load Data
 ```{r}
@@ -27,8 +28,12 @@ We have to manually download each project file from Boris. Each project is a sin
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
 #filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
 
+setwd("/Users/kaleighfisher/Desktop/Boris_files")
+filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", pattern="*.csv")
+read.csv("NF02.csv")
+
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
-#borisfiles <- lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+borisfiles <- lapply(filenames, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
 ## do this to all the things 
 #all_data <- dataframe()
@@ -78,6 +83,17 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                             x[4]
                             } )
 ```
+These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many videos have been observed for each project for foraging and nest, at the two different time points. 
+
+```{r}
+
+#WRITE CODE HERE TO CHECK STATUS OF OBSERVATIONS
+```
+
+
+
+
+
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
 ```{r}
 ## collapse the dataframe to count the number of instances doing each behavior
@@ -112,6 +128,9 @@ count_data[is.na(count_data)] <- 0
 count_data$nBehavs <- rowSums(count_data[, 3:ncol(count_data)], na.rm = TRUE)
 
 count_data
+
+##Save dataframe as .csv so it can be used in other downstrea analyses 
+write.csv(count_data, "count_data.csv")
 
 ```
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
@@ -151,6 +170,11 @@ dur_data <- dur_data %>%
 dur_data[is.na(dur_data)] <- 0
 
 dur_data
+
+##Save dataframe as .csv so it can be used in other downstrea analyses 
+write.csv(dur_data, "dur_data.csv")
+
+
 ```
 output df with total duration of video watched per colony. columns = nestID and totalLen
 ```{r}
@@ -203,6 +227,10 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
 ## remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
 camDur
+
+##Save dataframe as .csv so it can be used in other downstrea analyses 
+write.csv(camDur, "camDur.csv")
+
 ```
 
 
