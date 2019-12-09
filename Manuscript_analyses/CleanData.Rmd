@@ -32,9 +32,9 @@ filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive
                         full.names = TRUE)
 
 ## kaleigh's relative path
-filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
-                        pattern="*.csv",
-                        full.names = TRUE)
+#filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
+                        #pattern="*.csv",
+                        #full.names = TRUE)
 
 filenames
 
@@ -66,32 +66,10 @@ all_data
 
 ```{r}
 ## load a subset of data to test
-all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
+#all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
 #head(all_data)
 
-
-getwd()
-
-## load a subset of data to test
-all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles/NF02.csv", 
-                     header = TRUE, 
-                     col.names = c("obsID", 
-                                   "obsDate", 
-                                   "filename", 
-                                   "totalLen", 
-                                   "fps", 
-                                   "beeID", 
-                                   "behav",
-                                   "cat",
-                                   "mod", 
-                                   "behavType", 
-                                   "start", 
-                                   "stop", 
-                                   "dur", 
-                                   "comStart", 
-                                   "comStop" ),
-                     row.names = NULL)
-head(all_data)
+#head(all_data)
 ```
 
 
