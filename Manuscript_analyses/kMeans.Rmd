@@ -13,9 +13,16 @@ library(tidyverse)
 if(!require(plotly)){install.packages("plotly")}
 library(plotly)
 ```
+### Load Data
+```{r}
+count_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/count_data.csv")
+count_data
+
+```
+
+
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
-
 ```{r find number of clusters in k means}
 ## Elbow Method for finding the optimal number of clusters
 ## dunno waht this does
@@ -23,7 +30,8 @@ set.seed(123)
 
 ## Compute and plot total within sum of squares for k = 2 to k = 10.
 k.max <- 10
-data <- count_data[, 3:5]
+## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
+data <- count_data[, 4:6]
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 7)$tot.withinss})
 wss
@@ -38,10 +46,11 @@ plot(1:k.max, wss,
 set.seed(20)
 
 ## set k based on where elbow is in above graph
-k <- 2
+k <- 3
 
 ## run k means test
-test <- kmeans(count_data[, 3:5], k, nstart = 20)
+## make sure subset includes broodfeed, nectarforage, pollenforage, egglay
+test <- kmeans(count_data[, 4:6], k, nstart = 20)
 test
 ```
 
