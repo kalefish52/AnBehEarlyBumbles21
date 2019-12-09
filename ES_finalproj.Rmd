@@ -52,195 +52,27 @@ Data includes several spreadsheets (each spreadsheet corresponding to a single c
 
 ### Load Packages
 ```{r}
+if(!require(ggplot2)){install.packages("ggplot2")}
+if(!require(ggpubr)){install.packages("ggpubr")}
+library(ggplot2)
+library(ggpubr)
 library(tidyverse)
 library(dplyr)
 library(plyr)
-if(!require(ggplot2)){install.packages("ggplot2")}
+
 ```
-
-
-
-
 
 ### Load Data
 ```{r}
 
-## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-#borisfiles <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+## assumes working directory is the github folder SarroFisher
+getwd()
 
-## loop over the files and import all of them. rename column names to remove "." and make shorter
-#lapply(borisfiles, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
-
-## do this to all the things 
-#do.call(rbind(filename))
-```
-
-```{r}
-## load a subset of data to test
-all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
-head(all_data)
+count_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/count_data.csv")
+dur_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/dur_data.csv")
+camDur <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/camDur.csv")
 
 ```
-
-
-
-
-
-### Clean Data
-split obsID column into its component parts to enable manipulation by camera/colony/time/date
-```{r}
-## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
-all_data$beeID <- as.character(all_data$beeID)
-all_data$obsID <- as.character(all_data$obsID)
-
-## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
-## element 1 is camID
-all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){
-                            x[1]
-                            } )
-## element 2 is nestID
-all_data$nestID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){
-                            x[2]
-                            } )
-## element 3 is dateID
-all_data$dateID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){ 
-                            x[3]
-                            } )
-## element 4 is hourID
-all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"), 
-                          function(x){ 
-                            x[4]
-                            } )
-```
-## Frequency count
-output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
-```{r}
-## collapse the dataframe to count the number of instances doing each behavior
-## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
-#  (and any other behaviors recorded), with counts for each behavior in as values
-## assumes that no two behaviors stopped at the exact same time. cannot handle duplicate stop times. 
-#  not sure how to fix that...
-count_data <- all_data
-count_data$count <- 1
-count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
-              names_from = stop, 
-              values_from = count)
-
-## add column for sum of counts for each behav
-count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
-
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
-count_data <- count_data %>%
-  select(nestID, beeID, behav, totCount)
-
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), 
-              names_from = behav, 
-              values_from = totCount)
-
-count_data
-
-```
-output df with total count of behaviors per individual per colony
-```{r}
-## sum rows excluding first two (nestID and beeID)
-totFreq <- count_data
-totFreq$nBehavs <- rowSums(count_data[, 3:ncol(count_data)], na.rm = TRUE)
-
-```
-## Duration
-output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
-```{r}
-## make duration of all brood feeding events 1 second duration to enable duration comparisons
-time_data <- all_data
-for (i in 1:nrow(time_data)) {
-  if (time_data$behav[i] == "feedsbrood") {
-    time_data$dur[i] <- 1
-  }
-}
-
-## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
-## values = duration of each behav
-dur_data <- time_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
-              names_from = stop, 
-              values_from = dur, 
-              names_repair = "minimal")
-
-## add column for sum of duration for each behav
-dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
-
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
-dur_data <- dur_data %>%
-  select(nestID, beeID, behav, totDur)
-
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), 
-              names_from = behav, 
-              values_from = totDur)
-
-dur_data
-```
-output df with total duration of video watched per colony. columns = nestID and totalLen
-```{r}
-## select only the obsID, nestID, and totalLen columns
-## subset to only the unique combinations (ie. remove duplicates so we don't count more time than we watched)
-totalLen_data <- all_data %>%
-  select(obsID, nestID, totalLen) %>%
-  unique()
-totalLen_data
-
-## split out obsID into camID, dateID and hourID (split based on the tab (\t) between elements)
-## element 1 is camID
-totalLen_data$camID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){
-                            x[1]
-                            } )
-## element 3 is dateID
-totalLen_data$dateID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){ 
-                            x[3]
-                            } )
-## element 4 is hourID
-totalLen_data$hourID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){ 
-                            x[4]
-                            } )
-## combine date and hour into a single column called timeID
-totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
-## subset the df to remove the obs, hour, and date columns
-totalLen_data <- totalLen_data %>%
-  select(camID, timeID, nestID, totalLen)
-
-totalLen_data
-
-## for each nestID, remove nest videos that have a matching foraging video (i.e. watched twice)
-#  sum totalLen for all the for videos + nest videos that do not have a matching for video
-camDur <- data.frame(nestID = NA,
-                     totalLen = NA)
-for (i in 1:length(unique(totalLen_data$nestID))) {
-  sub_data <- subset(totalLen_data, nestID == unique(totalLen_data$nestID)[i])
-  for_data <- subset(sub_data, sub_data$camID == "for")
-  nest_data <- subset(sub_data, sub_data$camID == "nest")
-  subNest_data <- nest_data %>%
-      filter(! timeID %in% for_data$timeID)
-  forSum <- sum(for_data$totalLen)
-  nestSum <- sum(subNest_data$totalLen)
-  camSum <- forSum + nestSum
-  camDur <- rbind(camDur, c(sub_data$nestID[1], camSum))
-}
-## remove NA row initially created
-camDur <- camDur[2:nrow(camDur),]
-camDur
-```
-
-
 
 
 
@@ -249,68 +81,100 @@ camDur
 ## Frequency
 ```{r}
 ## NxN df with nestID, beeID, behaviors x y z, and totalBehavs // individual bees as rows // total number of behaviors
-totFreq
+count_data
 
 ## subset only queen data ******(do this earlier when i run it for real)******
-queen_freq <- totFreq[grep("Queen", totFreq$beeID), ]
+queen_count <- count_data[grep("Queen", count_data$beeID), ]
 
 ## replace NA values with 0
-queen_freq[is.na(queen_freq)] <- 0
+queen_count[is.na(queen_count)] <- 0
 
 ## add column for treatment (separate treatment from colID in nestID column)
-queen_freq$treat <- substr(queen_freq$nestID, start = 1, stop = 2)
+queen_count$treat <- substr(queen_count$nestID, start = 1, stop = 2)
 
 ## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
-queen_freq$treat <- factor(queen_freq$treat, levels = c("QA", "QT", "QF"))
+queen_count$treat <- factor(queen_count$treat, levels = c("QA", "QT", "QF"))
 
-queen_freq
+queen_count
 ```
 gather data so it's one row per individual-behavior combo
 ```{r}
 ## gather the data so it's got one row per individual-behavior combo
 ## ******** need to make this more inclusive of all behaviors i'm coding *********
-gath_freq <- queen_freq %>%
+gath_count <- queen_count %>%
   gather(feedsbrood, pollenforaging, nectarforaging, key = "behav", value = "count")
 
-gath_freq
+gath_count
 ```
 pie charts with propotional duration
 ```{r}
-## call it prop_freq to make it distinct
-prop_freq <- gath_freq
+## call it prop_count to make it distinct
+prop_count <- gath_count
 
 ## add column called prop that calculates proportion of total time per behavior
-prop_freq$prop <- NA
-for (i in 1:nrow(prop_freq)) {
-  prop_freq$prop[i] <- prop_freq$count[i]/prop_freq$nBehavs[i]
+prop_count$prop <- NA
+for (i in 1:nrow(prop_count)) {
+  prop_count$prop[i] <- prop_count$count[i]/prop_count$nBehavs[i]
 }
-prop_freq
 
 ## subset to make pie graph of QF groups
-qf_prop_freq <- subset(prop_freq, prop_freq$treat == "QF")
-qf_prop_freq
+qf_prop_count <- subset(prop_count, prop_count$treat == "QF")
 
 ## summarize over all the qf groups
-dfSumm <- ddply(qf_prop_freq, 
+dfSumm <- ddply(qf_prop_count, 
                 c("behav"), 
                 summarise,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-dfSumm
 
-pg <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0)
-pg
+
+## subset to make pie graph of QT groups
+qt_prop_count <- subset(prop_count, prop_count$treat == "QT")
+
+## summarize over all the qf groups
+dfSumm <- ddply(qt_prop_count, 
+                c("behav"), 
+                summarise,
+                mean = mean(prop), 
+                sd = sd(prop),
+                sem = sd(prop)/sqrt(length(prop)))
+
+QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0)
+
+## subset to make pie graph of QA groups
+qa_prop_count <- subset(prop_count, prop_count$treat == "QA")
+
+## summarize over all the qf groups
+dfSumm <- ddply(qa_prop_count, 
+                c("behav"), 
+                summarise,
+                mean = mean(prop), 
+                sd = sd(prop),
+                sem = sd(prop)/sqrt(length(prop)))
+
+QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0)
+
+## plot them all on one graph
+figure <- ggarrange(QA, QT, QF,
+                    labels = c("QA", "QT", "QF"),
+                    ncol = 1, nrow = 3)
+figure
 ```
 bar graphs with absolute time. bar height = mean, error = sem, grouped by behavior, colored by social group
 ```{r}
-## call it abs_freq to make distinct
-abs_freq <- gath_freq
+## call it abs_count to make distinct
+abs_count <- gath_count
 
 ## summarize the data and calculate mean, sd, sem
-dfSumm <- ddply(abs_freq, 
+dfSumm <- ddply(abs_count, 
                 c("behav", "treat"), 
                 summarise,
                 mean = mean(count), 
@@ -352,7 +216,10 @@ queen_dur <- dur_data[grep("Queen", dur_data$beeID), ]
 queen_dur
 
 ## add column to queen data that includes total duration of observed time 
-## first order both dataframes to make sure they are in the same order
+## first subset camDur to only include nests that we have queens for
+camDur <- camDur %>%
+      filter(nestID %in% queen_dur$nestID)
+## then order both dataframes to make sure they are in the same order
 queen_dur <- queen_dur[order(queen_dur$nestID),] 
 camDur <- camDur[order(camDur$nestID),]
 ## then add the column
@@ -414,12 +281,48 @@ dfSumm <- ddply(qf_prop_dur,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-dfSumm
 
-pg <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0)
-pg
+
+## subset to make pie graph of QT groups
+qt_prop_dur <- subset(prop_dur, prop_dur$treat == "QT")
+qt_prop_dur
+
+## summarize over all the qf groups
+dfSumm <- ddply(qt_prop_dur, 
+                c("behav"), 
+                summarise,
+                mean = mean(prop), 
+                sd = sd(prop),
+                sem = sd(prop)/sqrt(length(prop)))
+
+QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0)
+
+## subset to make pie graph of QF groups
+qa_prop_dur <- subset(prop_dur, prop_dur$treat == "QA")
+qa_prop_dur
+
+## summarize over all the qa groups
+dfSumm <- ddply(qa_prop_dur, 
+                c("behav"), 
+                summarise,
+                mean = mean(prop), 
+                sd = sd(prop),
+                sem = sd(prop)/sqrt(length(prop)))
+
+QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0)
+
+## plot them all on one graph
+figure <- ggarrange(QA, QT, QF,
+                    labels = c("QA", "QT", "QF"),
+                    ncol = 1, nrow = 3)
+figure
 ```
 bar graphs with absolute time. bar height = mean, error = sem, grouped by behavior, colored by social group
 ```{r}
