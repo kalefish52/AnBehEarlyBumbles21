@@ -1,6 +1,8 @@
 ---
 title: "CleanData"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -33,15 +35,15 @@ We have to manually download each project file from Boris. Each project is a sin
 
 ## erica's relative path
 ## filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles",
-                        pattern = "*.csv",
-                        full.names = TRUE)
+                       # pattern = "*.csv",
+                        #full.names = TRUE)
 
 ## kaleigh's relative path
 filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
                         pattern="*.csv", 
                         full.names = TRUE)
 
-filenames
+head(filenames)
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 all_data <- do.call(rbind, lapply(filenames, 
@@ -102,6 +104,8 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                           function(x){ 
                             x[4]
                             } )
+
+head(all_data)
 ```
 These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many videos have been observed for each project for foraging and nest, at the two different time points. 
 
