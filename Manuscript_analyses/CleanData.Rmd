@@ -13,6 +13,13 @@ library(tidyverse)
 library(dplyr)
 ```
 
+We have to manually download each project file from Boris. Each project is a single aggregated data file and represents one nest (ex. QF01). To download Boris files into a directory for data cleaning, do the following: 
+1) Open project file in BORIS
+2) Observations -> Export Events -> Aggregated events
+3) Press select all and then ok 
+4) Select all subjects then all behaviors, press ok 
+5) Group selected events into one file 
+6) Save file as nest name eg. "QF01" as a .csv file in the BORISfiles directory 
 
 ### Load Data
 ```{r}
