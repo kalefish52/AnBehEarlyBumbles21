@@ -28,12 +28,12 @@ We have to manually download each project file from Boris. Each project is a sin
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
 #filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
 
-setwd("/Users/kaleighfisher/Desktop/Boris_files")
-filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", pattern="*.csv")
-read.csv("NF02.csv")
+#setwd("/Users/kaleighfisher/Desktop/Boris_files")
+#filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", pattern="*.csv")
+#read.csv("NF02.csv")
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
-borisfiles <- lapply(filenames, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+#borisfiles <- lapply(filenames, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
 
 ## do this to all the things 
 #all_data <- dataframe()
@@ -135,18 +135,39 @@ write.csv(count_data, "count_data.csv")
 ```
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
 ```{r}
-## make duration of all brood feeding events 1 second duration to enable duration comparisons
+## rename for clarity
 time_data <- all_data
+
+## only look at first 5 minutes of the watched video to standardize
+time_data$start <- as.numeric(time_data$start)
+time_data$stop <- as.numeric(time_data$stop)
+time_data <- time_data[time_data$start <= 300, ]
+## make behaviors stop at the end of 5 minutes
+for (i in 1:nrow(time_data)) {
+  if (time_data$stop[i] >300) {
+    time_data$stop[i] <- 301 + runif(1)
+  }
+}
+
+## recalculate duration data to account for stop time at 5 minutes
+for (i in 1:nrow(time_data)) {
+  time_data$dur[i] <- time_data$stop[i] - time_data$start[i]
+}
+
+## make duration of all brood feeding events 1 second duration to enable duration comparisons
 for (i in 1:nrow(time_data)) {
   if (time_data$behav[i] == "feedsbrood") {
     time_data$dur[i] <- 1
   }
 }
 
+time_data
+
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
 ## produces error: Values in `dur` are not uniquely identified; output will contain list-cols. 
 #  table showing values as <S3: vctrs_list_of> 
+#  cannot have dupliate stop times
 dur_data <- time_data %>%
   pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
               names_from = stop, 
@@ -206,13 +227,21 @@ totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 ## subset the df to remove the obs, hour, and date columns
 totalLen_data <- totalLen_data %>%
   select(camID, timeID, nestID, totalLen)
+## make totalLen reflect only the first 5 minutes of the video, since we removed observations from after that point
+totalLen_data$totalLen[totalLen_data$totalLen > 300] <- 300
 
 totalLen_data
 
+
 ## for each nestID, remove nest videos that have a matching foraging video (i.e. watched twice)
 #  sum totalLen for all the for videos + nest videos that do not have a matching for video
+
+## create empty dataframe to put length into
 camDur <- data.frame(nestID = NA,
                      totalLen = NA)
+## for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
+## then remove nest videos that have a matching foraging video. then sum total length of remaining nest + for videos
+## then add those values to the camDur dataframe
 for (i in 1:length(unique(totalLen_data$nestID))) {
   sub_data <- subset(totalLen_data, nestID == unique(totalLen_data$nestID)[i])
   for_data <- subset(sub_data, sub_data$camID == "for")
