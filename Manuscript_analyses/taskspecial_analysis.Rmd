@@ -1,24 +1,34 @@
 ---
-title: "Division of Labor Project Code"
+title: "Kaleigh Fisher Project Code - Task Analysis"
 output: html_document
 ---
 
-Write how the data needs to be formatted and what columns you need for the analysis
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ```{r}
-setwd("/Volumes/GoogleDrive/My Drive/Kaleigh.Shared/Research Projects/Chapter Three/Division of Labor Experiments/Awesome Summer Experiments/Foraging_Analysis_1119")
-data<-read.csv("NMDS_1119.csv")
+# load packages 
+library(tidyverse)
 library(vegan)
 library(scatterplot3d)
 library(ggplot2)
+library(scatterplot3d)
+
+```
+
+
+```{r}
+
+data<-read.csv("NMDS_1119.csv")
+
 head(data)
 ##Subset data into different microcolony groups
 NT<-data[1:27,]
 QT<-data[28:53,]
 
 ## Change first column into a header 
-library(tidyverse)
+
 NT_mat<-NT %>% remove_rownames %>% column_to_rownames(var="X")
 QT_mat<-QT%>% remove_rownames %>% column_to_rownames(var="X")
 
@@ -171,7 +181,7 @@ anosim_all = anosim(mat_all, all_scores$treatment)
 ```{r}
 
 # Make scatter plots 
-library(scatterplot3d)
+
 scatdata<-read.csv("scatter_1119.csv")
 head(scatdata)
 
