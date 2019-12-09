@@ -26,14 +26,41 @@ We have to manually download each project file from Boris. Each project is a sin
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-#filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+## erica's relative path
+filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles",
+                        pattern = "*.csv",
+                        full.names = TRUE)
 
-#setwd("/Users/kaleighfisher/Desktop/Boris_files")
-#filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", pattern="*.csv")
-#read.csv("NF02.csv")
+## kaleigh's relative path
+filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
+                        pattern="*.csv")
+
+filenames
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
-#borisfiles <- lapply(filenames, read.csv, header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop"))
+borisfiles <- lapply(filenames, 
+                     read.csv, 
+                     header = TRUE, 
+                     col.names = c("obsID", 
+                                   "obsDate", 
+                                   "filename", 
+                                   "totalLen", 
+                                   "fps", 
+                                   "beeID", 
+                                   "behav", 
+                                   "cat", 
+                                   "mod", 
+                                   "behavType", 
+                                   "start", 
+                                   "stop",
+                                   "dur", 
+                                   "comStart",
+                                   "comStop"))
+
+## this part isn't working yet
+all_data <- do.call(rbind(borisfiles))
+
+all_data
 
 ## do this to all the things 
 #all_data <- dataframe()
@@ -45,9 +72,35 @@ We have to manually download each project file from Boris. Each project is a sin
 
 ```{r}
 ## load a subset of data to test
-all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
-head(all_data)
+#all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
+#head(all_data)
 
+## set wd to folder containing BORISfiles folder so we can access from different computers
+## for some reason this is not working, so i put the whole path in the load
+setwd("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data")
+
+getwd()
+
+## load a subset of data to test
+all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles/NF02.csv", 
+                     header = TRUE, 
+                     col.names = c("obsID", 
+                                   "obsDate", 
+                                   "filename", 
+                                   "totalLen", 
+                                   "fps", 
+                                   "beeID", 
+                                   "behav",
+                                   "cat",
+                                   "mod", 
+                                   "behavType", 
+                                   "start", 
+                                   "stop", 
+                                   "dur", 
+                                   "comStart", 
+                                   "comStop" ),
+                     row.names = NULL)
+head(all_data)
 ```
 
 
