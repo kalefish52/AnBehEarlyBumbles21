@@ -33,7 +33,8 @@ filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive
 
 ## kaleigh's relative path
 filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
-                        pattern="*.csv")
+                        pattern="*.csv",
+                        full.names = TRUE)
 
 filenames
 
