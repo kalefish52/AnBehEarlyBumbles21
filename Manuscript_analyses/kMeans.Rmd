@@ -24,8 +24,9 @@ count_data
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
 ```{r find number of clusters in k means}
-## Elbow Method for finding the optimal number of clusters
-## dunno waht this does
+## Elbow Method for finding the optimal number of clusters. optimal number of clusters = elbow of the graph. (in this case 3)
+
+## set seed of random number generator for reproducibility
 set.seed(123)
 
 ## Compute and plot total within sum of squares for k = 2 to k = 10.
@@ -33,7 +34,7 @@ k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
 data <- count_data[, 4:6]
 wss <- sapply(1:k.max, 
-              function(k){kmeans(data, k, nstart=50, iter.max = 7)$tot.withinss})
+              function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
 wss
 plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
@@ -42,14 +43,14 @@ plot(1:k.max, wss,
 ```
 
 ```{r run k means analysis}
-## dunno what this means
-set.seed(20)
+## set random number generator seed for reproducibility
+set.seed(124)
 
 ## set k based on where elbow is in above graph
 k <- 3
 
 ## run k means test
-## make sure subset includes broodfeed, nectarforage, pollenforage, egglay
+## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
 test <- kmeans(count_data[, 4:6], k, nstart = 20)
 test
 ```
@@ -58,7 +59,8 @@ test
 ## make cluster a factor so we can graph with it
 count_data$cluster <- as.factor(test$cluster)
 
-## graph the data in 3d
+## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
+## make egg laying workers x 
 plot_ly(x = count_data$feedsbrood, 
         y = count_data$nectarforaging, 
         z = count_data$pollenforaging, 
