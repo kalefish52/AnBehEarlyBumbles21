@@ -191,11 +191,22 @@ count_data[is.na(count_data)] <- 0
 ## sum rows excluding first two (nestID and beeID) to see total number of behaviors carried out by each indiv
 count_data$nBehavs <- rowSums(count_data[, 3:ncol(count_data)], na.rm = TRUE)
 
-count_data
+## add column for queen / worker status based on first letter in beeID
+beeTypeCharacter <- sapply(strsplit(count_data$beeID, ""), 
+                          function(x){
+                            x[1]
+                          })
+
+count_data$beeType <- beeTypeCharacter
+
+## remove unknown worker data
+count_data <- count_data[!count_data$beeType == "U", ]
+count_data <- count_data[!count_data$beeType == "N", ]
 
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
 write.csv(count_data, "count_data.csv")
 
+count_data
 ```
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
 ```{r}
