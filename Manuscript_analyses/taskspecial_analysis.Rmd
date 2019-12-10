@@ -68,13 +68,42 @@ Now try to compare different ordination analyses: PCoA, NMDS and K means
 ```{r} 
 #PCoA Analysis 
 
+##Step One: Create a distance matrix 
+
+#Samples should be rows and each gene should be a column (t=transpose) 
+distance.matrix<-dist(scale((NF.matrix), center=TRUE, scale=TRUE), method="euclidean")
+
+
+##Step Two: Perform multi-dimensional scaling on the distance matrix using the cmdscale() funciton 
+mds.stuff<-cmdscale(distance.matrix, eig=TRUE, x.ret=TRUE)
+# returns eigen values to calculate how much variation in the distance matrix 
+# each axis in the final MDS plot accounts for. 
+
+##Step Three: Calculate amount of variation each axis accounts for using eigen values
+mds.var.per<-round(mds.stuff$eig/sum(mds.stuff$eig)*100, 1)
+mds.var.per
+## Can make a graph here 
+barplot(mds.var.per, xlab="Variation Axes", ylab="Percentage of Variation")
+
+
+##Step Four: Format data for ggplot
+mds.values<-mds.stuff$points
+mds.data<-data.frame(Sample=rownames(mds.values), 
+                     x=mds.values[,1],
+                     y=mds.values[,2])
+
+ggplot(data=mds.data, aes(x=x, y=y, label=Sample))+ 
+  geom_text()+
+  theme_bw()
+  
+
+
+##Step Five: make graph 
+
+###plot mds.data using 
 
 
 ```
-
-
-
-
 
 
 
