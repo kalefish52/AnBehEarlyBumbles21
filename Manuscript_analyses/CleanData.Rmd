@@ -1,6 +1,8 @@
 ---
 title: "CleanData"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -11,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(ggplot2)
 ```
 
 We have to manually download each project file from Boris. Each project is a single aggregated data file and represents one nest (ex. QF01). To download Boris files into a directory for data cleaning, do the following: 
@@ -26,17 +29,21 @@ We have to manually download each project file from Boris. Each project is a sin
 ```{r}
 
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
-## erica's relative path
-filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles",
-                        pattern = "*.csv",
-                        full.names = TRUE)
+## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
 
-## kaleigh's relative path
-#filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
-                        #pattern="*.csv",
+## use full.names=TRUE so that it reads in files using absolute file path 
+
+## erica's relative path
+## filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles",
+                       # pattern = "*.csv",
                         #full.names = TRUE)
 
-filenames
+## kaleigh's relative path
+filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
+                        pattern="*.csv", 
+                        full.names = TRUE)
+
+head(filenames)
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 all_data <- do.call(rbind, lapply(filenames, 
@@ -64,13 +71,6 @@ all_data
 
 ```
 
-```{r}
-## load a subset of data to test
-#all_data <- read.csv("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/MasterProjects/18Su_AwesomeSummer/MockData/AggEvents.csv", header = TRUE, col.names = c("obsID", "obsDate", "filename", "totalLen", "fps", "beeID", "behav", "mod", "behavType", "start", "stop", "dur", "comStart", "comStop" ))
-#head(all_data)
-
-#head(all_data)
-```
 
 
 
@@ -104,16 +104,47 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                           function(x){ 
                             x[4]
                             } )
+
+head(all_data)
 ```
 These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many videos have been observed for each project for foraging and nest, at the two different time points. 
 
+
+## look at how many observations we have for each nest for each BORIS download
 ```{r}
 
-#WRITE CODE HERE TO CHECK STATUS OF OBSERVATIONS
+## Make a new column for nest type ie. NT or QT 
+Queencharacter<-sapply(strsplit(all_data$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(all_data$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+                          
+all_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+##remove first 30 rows because they are labelled incorrectly, Erica is fixing, will not be an issue next download 
+
+data_sum<- all_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
+datasum<-data_sum[-c(1:30),]
+
+sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(Observations=n())
+sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
+
+##look at data we have so far based on each colony 
+
+ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+## look at data we have so far based on each type of colony 
+ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+
+
 ```
-
-
-
 
 
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -124,16 +155,18 @@ output df with each bee as a single row, behaviors as columns, count of frequenc
 ## assumes that no two behaviors stopped at the exact same time. cannot handle duplicate stop times. 
 #  not sure how to fix that...
 count_data <- all_data
-count_data$count <- 1
+## add a column with value 1 that counts the behavioral observation 
+count_data$count <- 1  
+## condense data frame into relevant columns, each row is a single observation for an individual
 count_data <- count_data %>%
   pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
               names_from = stop, 
-              values_from = count)
+              values_from = count) 
 
 ## add column for sum of counts for each behav
 count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
 
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
+## subset dataframe so that all is left is nestID, beeID, behav, and totCount
 count_data <- count_data %>%
   select(nestID, beeID, behav, totCount)
 
