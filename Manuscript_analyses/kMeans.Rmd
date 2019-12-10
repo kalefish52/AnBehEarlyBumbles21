@@ -63,15 +63,15 @@ plot_ly(x = count_data$feedsbrood,
         y = count_data$nectarforaging, 
         z = count_data$pollenforaging, 
         type="scatter3d", 
-        mode="markers", 
+        mode="markers",
+        symbol = count_data$beeType, symbols = c('circle','o'),
         color = count_data$cluster)%>%
   layout(
     title = "k means clustering",
     scene = list(
       xaxis = list(title = "feedsbrood"),
       yaxis = list(title = "nectarforaging"),
-      zaxis = list(title = "pollenforaging")
-      )
+      zaxis = list(title = "pollenforaging"))
   )
 ```
                      
