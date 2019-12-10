@@ -33,15 +33,24 @@ We have to manually download each project file from Boris. Each project is a sin
 
 ## use full.names=TRUE so that it reads in files using absolute file path 
 
-## erica's relative path
-## filenames <- list.files("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles",
-                       # pattern = "*.csv",
-                        #full.names = TRUE)
+list_filenames <- function(BORISfiles_path) {
+  filenames <- list.files(BORISfiles_path,
+                          pattern = "*.csv",
+                          full.names = TRUE)
+  return(filenames)
+}
 
-## kaleigh's relative path
-filenames <- list.files("/Users/kaleighfisher/Desktop/Boris_files", 
-                        pattern="*.csv", 
-                        full.names = TRUE)
+
+## use filenames below to enter your file path to the BORISfiles folder (can be found in GitHub repo)
+
+## Erica's BORISfiles path
+filenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
+
+## Kaleigh's BORISfiles path
+#filenames <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
+
+## Lauren's BORISfiles path
+#filenames <- list_filenames("")
 
 head(filenames)
 
@@ -293,6 +302,8 @@ totalLen_data
 
 ## create empty dataframe to put length into
 camDur <- data.frame(nestID = NA,
+                     forLen = NA,
+                     nestLen = NA,
                      totalLen = NA)
 ## for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
 ## then remove nest videos that have a matching foraging video. then sum total length of remaining nest + for videos
@@ -304,17 +315,32 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   subNest_data <- nest_data %>%
       filter(! timeID %in% for_data$timeID)
   forSum <- sum(for_data$totalLen)
-  nestSum <- sum(subNest_data$totalLen)
-  camSum <- forSum + nestSum
-  camDur <- rbind(camDur, c(sub_data$nestID[1], camSum))
+  totNestSum <- sum(nest_data$totalLen)
+  subNestSum <- sum(subNest_data$totalLen)
+  camSum <- forSum + subNestSum
+  camDur <- rbind(camDur, c(sub_data$nestID[1], forSum, totNestSum, camSum))
 }
 ## remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
-camDur
+
+## make columns numeric so i can calculate ratio in next step
+camDur$totalLen <- as.numeric(camDur$totalLen)
+camDur$forLen <- as.numeric(camDur$forLen)
+camDur$nestLen <- as.numeric(camDur$nestLen)
+
+## make new column with the ratio of foraging to nest video length. should be ~1 for each colony
+camDur$FNratio <- NA
+for (i in 1:nrow(camDur)) {
+  camDur$FNratio[i] <- camDur$forLen[i] / camDur$nestLen[i]
+}
 
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
 write.csv(camDur, "camDur.csv")
 
+
+## check to see how much video was watched for each nest and for each treatment
+## must be equal + ratio must be 1 to compare
+camDur
 ```
 
 
