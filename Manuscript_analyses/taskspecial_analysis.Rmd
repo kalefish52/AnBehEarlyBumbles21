@@ -19,15 +19,29 @@ library(scatterplot3d)
 
 
 ```{r}
+#read in count_data from CleanData.Rmd
+count_data<-read.csv("/Users/kaleighfisher/Dropbox/SarroFisher/Manuscript_analyses/count_data.csv")
+head(count_data)
 
-data<-read.csv("NMDS_1119.csv")
+count_data<- count_data %>% arrange(nestID)
+datasum<-data_sum[-c(1:30),]
 
-head(data)
-##Subset data into different microcolony groups
-NT<-data[1:27,]
-QT<-data[28:53,]
+
+## Add colony type column ## Make a new column for nest type ie. NT or QT 
+Queencharacter<-sapply(strsplit(count_data$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+                          
+all_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
 ## Change first column into a header 
+
+
 
 NT_mat<-NT %>% remove_rownames %>% column_to_rownames(var="X")
 QT_mat<-QT%>% remove_rownames %>% column_to_rownames(var="X")
@@ -53,6 +67,20 @@ stressplot(NMDS_QT)
 
 
 ```
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
 ```{r}
 
 ##Make NMDS graph in ggplot2 for NT groups
@@ -83,7 +111,7 @@ head(NMDS_behav)
 
 
 
-library(tidyverse)
+
 ##Graph data as NMDS around behaviors for NT plot 
 ggplot() + 
   geom_text(data=NMDS_behav,aes(x=NMDS1,y=NMDS2,label=behavs),alpha=1, nudge_x=-.2) +  #add behavior labels
