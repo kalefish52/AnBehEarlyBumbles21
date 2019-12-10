@@ -23,9 +23,12 @@ library(scatterplot3d)
 count_data<-read.csv("/Users/kaleighfisher/Dropbox/SarroFisher/Manuscript_analyses/count_data.csv")
 head(count_data)
 
-count_data<- count_data %>% arrange(nestID)
-datasum<-data_sum[-c(1:30),]
+count_data<- count_data %>% arrange(nestID) ## See if any observations are mislabelled 
 
+count_data<- count_data[-c(1:12),] ## Remove observations that are mislabelled 
+
+##Need to make element into a character in order for strsplit to work 
+count_data$nestID<- as.character(count_data$nestID)
 
 ## Add colony type column ## Make a new column for nest type ie. NT or QT 
 Queencharacter<-sapply(strsplit(count_data$nestID, ""), 
@@ -36,19 +39,51 @@ Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
                         function(x){
                           x[2]
                         })    
-                          
-all_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
-
-## Change first column into a header 
+count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
 
 
-NT_mat<-NT %>% remove_rownames %>% column_to_rownames(var="X")
-QT_mat<-QT%>% remove_rownames %>% column_to_rownames(var="X")
 
-##Make data frame into a matrix
-mat_NT<-as.matrix(NT_mat)
-mat_QT<-as.matrix(QT_mat)
+## Make matrices for each colony type for behaviors of interest 
+NF.matrix <- count_data %>% filter(nestTYPE == "NF") %>% select(beeID, feedsbrood, pollenforaging, nectarforaging) %>% remove_rownames %>% column_to_rownames(var="beeID")
+
+##make a unique number vector and paste it to beeID
+
+
+## takes a pattern and replaces it - gsub() 
+
+x<-gsub("Worker[ ][0-9][ ]\\(", "",  as.character(NF.matrix$beeID)) 
+x <- gsub("\\)", "", x)
+
+x <- paste(x, 1:length(x), sep="_") #length or nrow 
+
+
+column_to_rownames(var="") 
+
+%>% column_to_rownames(var="X")
+
+
+
+
+
+NT.matrix <- count_data %>% filter(nestTYPE == "NT")
+QF.matrix <- count_data %>% filter(nestTYPE == "QF")
+QT.matrix <- count_data %>% filter(nestTYPE == "QT")
+
+
+```
+
+Try and compare different ordination al
+```{r} 
+
+
+```
+
+
+
+
+
+
 
 ##NMDS 
 NMDS_NT=metaMDS(mat_NT, k=2)
