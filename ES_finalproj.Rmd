@@ -71,7 +71,6 @@ getwd()
 count_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/count_data.csv")
 dur_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/dur_data.csv")
 camDur <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/camDur.csv")
-
 ```
 
 
@@ -102,7 +101,10 @@ gather data so it's one row per individual-behavior combo
 ## gather the data so it's got one row per individual-behavior combo
 ## ******** need to make this more inclusive of all behaviors i'm coding *********
 gath_count <- queen_count %>%
-  gather(feedsbrood, pollenforaging, nectarforaging, key = "behav", value = "count")
+  gather(feedsbrood, broodmanipulate, incubate, waxmanipulate, pollenforaging, nectarforaging, offbrood, other, key = "behav", value = "count")
+
+## remove rows with NA nest ID
+gath_count <- gath_count[!is.na(gath_count$treat),]
 
 gath_count
 ```
@@ -130,6 +132,8 @@ dfSumm <- ddply(qf_prop_count,
 
 QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QF",
+       y = "QF") +
   coord_polar("y", start=0)
 
 ## subset to make pie graph of QT groups
@@ -145,6 +149,8 @@ dfSumm <- ddply(qt_prop_count,
 
 QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QT",
+       y = "QT") +
   coord_polar("y", start=0)
 
 ## subset to make pie graph of QA groups
@@ -160,12 +166,14 @@ dfSumm <- ddply(qa_prop_count,
 
 QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QA",
+       y = "QA") +
   coord_polar("y", start=0)
 
 ## plot them all on one graph
 figure <- ggarrange(QA, QT, QF,
-                    labels = c("QA", "QT", "QF"),
-                    ncol = 1, nrow = 3)
+                    labels = c("A", "B", "C"),
+                    ncol = 1, nrow = 1)
 figure
 ```
 bar graphs with absolute time. bar height = mean, error = sem, grouped by behavior, colored by social group
@@ -192,10 +200,11 @@ p <- ggplot(dfSumm, aes(x = behav,
   geom_bar(position = position_dodge(),
            stat="identity",
            width = 0.5) +
-  geom_errorbar(position=position_dodge(0.5), 
-                width=0.1) +
-  theme(text = element_text(size=20)) +
-  theme(legend.position="top") +
+  geom_errorbar(position = position_dodge(0.5), 
+                width = 0.1) +
+  theme(text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  theme(legend.position = "top") +
   labs(x = "behavior", 
        y = "count",
        legend = "queen ID")
@@ -219,6 +228,7 @@ queen_dur
 ## first subset camDur to only include nests that we have queens for
 camDur <- camDur %>%
       filter(nestID %in% queen_dur$nestID)
+camDur
 ## then order both dataframes to make sure they are in the same order
 queen_dur <- queen_dur[order(queen_dur$nestID),] 
 camDur <- camDur[order(camDur$nestID),]
@@ -254,7 +264,7 @@ gather data so it's one row per individual-behavior combo
 ## gather the data so it's got one row per individual-behavior combo
 ## ******** need to make this more inclusive of all behaviors i'm coding *********
 gath_dur <- queen_dur %>%
-  gather(feedsbrood, pollenforaging, nectarforaging, non, key = "behav", value = "time")
+  gather(feedsbrood, broodmanipulate, incubate, waxmanipulate, pollenforaging, nectarforaging, offbrood, other, non, key = "behav", value = "time")
 
 gath_dur
 ```
@@ -284,6 +294,8 @@ dfSumm <- ddply(qf_prop_dur,
 
 QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QF",
+       y = "QF") +
   coord_polar("y", start=0)
 
 ## subset to make pie graph of QT groups
@@ -300,6 +312,8 @@ dfSumm <- ddply(qt_prop_dur,
 
 QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QT",
+       y = "QT") +
   coord_polar("y", start=0)
 
 ## subset to make pie graph of QF groups
@@ -316,18 +330,20 @@ dfSumm <- ddply(qa_prop_dur,
 
 QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
+  labs(x = "QA",
+       y = "QA") +
   coord_polar("y", start=0)
 
 ## plot them all on one graph
 figure <- ggarrange(QA, QT, QF,
                     labels = c("QA", "QT", "QF"),
-                    ncol = 1, nrow = 3)
+                    ncol = 1, nrow = 1)
 figure
 ```
 bar graphs with absolute time. bar height = mean, error = sem, grouped by behavior, colored by social group
 ```{r}
 ## call it abs_dur to make distinct
-abs_dur <- gath_dur
+abs_dur <- gath_dur[!gath_dur$behav=="non",]
 
 ## summarize the data and calculate mean, sd, sem
 dfSumm <- ddply(abs_dur, 
@@ -350,7 +366,8 @@ p <- ggplot(dfSumm, aes(x = behav,
            width = 0.5) +
   geom_errorbar(position=position_dodge(0.5), 
                 width=0.1) +
-  theme(text = element_text(size=20)) +
+  theme(text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 90)) +
   theme(legend.position="top") +
   labs(x = "behavior", 
        y = "absolute time (sec)",
