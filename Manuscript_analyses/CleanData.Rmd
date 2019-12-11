@@ -377,12 +377,12 @@ for (i in 1:nrow(dur_data)) {
 
 ## make duration of all brood feeding events 1 second duration to enable duration comparisons
 for (i in 1:nrow(dur_data)) {
-  if (dur_data$behav[i] == "feedsbrood") {
+  if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") {
     dur_data$dur[i] <- 1
   }
 }
 dur_data$behav[2300]
-dur_data
+tail(dur_data)
 
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
