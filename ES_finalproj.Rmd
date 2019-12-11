@@ -461,7 +461,6 @@ noTime_pollenforaging
 
 #acrossTime <- lme4::lmer(incubate ~ treat + WingAvg + (nestID|NatCol) + (nestID|WNatCol), data = queen_dur)
 
-noTime
 ```
 
 
