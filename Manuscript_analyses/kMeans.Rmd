@@ -16,7 +16,7 @@ library(plotly)
 ### Load Data
 ```{r}
 count_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/count_data.csv")
-count_data
+tail(count_data)
 
 ```
 
@@ -66,7 +66,7 @@ plot_ly(x = count_data$feedsbrood,
         z = count_data$pollenforaging, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_data$beeType, symbols = c('circle','o'),
+        symbol = count_data$beeType, symbols = c('square', 'circle','o'),
         color = count_data$cluster)%>%
   layout(
     title = "k means clustering",
