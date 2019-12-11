@@ -133,7 +133,10 @@ dfSumm <- ddply(qf_prop_count,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QF",
@@ -142,7 +145,6 @@ QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
 
 ## subset to make pie graph of QT groups
 qt_prop_count <- subset(prop_count, prop_count$treat == "QT")
-
 ## summarize over all the qf groups
 dfSumm <- ddply(qt_prop_count, 
                 c("behav"), 
@@ -150,16 +152,20 @@ dfSumm <- ddply(qt_prop_count,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QT",
        y = "QT") +
   coord_polar("y", start=0)
 
+QT
+
 ## subset to make pie graph of QA groups
 qa_prop_count <- subset(prop_count, prop_count$treat == "QA")
-
 ## summarize over all the qf groups
 dfSumm <- ddply(qa_prop_count, 
                 c("behav"), 
@@ -167,7 +173,10 @@ dfSumm <- ddply(qa_prop_count,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QA",
@@ -294,7 +303,10 @@ dfSumm <- ddply(qf_prop_dur,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QF <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QF",
@@ -312,7 +324,10 @@ dfSumm <- ddply(qt_prop_dur,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QT",
@@ -330,7 +345,10 @@ dfSumm <- ddply(qa_prop_dur,
                 mean = mean(prop), 
                 sd = sd(prop),
                 sem = sd(prop)/sqrt(length(prop)))
-
+## standardize the means back to proportions so they add up to 1
+dfSumm$tot <- sum(dfSumm$mean)
+dfSumm$mean <- dfSumm$mean/dfSumm$tot
+## graph
 QA <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
   geom_bar(width = 1, stat = "identity") +
   labs(x = "QA",
