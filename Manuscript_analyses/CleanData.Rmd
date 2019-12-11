@@ -333,7 +333,21 @@ count_data$beeType <- beeTypeCharacter
 ## remove unknown worker data
 count_data <- count_data[!count_data$beeType == "U", ]
 count_data <- count_data[!count_data$beeType == "N", ]
-
+## make missingBees beeType NA
+for (i in 1:nrow(count_data)) {
+  if (count_data$beeType[i] == 1 || 
+      count_data$beeType[i] == 2 || 
+      count_data$beeType[i] == 3 ||
+      count_data$beeType[i] == 4 ||
+      count_data$beeType[i] == 5 ||
+      count_data$beeType[i] == 6 ||
+      count_data$beeType[i] == 7 ||
+      count_data$beeType[i] == 8 ||
+      count_data$beeType[i] == 9) {
+    count_data$beeType[i] <- 0
+  }
+}
+ 
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
 write.csv(count_data, "count_data.csv")
 
