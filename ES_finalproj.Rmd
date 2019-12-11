@@ -87,7 +87,8 @@ count_data
 
 ## subset only queen data ******(do this earlier when i run it for real)******
 #queen_count <- count_data[grep("Queen", count_data$beeID), ]
-queen_count <- count_data[beeType == "Q", ]
+count_data$beeType <- as.character(count_data$beeType)
+queen_count <- count_data[count_data$beeType == "Q", ]
 
 ## replace NA values with 0
 queen_count[is.na(queen_count)] <- 0
@@ -448,13 +449,17 @@ queen_dur
 # *******need to add in WingAvg**********
 # *******how do i run the model to include values that have NA for a random effect?********
 noTime_incubateWnat <- lme4::lmer(incubate ~ treat + (1|Qnatal) + (1|Wnatal), data = queen_dur)
+
 noTime_incubate <- lme4::lmer(incubate ~ treat + (1|Qnatal), data = queen_dur)
+noTime_incubate
 noTime_feedsbrood <- lme4::lmer(feedsbrood ~ treat + (1|Qnatal), data = queen_dur)
+noTime_feedsbrood
 noTime_nectarforaging <- lme4::lmer(nectarforaging ~ treat + (1|Qnatal), data = queen_dur)
+noTime_nectarforaging
 noTime_pollenforaging <- lme4::lmer(pollenforaging ~ treat + (1|Qnatal), data = queen_dur)
+noTime_pollenforaging
 
-
-acrossTime <- lme4::lmer(incubate ~ treat + WingAvg + (nestID|NatCol) + (nestID|WNatCol), data = queen_dur)
+#acrossTime <- lme4::lmer(incubate ~ treat + WingAvg + (nestID|NatCol) + (nestID|WNatCol), data = queen_dur)
 
 noTime
 ```
