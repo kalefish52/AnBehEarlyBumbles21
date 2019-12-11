@@ -56,11 +56,21 @@ count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
 ## Make matrices for each colony type for behaviors of interest 
 #Separates pollen and nectar foraging and does not include egg laying 
+# Can choose behaviors of interest using select()
 
 NF.matrix <- count_data %>% filter(nestTYPE == "NF") %>% select(beeID, feedsbrood, pollenforaging, nectarforaging) %>% remove_rownames %>% column_to_rownames(var="beeID")
 NT.matrix <- count_data %>% filter(nestTYPE == "NT") %>% select(beeID, feedsbrood, pollenforaging, nectarforaging) %>% remove_rownames %>% column_to_rownames(var="beeID")
 QF.matrix <- count_data %>% filter(nestTYPE == "QF") %>% select(beeID, feedsbrood, pollenforaging, nectarforaging) %>% remove_rownames %>% column_to_rownames(var="beeID")
 QT.matrix <- count_data %>% filter(nestTYPE == "QT") %>% select(beeID, feedsbrood, pollenforaging, nectarforaging) %>% remove_rownames %>% column_to_rownames(var="beeID")
+
+## Store matrices as a list so that each analyses can loop through each matrix 
+Matrices<- list()
+Matrices[[1]]<-NF.matrix
+Matrices[[2]]<-NT.matrix
+Matrices[[3]]<-QF.matrix
+Matrices[[4]]<-QT.matrix
+
+Matrices
 ```
 
 Now try to compare different ordination analyses: PCoA, NMDS and K means 
@@ -69,64 +79,73 @@ Now try to compare different ordination analyses: PCoA, NMDS and K means
 #PCoA Analysis 
 
 ##Step One: Create a distance matrix 
-
-#Samples should be rows and each gene should be a column (t=transpose) 
-distance.matrix<-dist(scale((NF.matrix), center=TRUE, scale=TRUE), method="euclidean")
-
+#Samples should be rows and each gene should be a column 
+distance.matrix<-lapply(Matrices, 
+       function(i){
+         dist(scale(i, center=TRUE, scale=TRUE), method="euclidean")
+       })
 
 ##Step Two: Perform multi-dimensional scaling on the distance matrix using the cmdscale() funciton 
-mds.stuff<-cmdscale(distance.matrix, eig=TRUE, x.ret=TRUE)
+mds.stuff<-lapply(distance.matrix, 
+                  function(i){
+                    cmdscale(i, eig=TRUE, x.ret=TRUE)
+                  })
+
 # returns eigen values to calculate how much variation in the distance matrix 
 # each axis in the final MDS plot accounts for. 
 
 ##Step Three: Calculate amount of variation each axis accounts for using eigen values
-mds.var.per<-round(mds.stuff$eig/sum(mds.stuff$eig)*100, 1)
-mds.var.per
-## Can make a graph here 
+mds.var.per<-lapply(mds.stuff, 
+                    function(i){
+                      round(i$eig/sum(i$eig)*100, 1)
+                    })
+
+## Step Four: make graphs
 barplot(mds.var.per, xlab="Variation Axes", ylab="Percentage of Variation")
 
 
 ##Step Four: Format data for ggplot
-mds.values<-mds.stuff$points
-mds.data<-data.frame(Sample=rownames(mds.values), 
-                     x=mds.values[,1],
-                     y=mds.values[,2])
+mds.data<-lapply(mds.stuff,
+                 function(i){
+                   data.frame(Sample=rownames(i$points), 
+                      x=i$points[,1],
+                      y=i$points[,2])
+                 })
 
-ggplot(data=mds.data, aes(x=x, y=y, label=Sample))+ 
-  geom_text()+
-  theme_bw()
+##Step Five: make graphs 
+
+PCoAplots<-lapply(mds.data,
+                  function(i){
+                    ggplot(data=i, aes(x=x, y=y, label=Sample))+
+                      geom_text()+
+                      theme_bw()+
+                      geom_jitter()
+                  })
+PCoAplots
+
+
   
-
-
-##Step Five: make graph 
-
-###plot mds.data using 
 
 
 ```
 
 
 
-##NMDS 
+
+
+```{r}
+##NMDS Analysis
+
 NMDS_NT=metaMDS(mat_NT, k=2)
 NMDS_QT=metaMDS(mat_QT, k=2)
 
 ## Cannot have rows with only 0s, removed workers that did not have any observations
 
+
+
 ##Check for stress, want low stress 
 stressplot(NMDS_NT)
 stressplot(NMDS_QT)
-
-
-
-
-
-
-
-```
-
-```{r}
-
 
 
 ```
