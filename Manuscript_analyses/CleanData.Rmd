@@ -80,6 +80,46 @@ all_data
 
 ```
 
+```{r}
+## upload master datasheets that contain beeIDs for each nest 
+
+masterfilenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/MasterDatasheets")
+
+## loop over the files and import all of them. rename column names to remove "." and make shorter
+master_data <- do.call(rbind, lapply(masterfilenames, 
+                                    function(i) {
+                                      read.csv(i, 
+                                               header = FALSE, 
+                                               skip = 1,
+                                               na.strings=c("", " ", "NA", "na", "x", "X", "xp", "-", "#VALUE!", "Died", "died"),
+                                               col.names = c("nestID",
+                                                             "Qnatal",
+                                                             "Qpulled",
+                                                             "QID",
+                                                             "Gas1",
+                                                             "Gas2",
+                                                             "Wnatal", 
+                                                             "Wpulled",
+                                                             "WID1",
+                                                             "WID2",
+                                                             "WID3",
+                                                             "WID4",
+                                                             "WID5",
+                                                             "Eggs",
+                                                             "DaysToEggs",
+                                                             "LarvDate",
+                                                             "FreezeDate",
+                                                             "EggsToEclosion",
+                                                             "TotalNestTime",
+                                                             "Video1",
+                                                             "Video2",
+                                                             "Notes",
+                                                             "MadeBorisFile"))
+                     }
+))
+
+```
+
 
 
 
@@ -155,22 +195,113 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
 
 ```
 
+```{r}
+## merge all_data to master_data to add bees who did not carry out any recorded behaviors (ie missing from all_data file)
+
+## subset master_data to only include nests in the all_data file
+master_data <- subset(master_data, nestID %in% all_data$nestID)
+
+## make a list of all the bees we do have records for
+## select only relevant information
+recordedBees <- select(all_data, nestID, beeID)
+## remove duplicates
+recordedBees <- unique(recordedBees[c("nestID", "beeID")])
+## pull out ID number from beeID column
+recordedBees$IDnum <- sapply(strsplit(recordedBees$beeID, ")"),
+                        function(x){
+                          x[1]
+                        })
+recordedBees$IDnum <- sapply(strsplit(recordedBees$IDnum, "\\("),
+                        function(x){
+                          x[2]
+                        })
+## remove NA values
+recordedBees <- recordedBees[!is.na(recordedBees$IDnum),]
+## combine nestID and IDnum into one variable
+recordedBees$ID <- paste(recordedBees$nestID, recordedBees$IDnum)
+## list only IDs
+recordedBees <- select(recordedBees, ID)
+
+recordedBees
+
+## format the master_data in the same way
+## gather the master_data so each worker and queen has their own row
+masterBees <- master_data %>%
+  gather(QID, WID1, WID2, WID3, WID4, WID5, 
+         key = "IDtype", 
+         value = "IDnum")
+## remove NA values
+masterBees <- masterBees[!is.na(masterBees$IDnum),]
+## combine nestID and IDnum into one variable
+masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
+## list only IDs
+masterBees <- select(masterBees, ID)
+
+
+masterBees
+
+## subset masterBees to only include those not recorded
+missingBees <- subset(masterBees, !(ID %in% recordedBees$ID))
+missingBees
+
+## split back out nestID and beeID
+missingBees$nestID <- sapply(strsplit(missingBees$ID, " "),
+                        function(x){
+                          x[1]
+                        })
+missingBees$beeID <- sapply(strsplit(missingBees$ID, " "),
+                        function(x){
+                          x[2]
+                        })
+  
+missingBees  
+
+## add missing bees to all_data file
+## add rows to all_data, filled with NA values, number of rows equal to number of missingBees
+emptydf <- data.frame(matrix(NA, nrow = nrow(missingBees), ncol = ncol(all_data)))
+## make column names the same
+names(emptydf) <- names(all_data)
+## rbind the data. emptydf is at the tail of all_data
+all_data <- rbind(all_data, emptydf)  
+## add missing bee nestID and beeID to the all_data df
+for (i in 0:(nrow(missingBees) - 1)) {
+  all_data$nestID[nrow(all_data) - i] <- missingBees$nestID[i+1]
+  all_data$beeID[nrow(all_data) - i] <- missingBees$beeID[i+1]
+}
+
+tail(all_data)
+
+## add random number column to make table compatible with pivot_wider
+all_data$rand <- NA
+for (i in 1:(nrow(all_data))) {
+  all_data$rand[i] <- runif(1)
+}
+
+## make NA values 0
+all_data[is.na(all_data)] <- 0
+
+all_data
+
+tail(all_data)
+```
 
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
 ```{r}
 ## collapse the dataframe to count the number of instances doing each behavior
 ## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
 #  (and any other behaviors recorded), with counts for each behavior in as values
-## assumes that no two behaviors stopped at the exact same time. cannot handle duplicate stop times. 
-#  not sure how to fix that...
+## assumes rand number is not duplicated across individuals. 
+
 count_data <- all_data
 ## add a column with value 1 that counts the behavioral observation 
 count_data$count <- 1  
 ## condense data frame into relevant columns, each row is a single observation for an individual
 count_data <- count_data %>%
   pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
-              names_from = stop, 
+              names_from = rand, 
               values_from = count) 
+
+count_data
 
 ## add column for sum of counts for each behav
 count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
@@ -218,9 +349,9 @@ time_data$start <- as.numeric(time_data$start)
 time_data$stop <- as.numeric(time_data$stop)
 time_data <- time_data[time_data$start <= 300, ]
 ## make behaviors stop at the end of 5 minutes
-for (i in 1:nrow(time_data)) {
-  if (time_data$stop[i] >300) {
-    time_data$stop[i] <- 301 + runif(1)
+for (i in 1:(nrow(time_data))) {
+  if (time_data$stop[i] > 300) {
+    time_data$stop[i] <- 301
   }
 }
 
@@ -235,17 +366,14 @@ for (i in 1:nrow(time_data)) {
     time_data$dur[i] <- 1
   }
 }
-
+time_data$behav[2300]
 time_data
 
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
-## produces error: Values in `dur` are not uniquely identified; output will contain list-cols. 
-#  table showing values as <S3: vctrs_list_of> 
-#  cannot have dupliate stop times
 dur_data <- time_data %>%
   pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
-              names_from = stop, 
+              names_from = rand, 
               values_from = dur, 
               names_repair = "minimal")
 
@@ -256,6 +384,8 @@ dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
 dur_data <- dur_data %>%
   select(nestID, beeID, behav, totDur)
 
+dur_data
+
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 dur_data <- dur_data %>%
   pivot_wider(id_cols = c("nestID", "beeID"), 
@@ -265,7 +395,6 @@ dur_data <- dur_data %>%
 ## replace NA values with 0
 dur_data[is.na(dur_data)] <- 0
 
-dur_data
 
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
 write.csv(dur_data, "dur_data.csv")
