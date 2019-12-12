@@ -83,10 +83,8 @@ dur_data <- read.csv(paste(git_filepath, "/Manuscript_analyses/dur_data.csv", se
 camDur <- read.csv(paste(git_filepath, "/Manuscript_analyses/camDur.csv", sep = ""))
 ```
 
-
-
-## Visualize Data
-### Counts of behaviors
+# Visualize Data
+### Counts of each behavior per individual
 Visualize the average number of times each behavior was carried out by queens in each of the three groups (solitary queen, social queen (3 workers), social queen (5 workers))
 ```{r}
 ## NxN df with nestID, beeID, behaviors x y z, and totalBehavs // individual bees as rows // total number of behaviors
@@ -118,7 +116,7 @@ gath_count <- gath_count[!is.na(gath_count$treat),]
 
 gath_count
 ```
-pie charts with propotional counts of behaviors
+make pie charts with propotional counts of behaviors. one chart per social group
 ```{r}
 ## call it prop_count to make it distinct
 prop_count <- gath_count
@@ -168,8 +166,6 @@ QT <- ggplot(dfSumm, aes(x="", y=mean, fill=behav)) +
        y = "QT") +
   coord_polar("y", start=0)
 
-QT
-
 ## subset to make pie graph of QA groups
 qa_prop_count <- subset(prop_count, prop_count$treat == "QA")
 ## summarize over all the qf groups
@@ -195,7 +191,7 @@ figure <- ggarrange(QA, QT, QF,
                     ncol = 1, nrow = 1)
 figure
 ```
-bar graphs with counts of each behavior. bar height = mean, error = sem, grouped by behavior, colored by social group
+make bar graphs with counts of each behavior. bar height = mean, error = sem, grouped by behavior, colored by social group
 ```{r}
 ## call it abs_count to make distinct
 abs_count <- gath_count
@@ -210,7 +206,7 @@ dfSumm <- ddply(abs_count,
 dfSumm
 
 ## plot the summarized data in a barplot with error bars equal to sem
-## important that error bar position_dodge = geom_bar width
+## important that error bar position_dodge = geom_bar width to center error bars on the graph
 p <- ggplot(dfSumm, aes(x = behav, 
                    y = mean, 
                    fill = treat,
@@ -230,7 +226,7 @@ p <- ggplot(dfSumm, aes(x = behav,
 p
 ```
 
-## Duration
+## Duration of each behavior per individual
 ```{r}
 ## saves plot ggsave(xxxx.pdf)
 ## 2xN df with nestID and totalLen as columns // totalLen value is total observed time (sec)
@@ -239,7 +235,7 @@ camDur
 ## NxN df with nestID, beeID, behaviors x y z etc as columns // individual bees as rows // total duration of behaviors (sec)
 dur_data
 
-## subset only queen data ******(do this earlier when i run it for real)******
+## subset only queen data because i'm only interested in queens
 queen_dur <- dur_data[grep("Queen", dur_data$beeID), ]
 queen_dur
 
@@ -251,7 +247,7 @@ camDur
 ## then order both dataframes to make sure they are in the same order
 queen_dur <- queen_dur[order(queen_dur$nestID),] 
 camDur <- camDur[order(camDur$nestID),]
-## then add the column
+## then add the legth column to the queen_dur data
 queen_dur$totalLen <- camDur$totalLen
 
 ## replace NA values with 0
@@ -264,29 +260,36 @@ queen_dur$treat <- substr(queen_dur$nestID, start = 1, stop = 2)
 queen_dur$treat <- factor(queen_dur$treat, levels = c("QA", "QT", "QF"))
 
 ## make new column for total time spent doing nothing
-## ********make more inclusive of all behaviors************
+## make totalLen a number so we can do math on it
 queen_dur$totalLen <- as.numeric(queen_dur$totalLen)
+## add column called non for time doing nothing
 queen_dur$non <- NA
+## subtract time doing stuff from total time to calculate time doing nothing
 for (i in 1:nrow(queen_dur)) {
   queen_dur$non[i] <- queen_dur$totalLen[i] - 
-                          queen_dur$feedsbrood[i] - 
+                          queen_dur$fillshoneypot[i] -
+                          queen_dur$laysegg[i] -
+                          queen_dur$eatsbrood[i] -
+                          queen_dur$fillshoneypot[i] -
+                          queen_dur$broodmanipulate[i] -
+                          queen_dur$incubate[i] -
+                          queen_dur$waxmanipulate[i] -
+                          queen_dur$offbrood[i] -
+                          queen_dur$feedsbrood[i] -
                           queen_dur$pollenforaging[i] - 
                           queen_dur$nectarforaging[i] 
 }
 
 queen_dur
 
-
-```
-gather data so it's one row per individual-behavior combo
-```{r}
 ## gather the data so it's got one row per individual-behavior combo
 gath_dur <- queen_dur %>%
   gather(feedsbrood, broodmanipulate, incubate, waxmanipulate, pollenforaging, nectarforaging, offbrood, other, non, key = "behav", value = "time")
 
 gath_dur
+
 ```
-pie charts with propotional duration
+pie charts with propotional duration of time spent on each behavior for each social group
 ```{r}
 ## call it prop_dur to make it distinct
 prop_dur <- gath_dur
@@ -401,96 +404,5 @@ p <- ggplot(dfSumm, aes(x = behav,
        legend = "queen ID")
 p
 ```
-
-
-<<<<<<< HEAD
-### Analyze Data
-```{r}
-## add natal colonies and wing size to dataframe
-
-## import master data sheets that contain natal colonies
-list_filenames <- function(BORISfiles_path) {
-  filenames <- list.files(BORISfiles_path,
-                          pattern = "*.csv",
-                          full.names = TRUE)
-  return(filenames)
-}
-
-filenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/MasterDatasheets")
-
-filenames
-
-## loop over the files and import all of them. rename column names to remove "." and make shorter
-master_data <- do.call(rbind, lapply(filenames, 
-                                    function(i) {
-                                      read.csv(i, 
-                                               header = FALSE, 
-                                               skip = 1,
-                                               na.strings=c("", " ", "NA", "na", "x", "X", "xp", "-", "#VALUE!", "Died", "died"),
-                                               col.names = c("nestID",
-                                                             "Qnatal",
-                                                             "Qpulled",
-                                                             "QID",
-                                                             "Gas1",
-                                                             "Gas2",
-                                                             "Wnatal", 
-                                                             "Wpulled",
-                                                             "WID1",
-                                                             "WID2",
-                                                             "WID3",
-                                                             "WID4",
-                                                             "WID5",
-                                                             "Eggs",
-                                                             "DaysToEggs",
-                                                             "LarvDate",
-                                                             "FreezeDate",
-                                                             "EggsToEclosion",
-                                                             "TotalNestTime",
-                                                             "Video1",
-                                                             "Video2",
-                                                             "Notes",
-                                                             "MadeBorisFile"))
-                     }
-))
-
-## add natal colonies to queen_dur file
-master_data <- subset(master_data, nestID %in% queen_dur$nestID)
-
-## sort master_data and queen_dur so I can combine
-master_data$nestID <- as.character(master_data$nestID)
-master_data <- master_data[order(master_data$nestID),]
-queen_dur$nestID <- as.character(queen_dur$nestID)
-queen_dur <- queen_dur[order(queen_dur$nestID),]
-## combine
-queen_dur <- cbind(master_data$Qnatal, master_data$Wnatal, queen_dur)
-## rename added columns
-names(queen_dur)[1] <- "Qnatal"
-names(queen_dur)[2] <- "Wnatal"
-
-## differences between duration of each behavior across social groups + time
-queen_dur
-
-## linear mixed model
-# *******need to add in WingAvg**********
-# *******how do i run the model to include values that have NA for a random effect?********
-noTime_incubateWnat <- lme4::lmer(incubate ~ treat + (1|Qnatal) + (1|Wnatal), data = queen_dur)
-
-noTime_incubate <- lme4::lmer(incubate ~ treat + (1|Qnatal), data = queen_dur)
-noTime_incubate
-noTime_feedsbrood <- lme4::lmer(feedsbrood ~ treat + (1|Qnatal), data = queen_dur)
-noTime_feedsbrood
-noTime_nectarforaging <- lme4::lmer(nectarforaging ~ treat + (1|Qnatal), data = queen_dur)
-noTime_nectarforaging
-noTime_pollenforaging <- lme4::lmer(pollenforaging ~ treat + (1|Qnatal), data = queen_dur)
-noTime_pollenforaging
-
-#acrossTime <- lme4::lmer(incubate ~ treat + WingAvg + (nestID|NatCol) + (nestID|WNatCol), data = queen_dur)
-
-```
-
-
-=======
->>>>>>> c3fcf4ed9d4ae9264799c2f85c757203b0f4b011
-
 
 
