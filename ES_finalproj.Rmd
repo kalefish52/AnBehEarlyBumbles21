@@ -23,7 +23,7 @@ Social Phase: queens transition to focusing almost exclusively on reproduction. 
 
 -2 time points per colony (early + late)
 
--score behavioral data in videos
+-score behavioral data in videos via BORIS
 
 
 # Video Data
@@ -50,7 +50,7 @@ Data includes several spreadsheets (each spreadsheet corresponding to a single c
 
 # Data Analyses
 
-### Load Packages
+## Load Packages
 ```{r}
 if(!require(ggplot2)){install.packages("ggplot2")}
 if(!require(ggpubr)){install.packages("ggpubr")}
@@ -65,35 +65,44 @@ library(plyr)
 
 ```
 
-### Load Data
+## Load Data
+Load in the cleaned data after running the CleanData file
 ```{r}
+## use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 
-## assumes working directory is the github folder SarroFisher
-getwd()
+## Erica's Git filepath
+git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
 
-count_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/count_data.csv")
-dur_data <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/dur_data.csv")
-camDur <- read.csv("/Users/ericasarro/Documents/UCR_Code/SarroFisher/Manuscript_analyses/camDur.csv")
+## Kaleigh's Git filepath
+#git_filepath <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
+
+## Lauren's Git filepath
+#git_filepath <- list_filenames("")
+```
+
+```{r}
+count_data <- read.csv(paste(git_filepath, "/Manuscript_analyses/count_data.csv", sep = ""))
+dur_data <- read.csv(paste(git_filepath, "/Manuscript_analyses/dur_data.csv", sep = ""))
+camDur <- read.csv(paste(git_filepath, "/Manuscript_analyses/camDur.csv", sep = ""))
 ```
 
 
 
-### Visualize Data
-
-## Count
+## Visualize Data
+### Counts of behaviors
+Visualize the average number of times each behavior was carried out by queens in each of the three groups (solitary queen, social queen (3 workers), social queen (5 workers))
 ```{r}
 ## NxN df with nestID, beeID, behaviors x y z, and totalBehavs // individual bees as rows // total number of behaviors
 count_data
 
-## subset only queen data ******(do this earlier when i run it for real)******
-#queen_count <- count_data[grep("Queen", count_data$beeID), ]
+## remove workers from the data becauase i'm only interested in queens here
 count_data$beeType <- as.character(count_data$beeType)
 queen_count <- count_data[count_data$beeType == "Q", ]
 
-## replace NA values with 0
+## replace NA values with 0s so I can count 0 instances of behaviors not observed
 queen_count[is.na(queen_count)] <- 0
 
-## add column for treatment (separate treatment from colID in nestID column)
+## add column for treatment so i can view the three treatment groups (solitary queen, queen + 3 workers, queen + 5 workers) individually
 queen_count$treat <- substr(queen_count$nestID, start = 1, stop = 2)
 
 ## make social treatment a factor so it creates 2 distinct groups (rather than scale from 0-1)
@@ -376,92 +385,6 @@ p <- ggplot(dfSumm, aes(x = behav,
        y = "absolute time (sec)",
        legend = "queen ID")
 p
-```
-
-
-### Analyze Data
-```{r}
-## add natal colonies and wing size to dataframe
-
-## import master data sheets that contain natal colonies
-list_filenames <- function(BORISfiles_path) {
-  filenames <- list.files(BORISfiles_path,
-                          pattern = "*.csv",
-                          full.names = TRUE)
-  return(filenames)
-}
-
-filenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/MasterDatasheets")
-
-filenames
-
-## loop over the files and import all of them. rename column names to remove "." and make shorter
-master_data <- do.call(rbind, lapply(filenames, 
-                                    function(i) {
-                                      read.csv(i, 
-                                               header = FALSE, 
-                                               skip = 1,
-                                               na.strings=c("", " ", "NA", "na", "x", "X", "xp", "-", "#VALUE!", "Died", "died"),
-                                               col.names = c("nestID",
-                                                             "Qnatal",
-                                                             "Qpulled",
-                                                             "QID",
-                                                             "Gas1",
-                                                             "Gas2",
-                                                             "Wnatal", 
-                                                             "Wpulled",
-                                                             "WID1",
-                                                             "WID2",
-                                                             "WID3",
-                                                             "WID4",
-                                                             "WID5",
-                                                             "Eggs",
-                                                             "DaysToEggs",
-                                                             "LarvDate",
-                                                             "FreezeDate",
-                                                             "EggsToEclosion",
-                                                             "TotalNestTime",
-                                                             "Video1",
-                                                             "Video2",
-                                                             "Notes",
-                                                             "MadeBorisFile"))
-                     }
-))
-
-## add natal colonies to queen_dur file
-master_data <- subset(master_data, nestID %in% queen_dur$nestID)
-
-## sort master_data and queen_dur so I can combine
-master_data$nestID <- as.character(master_data$nestID)
-master_data <- master_data[order(master_data$nestID),]
-queen_dur$nestID <- as.character(queen_dur$nestID)
-queen_dur <- queen_dur[order(queen_dur$nestID),]
-## combine
-queen_dur <- cbind(master_data$Qnatal, master_data$Wnatal, queen_dur)
-## rename added columns
-names(queen_dur)[1] <- "Qnatal"
-names(queen_dur)[2] <- "Wnatal"
-
-## differences between duration of each behavior across social groups + time
-queen_dur
-
-## linear mixed model
-# *******need to add in WingAvg**********
-# *******how do i run the model to include values that have NA for a random effect?********
-noTime_incubateWnat <- lme4::lmer(incubate ~ treat + (1|Qnatal) + (1|Wnatal), data = queen_dur)
-
-noTime_incubate <- lme4::lmer(incubate ~ treat + (1|Qnatal), data = queen_dur)
-noTime_incubate
-noTime_feedsbrood <- lme4::lmer(feedsbrood ~ treat + (1|Qnatal), data = queen_dur)
-noTime_feedsbrood
-noTime_nectarforaging <- lme4::lmer(nectarforaging ~ treat + (1|Qnatal), data = queen_dur)
-noTime_nectarforaging
-noTime_pollenforaging <- lme4::lmer(pollenforaging ~ treat + (1|Qnatal), data = queen_dur)
-noTime_pollenforaging
-
-#acrossTime <- lme4::lmer(incubate ~ treat + WingAvg + (nestID|NatCol) + (nestID|WNatCol), data = queen_dur)
-
-noTime
 ```
 
 
