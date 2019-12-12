@@ -73,11 +73,8 @@ Load in the cleaned data after running the CleanData file
 ## Erica's Git filepath
 git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
 
-## Kaleigh's Git filepath
-#git_filepath <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
-
 ## Lauren's Git filepath
-#git_filepath <- list_filenames("")
+#git_filepath <- ("")
 ```
 
 ```{r}
