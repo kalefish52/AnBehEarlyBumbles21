@@ -314,8 +314,6 @@ count_data <- count_data %>%
               names_from = rand, 
               values_from = count) 
 
-count_data
-
 ## add column for sum of counts for each behav
 count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
 
