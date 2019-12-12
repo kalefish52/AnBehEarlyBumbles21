@@ -1,6 +1,8 @@
 ---
 title: "Kaleigh Fisher Project Code - Task Analysis"
-output: html_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
