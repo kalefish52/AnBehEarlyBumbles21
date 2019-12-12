@@ -1,6 +1,6 @@
 ---
 title: "Bumble Bee Queen Time Budgeting and Task Repertoire"
-output: html_notebook
+output: html_document
 ---
 
 # Proposed Topic
