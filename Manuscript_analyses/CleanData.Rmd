@@ -30,13 +30,13 @@ We have to manually download each project file from Boris. Each project is a sin
 use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 ```{r}
 ## Erica's Git filepath
-git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
+##git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
 
 ## Kaleigh's Git filepath
-#git_filepath <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
+git_filepath <- ("/Users/kaleighfisher/Dropbox/SarroFisher")
 
 ## Lauren's Git filepath
-#git_filepath <- list_filenames("")
+#git_filepath <- ("")
 ```
 import the BORIS datafiles and combine them into a single df called all_data. this contains all the behavioral observations
 ```{r}
