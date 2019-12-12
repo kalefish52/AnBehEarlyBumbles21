@@ -27,35 +27,37 @@ We have to manually download each project file from Boris. Each project is a sin
 
 ### Load Data
 ```{r}
+## use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 
+## Erica's Git filepath
+git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
+
+## Kaleigh's Git filepath
+#git_filepath <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
+
+## Lauren's Git filepath
+#git_filepath <- list_filenames("")
+```
+
+```{r}
 ## create a list of all the files in the BORISfiles directory. these are all the files we want to import
 ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
 
 ## use full.names=TRUE so that it reads in files using absolute file path 
 
-list_filenames <- function(BORISfiles_path) {
-  filenames <- list.files(BORISfiles_path,
+## function to return list of filenames in BORISfiles folder
+getBORISfilenames <- function(gitfilepath) {
+  filenames <- list.files(paste(gitfilepath, "/Data/BORISfiles", sep = ""),
                           pattern = "*.csv",
                           full.names = TRUE)
   return(filenames)
 }
 
+## make the list of filenames
+BORISfilenames <- getBORISfilenames(git_filepath)
 
-## use filenames below to enter your file path to the BORISfiles folder (can be found in GitHub repo)
-
-## Erica's BORISfiles path
-filenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/BORISfiles")
-
-## Kaleigh's BORISfiles path
-#filenames <- list_filenames("/Users/kaleighfisher/Desktop/Boris_files")
-
-## Lauren's BORISfiles path
-#filenames <- list_filenames("")
-
-head(filenames)
-
-## loop over the files and import all of them. rename column names to remove "." and make shorter
-all_data <- do.call(rbind, lapply(filenames, 
+## loop over the files in the list and import all of them. rename column names to remove "." and make shorter
+all_data <- do.call(rbind, lapply(BORISfilenames, 
                                     function(i) {
                                       read.csv(i, header = TRUE,
                                                col.names = c("obsID",
@@ -83,7 +85,17 @@ all_data
 ```{r}
 ## upload master datasheets that contain beeIDs for each nest 
 
-masterfilenames <- list_filenames("/Users/ericasarro/Google\ Drive\ File\ Stream/My\ Drive/WoodardLab.shared/Projects/2018.Awesome.Summer.Experiments/Raw\ Data/MasterDatasheets")
+
+## do the same for the master datasheets that contain bee ID numbers
+getMasterfilenames <- function(gitfilepath) {
+  filenames <- list.files(paste(gitfilepath, "/Data/MasterDatasheets", sep = ""),
+                          pattern = "*.csv",
+                          full.names = TRUE)
+  return(filenames)
+}
+
+## make the list of filenames
+masterfilenames <- getMasterfilenames(git_filepath)
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 master_data <- do.call(rbind, lapply(masterfilenames, 
@@ -118,6 +130,7 @@ master_data <- do.call(rbind, lapply(masterfilenames,
                      }
 ))
 
+master_data
 ```
 
 
@@ -356,36 +369,34 @@ count_data
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
 ```{r}
 ## rename for clarity
-time_data <- all_data
+dur_data <- all_data
 
-## only look at first 5 minutes of the watched video to standardize
-time_data$start <- as.numeric(time_data$start)
-time_data$stop <- as.numeric(time_data$stop)
-time_data <- time_data[time_data$start <= 300, ]
+## only look at first 5 minutes (300 seconds) of the watched video to standardize
+dur_data$start <- as.numeric(dur_data$start)
+dur_data$stop <- as.numeric(dur_data$stop)
+dur_data <- dur_data[dur_data$start <= 300, ]
 ## make behaviors stop at the end of 5 minutes
-for (i in 1:(nrow(time_data))) {
-  if (time_data$stop[i] > 300) {
-    time_data$stop[i] <- 301
+for (i in 1:(nrow(dur_data))) {
+  if (dur_data$stop[i] > 300) {
+    dur_data$stop[i] <- 301
   }
 }
 
 ## recalculate duration data to account for stop time at 5 minutes
-for (i in 1:nrow(time_data)) {
-  time_data$dur[i] <- time_data$stop[i] - time_data$start[i]
+for (i in 1:nrow(dur_data)) {
+  dur_data$dur[i] <- dur_data$stop[i] - dur_data$start[i]
 }
 
 ## make duration of all brood feeding events 1 second duration to enable duration comparisons
-for (i in 1:nrow(time_data)) {
-  if (time_data$behav[i] == "feedsbrood") {
-    time_data$dur[i] <- 1
+for (i in 1:nrow(dur_data)) {
+  if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") {
+    dur_data$dur[i] <- 1
   }
 }
-time_data$behav[2300]
-time_data
 
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
-dur_data <- time_data %>%
+dur_data <- dur_data %>%
   pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
               names_from = rand, 
               values_from = dur, 
@@ -397,8 +408,6 @@ dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
 ## subset dataframe so that all is left is nestID, beeID, behav, and totDur
 dur_data <- dur_data %>%
   select(nestID, beeID, behav, totDur)
-
-dur_data
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 dur_data <- dur_data %>%
@@ -413,7 +422,7 @@ dur_data[is.na(dur_data)] <- 0
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
 write.csv(dur_data, "dur_data.csv")
 
-
+dur_data
 ```
 output df with total duration of video watched per colony. columns = nestID and totalLen
 ```{r}
