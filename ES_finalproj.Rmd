@@ -1,8 +1,13 @@
 ---
-title: "Bumble Bee Queen Time Budgeting and Task Repertoire"
-output: html_document
+title: "Queen time budgeting and task repertoire"
+output:
+  html_document:
+    df_print: paged
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 # Proposed Topic
 How does the social environment affect bumble bee queen task repertoire and time budget?
 
