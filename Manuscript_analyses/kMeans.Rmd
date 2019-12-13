@@ -16,17 +16,18 @@ library(plotly)
 ## Load Data
 Load in the cleaned data after running the CleanData file
 ```{r}
-## use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
-
-## Erica's Git filepath
-git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
-
-## Lauren's Git filepath
-#git_filepath <- ("")
+## set working directory to the git folder
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to where this doc lives (Manuscript_analyses)
+setwd("..") # then move up one folder (SarroFisher)
+```
+```{r}
+getwd()
+wd <- getwd() # assign SarroFisher folder to wd variable to use in future code
+wd
 ```
 
 ```{r}
-count_data <- read.csv(paste(git_filepath, "/Manuscript_analyses/count_data.csv", sep = ""))
+count_data <- read.csv(paste(wd, "/Manuscript_analyses/count_data.csv", sep = ""))
 count_data
 ```
 
