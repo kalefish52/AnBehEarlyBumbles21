@@ -29,14 +29,13 @@ We have to manually download each project file from Boris. Each project is a sin
 # Load Data
 use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 ```{r}
-## Erica's Git filepath
-##git_filepath <- ("/Users/ericasarro/Documents/UCR_Code/SarroFisher")
-
-## Kaleigh's Git filepath
-git_filepath <- ("/Users/kaleighfisher/Dropbox/SarroFisher")
-
-## Lauren's Git filepath
-#git_filepath <- ("")
+## set working directory to the git folder
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to where this doc lives (Manuscript_analyses)
+setwd("..") # then move up one folder (SarroFisher)
+```
+```{r}
+wd <- getwd() # assign SarroFisher folder to wd variable to use in future code
+wd
 ```
 import the BORIS datafiles and combine them into a single df called all_data. this contains all the behavioral observations
 ```{r}
@@ -51,7 +50,7 @@ getBORISfilenames <- function(gitfilepath) {
 }
 
 ## make the list of filenames
-BORISfilenames <- getBORISfilenames(git_filepath)
+BORISfilenames <- getBORISfilenames(wd)
 
 ## loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
 all_data <- do.call(rbind, lapply(BORISfilenames, 
@@ -89,7 +88,7 @@ getMasterfilenames <- function(gitfilepath) {
 }
 
 ## make the list of filenames
-masterfilenames <- getMasterfilenames(git_filepath)
+masterfilenames <- getMasterfilenames(wd)
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 master_data <- do.call(rbind, lapply(masterfilenames, 
