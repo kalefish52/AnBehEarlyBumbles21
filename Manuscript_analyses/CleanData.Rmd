@@ -30,12 +30,7 @@ We have to manually download each project file from Boris. Each project is a sin
 use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 ```{r}
 ## set working directory to the git folder
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to where this doc lives (Manuscript_analyses)
-setwd("..") # then move up one folder (SarroFisher)
-```
-```{r}
-wd <- getwd() # assign SarroFisher folder to wd variable to use in future code
-wd
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
 ```
 import the BORIS datafiles and combine them into a single df called all_data. this contains all the behavioral observations
 ```{r}
@@ -43,7 +38,7 @@ import the BORIS datafiles and combine them into a single df called all_data. th
   ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
   ## use full.names=TRUE so that it reads in files using absolute file path 
 getBORISfilenames <- function(gitfilepath) {
-  filenames <- list.files(paste(gitfilepath, "/Data/BORISfiles", sep = ""),
+  filenames <- list.files("../Data/BORISfiles",
                           pattern = "*.csv",
                           full.names = TRUE)
   return(filenames)
@@ -81,7 +76,7 @@ import the master datasheets and combine them into a single df called master_dat
 ```{r}
 ## do the same for the master datasheets that contain bee ID numbers
 getMasterfilenames <- function(gitfilepath) {
-  filenames <- list.files(paste(gitfilepath, "/Data/MasterDatasheets", sep = ""),
+  filenames <- list.files("../Data/MasterDatasheets",
                           pattern = "*.csv",
                           full.names = TRUE)
   return(filenames)
