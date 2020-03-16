@@ -1,3 +1,6 @@
 Observation id,Observation date,Media file,Total length,FPS,Subject,Behavior,Behavioral category,Modifiers,Behavior type,Start (s),Stop (s),Duration (s),Comment start,Comment stop
 nest	NF10	20180814	1,2018-08-14 01:00:18,/Volumes/GoogleDrive/My Drive/2018.Awesome.Summer.Experiments/Videos/AllRounds/NF/NF10/05_nestNF10_1_20180814_010132.avi,1208.640,14.0,Worker 2 (72),feedsbrood,,,POINT,85.275,85.275,NA,,
+nest	NF10	20180820	2,2018-08-20 02:00:06,/Volumes/GoogleDrive/My Drive/2018.Awesome.Summer.Experiments/Videos/AllRounds/NF/NF10/05_nestNF10_1_20180820_021512.avi,2270.290,14.0,Worker 2 (72),feedsbrood,,,POINT,189.908,189.908,NA,,
+nest	NF10	20180820	2,2018-08-20 02:00:06,/Volumes/GoogleDrive/My Drive/2018.Awesome.Summer.Experiments/Videos/AllRounds/NF/NF10/05_nestNF10_1_20180820_021512.avi,2270.290,14.0,Worker 2 (72),feedsbrood,,,POINT,197.058,197.058,NA,,
+nest	NF10	20180820	2,2018-08-20 02:00:06,/Volumes/GoogleDrive/My Drive/2018.Awesome.Summer.Experiments/Videos/AllRounds/NF/NF10/05_nestNF10_1_20180820_021512.avi,2270.290,14.0,Worker 2 (72),feedsbrood,,,POINT,359.955,359.955,NA,,
 for	NF10	20180814	14,2018-08-14 14:00:42,G:/My Drive/WoodardLab.shared/Kaleigh_Ericas_Awesome_Summer_Experiments/Videos/Rounds1_2/NF/NF10/05_forNF10_1_20180814_140640.avi,1404.520,25.0,Unknown,nectarforaging,,,STATE,486.946,516.510,29.564,,
