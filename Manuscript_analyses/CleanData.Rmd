@@ -26,6 +26,13 @@ We have to manually download each project file from Boris. Each project is a sin
 *Note: all state events must be paired to export as an aggregated file 
 *Note: these files do not include observations that did not contain scored behaviors and do not include bees with no observed behaviors 
 
+To download information about all videos watched (including those without any observed behaviors), we have to download an additional file for each project from Boris. To do this:
+1) Open project file in BORIS
+2) Analysis -> Synthetic time budget
+3) Press select all and then ok
+4) Press ok
+5) Save file as nest name eg. "QF01" as a .csv file in the allBORISfiles directory
+
 # Load Data
 use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
 ```{r}
