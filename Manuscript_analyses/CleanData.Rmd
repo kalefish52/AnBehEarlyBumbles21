@@ -173,13 +173,39 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                             x[4]
                             } )
 
-## save this before removing entries to get accurate total for duration of time watched camDur values
-all_dur_data <- all_data
+```
 
+Remove foraging events less than 10 seconds long and remove nest video data after first 5 minutes
+```{r}
 ## remove all nectar foraging events under 10 seconds long
 all_data <- all_data[!(all_data$behav == "nectarforaging" & all_data$dur < 10),]
 ## remove all pollen foraging events under 10 seconds long
 all_data <- all_data[!(all_data$behav == "pollenforaging" & all_data$dur < 10),]
+
+## cut out all but the first five minutes of nest videos
+## make time variables numeric
+all_data$start <- as.numeric(all_data$start)
+all_data$stop <- as.numeric(all_data$stop)
+all_data$totalLen <- as.numeric(all_data$totalLen)
+## remove nest behaviors that start after 5 minute mark
+all_data <- all_data[!(all_data$camID == "nest" & all_data$start > 300),]
+## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
+for (i in 1:nrow(all_data)) {             # for every row in the dataframe
+  if (all_data$camID[i] == "nest") {      # if it's a nest video
+    all_data$totalLen[i] <- 300           # make the total length of the video 300 seconds (5 minutes)
+    if (all_data$stop[i] > 300) {         # of those nest videos, if a behavior ends past 300 seconds
+      all_data$stop[i] <- 300             # set the stop time to 300 seconds
+      all_data$dur[i] <- all_data$stop[i] - all_data$start[i] # and recalculate the duration of that behavior to end at 300s
+      }
+  }
+}
+
+## make duration of all brood feeding events 1 second duration to enable duration comparisons
+for (i in 1:nrow(all_data)) {
+  if (!is.na(all_data$behav[i]) && all_data$behav[i] == "feedsbrood") {
+    all_data$dur[i] <- 1
+  }
+}
 
 head(all_data)
 all_data
@@ -420,20 +446,20 @@ dur_data <- all_data
   ## so remove anything over 5 minutes of foraging video to standardize the amount of video watched in each category
 
 ## only look at first 5 minutes (300 seconds) of the watched video to standardize
-dur_data$start <- as.numeric(dur_data$start)
-dur_data$stop <- as.numeric(dur_data$stop)
-dur_data <- dur_data[dur_data$start <= 300, ]
-## make behaviors stop at the end of 5 minutes
-for (i in 1:(nrow(dur_data))) {
-  if (dur_data$stop[i] > 300) {
-    dur_data$stop[i] <- 301
-  }
-}
-
-## recalculate duration data to account for stop time at 5 minutes
-for (i in 1:nrow(dur_data)) {
-  dur_data$dur[i] <- dur_data$stop[i] - dur_data$start[i]
-}
+# dur_data$start <- as.numeric(dur_data$start)
+# dur_data$stop <- as.numeric(dur_data$stop)
+# dur_data <- dur_data[dur_data$start <= 300, ]
+# ## make behaviors stop at the end of 5 minutes
+# for (i in 1:(nrow(dur_data))) {
+#   if (dur_data$stop[i] > 300) {
+#     dur_data$stop[i] <- 301
+#   }
+# }
+# 
+# ## recalculate duration data to account for stop time at 5 minutes
+# for (i in 1:nrow(dur_data)) {
+#   dur_data$dur[i] <- dur_data$stop[i] - dur_data$start[i]
+# }
 
 ## make duration of all brood feeding events 1 second duration to enable duration comparisons
 for (i in 1:nrow(dur_data)) {
@@ -466,7 +492,7 @@ dur_data <- dur_data %>%
 ## replace NA values with 0
 dur_data[is.na(dur_data)] <- 0
 
-##save dataframe as .csv so it can be used in other downstrea analyses 
+##save dataframe as .csv so it can be used in other downstream analyses 
 write.csv(dur_data, "dur_data.csv")
 
 dur_data
@@ -477,7 +503,7 @@ output df with total duration of video watched per colony. columns = nestID and 
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
-totalLen_data <- all_dur_data %>%
+totalLen_data <- all_data %>%
   select(obsID, nestID, totalLen) %>%
   unique()
 totalLen_data
@@ -503,8 +529,8 @@ totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 ## subset the df to remove the obs, hour, and date columns
 totalLen_data <- totalLen_data %>%
   select(camID, timeID, nestID, totalLen)
-## make totalLen reflect only the first 5 minutes of the video, since we removed observations from after that point
-totalLen_data$totalLen[totalLen_data$totalLen > 300] <- 300
+# ## make totalLen reflect only the first 5 minutes of the video, since we removed observations from after that point
+# totalLen_data$totalLen[totalLen_data$totalLen > 300] <- 300
 
 totalLen_data
 
