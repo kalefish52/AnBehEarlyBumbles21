@@ -173,6 +173,14 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                             x[4]
                             } )
 
+## save this before removing entries to get accurate total for duration of time watched camDur values
+all_dur_data <- all_data
+
+## remove all nectar foraging events under 10 seconds long
+all_data <- all_data[!(all_data$behav == "nectarforaging" & all_data$dur < 10),]
+## remove all pollen foraging events under 10 seconds long
+all_data <- all_data[!(all_data$behav == "pollenforaging" & all_data$dur < 10),]
+
 head(all_data)
 all_data
 ```
@@ -293,7 +301,6 @@ for (i in 1:(nrow(all_data))) {
 all_data[is.na(all_data)] <- 0
 
 all_data
-
 ```
 ### make count data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -470,7 +477,7 @@ output df with total duration of video watched per colony. columns = nestID and 
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
-totalLen_data <- all_data %>%
+totalLen_data <- all_dur_data %>%
   select(obsID, nestID, totalLen) %>%
   unique()
 totalLen_data
