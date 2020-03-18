@@ -500,6 +500,7 @@ dur_data
 
 ### duration of video watched for each colony
 output df with total duration of video watched per colony. columns = nestID and totalLen
+**this currently does not include videos with 0 observations, so it is a vast underestimate of the videos we've watched
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
@@ -608,6 +609,46 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = nestTYPE)) +
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+## print number of seconds and hours of video watched
+
+## summary of all videos
+allNestH <- sum(camDur$nestLen)/60/60
+allForH <- sum(camDur$forLen)/60/60
+allVideosH <- sum(camDur$totalLen)/60/60
+avgNestM <- mean(camDur$nestLen)/60
+avgForM <- mean(camDur$forLen)/60
+avgTotalM <- mean(camDur$totalLen)/60
+
+# summary by group
+avgNFnestM <- mean(camDur$nestLen[camDur$nestTYPE == "NF"])/60
+avgNTnestM <- mean(camDur$nestLen[camDur$nestTYPE == "NT"])/60
+avgQFnestM <- mean(camDur$nestLen[camDur$nestTYPE == "QF"])/60
+avgQTnestM <- mean(camDur$nestLen[camDur$nestTYPE == "QT"])/60
+
+avgNFforH <- mean(camDur$forLen[camDur$nestTYPE == "NF"])/60/60
+avgNTforH <- mean(camDur$forLen[camDur$nestTYPE == "NT"])/60/60
+avgQFforH <- mean(camDur$forLen[camDur$nestTYPE == "QF"])/60/60
+avgQTforH <- mean(camDur$forLen[camDur$nestTYPE == "QT"])/60/60
+
+# print summaries
+print(paste("We watched", round(allNestH, digits = 1), "hours of NEST videos overall, which is an average of", round(avgNestM, digits = 1), "minutes per colony", sep = " "))
+print(paste("We watched", round(allForH, digits = 1), "hours of FORAGING videos overall, which is an average of", round(avgForM, digits = 1), "minutes per colony", sep = " "))
+print(paste("We watched", round(allVideosH, digits = 1), "hours of ALL videos overall, which is an average of", round(avgTotalM, digits = 1), "minutes per colony", sep = " "))
+
+print(paste("NF COLONIES: we watched an average of", round(avgNFnestM, digits = 1), "minutes of NEST and", round(avgNFforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("NT COLONIES: we watched an average of", round(avgNTnestM, digits = 1), "minutes of NEST and", round(avgNTforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("QF COLONIES: we watched an average of", round(avgQFnestM, digits = 1), "minutes of NEST and", round(avgQFforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("QT COLONIES: we watched an average of", round(avgQTnestM, digits = 1), "minutes of NEST and", round(avgQTforH, digits = 1), "hours of FOR", sep = " "))
+
+# summary by colony 
+for (i in 1:length(unique(camDur$nestID))) {
+  nestM <- assign(paste(camDur$nestID[i], "nestM", sep = ""), (sum(camDur$nestLen[camDur$nestID == unique(camDur$nestID)[i]])/60))
+  forH <- assign(paste(camDur$nestID[i], "forM", sep = ""), (sum(camDur$forLen[camDur$nestID == unique(camDur$nestID)[i]])/60/60))
+  print(paste(camDur$nestID[i], ": we watched a total of", round(nestM, digits = 1), "minutes of NEST and", round(forH, digits = 1), "hours of FOR", sep = " "))
+}
+
+
 ```
 
 
