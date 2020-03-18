@@ -86,6 +86,39 @@ obs_data <- do.call(rbind, lapply(BORISfilenames,
 obs_data
 
 ```
+
+import BORIS synthetic time budget datasheets and merge them into a single dataframe called videos_data
+```{r}
+## function to return list of filenames in BORISfiles folder
+  ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
+  ## use full.names=TRUE so that it reads in files using absolute file path 
+getwd()
+wd <- getwd()
+getBORISfilenames <- function(gitfilepath) {
+  filenames <- list.files(gitfilepath,
+                          pattern = "*.csv",
+                          full.names = TRUE)
+  return(filenames)
+}
+
+## make the list of filenames
+BORISfilenames <- getBORISfilenames(paste(wd, "/Data/allBORISfiles", sep = ""))
+
+## loop over the files in the list and import all of them into a single dataframe. skip first 3 lines of column headers and only import first 2 columns (obsID and totLen)
+videos_data <- do.call(rbind, lapply(BORISfilenames, 
+                                    function(i) {
+                                      read.csv(i, skip = 3, header = FALSE)[,1:2]
+                     }
+))
+
+## rename column headers to be descriptive
+names(videos_data)[1] <- "obsID"
+names(videos_data)[2] <- "totalLen"
+
+videos_data
+
+```
+
 import the master datasheets and combine them into a single df called master_dat. this contains beeIDs and natal colony for each nest. this will enable us to include the bees that we did not have observed behaviors for in our analyses
 ```{r}
 ## do the same for the master datasheets that contain bee ID numbers
@@ -140,22 +173,31 @@ master_data
 
 
 # Clean Data
-split obsID column from BORIS obs_data into its component parts to enable manipulation by camera/colony/time/date
+split obsID column from obs_data and videos_data into its component parts to enable manipulation by camera/colony/time/date
 ```{r}
 ## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
 obs_data$beeID <- as.character(obs_data$beeID)
 obs_data$obsID <- as.character(obs_data$obsID)
+videos_data$obsID <- as.character(videos_data$obsID)
 
 ## edit incorrect obsID information
 ## remove Kate from front of obsID name
 obs_data[obs_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
+videos_data[videos_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 ## remove space in front of for in one obsID
-obs_data[startsWith(obs_data$obsID, " for"), 1]
+obs_data[startsWith(obs_data$obsID, " for"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " for"), 1], 2, str_length(x))
+videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
 ## add non to beginning of obsID that are missing for or nest
 for (i in 1:nrow(obs_data)){
   if (startsWith(obs_data$obsID[i], "for") | startsWith(obs_data$obsID[i], "nest")) {}
   else {
     obs_data$obsID[i] <- paste("non", obs_data$obsID[i], sep = "\t")
+    }
+}
+for (i in 1:nrow(videos_data)){
+  if (startsWith(videos_data$obsID[i], "for") | startsWith(videos_data$obsID[i], "nest")) {}
+  else {
+    videos_data$obsID[i] <- paste("non", videos_data$obsID[i], sep = "\t")
     }
 }
 
@@ -165,8 +207,16 @@ obs_data$camID <- sapply(strsplit(obs_data$obsID, "\t"),
                           function(x){
                             x[1]
                             } )
+videos_data$camID <- sapply(strsplit(videos_data$obsID, "\t"), 
+                          function(x){
+                            x[1]
+                            } )
 ## element 2 is nestID
 obs_data$nestID <- sapply(strsplit(obs_data$obsID, "\t"), 
+                          function(x){
+                            x[2]
+                            } )
+videos_data$nestID <- sapply(strsplit(videos_data$obsID, "\t"), 
                           function(x){
                             x[2]
                             } )
@@ -175,8 +225,16 @@ obs_data$dateID <- sapply(strsplit(obs_data$obsID, "\t"),
                           function(x){ 
                             x[3]
                             } )
+videos_data$dateID <- sapply(strsplit(videos_data$obsID, "\t"), 
+                          function(x){ 
+                            x[3]
+                            } )
 ## element 4 is hourID
 obs_data$hourID <- sapply(strsplit(obs_data$obsID, "\t"), 
+                          function(x){ 
+                            x[4]
+                            } )
+videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"), 
                           function(x){ 
                             x[4]
                             } )
@@ -195,16 +253,23 @@ obs_data <- obs_data[!(obs_data$behav == "pollenforaging" & obs_data$dur < 10),]
 obs_data$start <- as.numeric(obs_data$start)
 obs_data$stop <- as.numeric(obs_data$stop)
 obs_data$totalLen <- as.numeric(obs_data$totalLen)
+videos_data$totalLen <- as.numeric(videos_data$totalLen)
 ## remove nest behaviors that start after 5 minute mark
 obs_data <- obs_data[!(obs_data$camID == "nest" & obs_data$start > 300),]
 ## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
-for (i in 1:nrow(obs_data)) {             # for every row in the dataframe
-  if (obs_data$camID[i] == "nest") {      # if it's a nest video
-    obs_data$totalLen[i] <- 300           # make the total length of the video 300 seconds (5 minutes)
-    if (obs_data$stop[i] > 300) {         # of those nest videos, if a behavior ends past 300 seconds
-      obs_data$stop[i] <- 300             # set the stop time to 300 seconds
-      obs_data$dur[i] <- obs_data$stop[i] - obs_data$start[i] # and recalculate the duration of that behavior to end at 300s
-      }
+for (i in 1:nrow(obs_data)) {                                             # for every row in the dataframe
+  if ((obs_data$camID[i] == "nest") & (obs_data$totalLen[i] > 300)) {      # if it's a nest video and it is over 300 seconds long
+    obs_data$totalLen[i] <- 300                                           # make the total length of the video 300 seconds (5 minutes)
+    if (obs_data$stop[i] > 300) {                                         # of those nest videos, if a behavior ends past 300 seconds
+      obs_data$stop[i] <- 300                                             # set the stop time to 300 seconds
+      obs_data$dur[i] <- obs_data$stop[i] - obs_data$start[i]             # and recalculate the duration of that behavior to end at 300s
+    }
+  }
+}
+
+for (i in 1:nrow(videos_data)) {                                             # for every row in the dataframe
+  if ((videos_data$camID[i] == "nest") & (videos_data$totalLen[i] > 300)) {      # if it's a nest video and it is over 300 seconds long
+    videos_data$totalLen[i] <- 300                                           # make the total length of the video 300 seconds (5 minutes)
   }
 }
 
@@ -443,6 +508,7 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 
 
 ```
+
 ### make duration df with duration of each behavior for each bee
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
 ```{r}
@@ -512,7 +578,7 @@ output df with total duration of video watched per colony. columns = nestID and 
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
-totalLen_data <- obs_data %>%
+totalLen_data <- videos_data %>%
   select(obsID, nestID, totalLen) %>%
   unique()
 totalLen_data
@@ -587,6 +653,7 @@ write.csv(camDur, "camDur.csv")
 ## check to see how much video was watched for each nest and for each treatment
 ## must be equal + ratio must be 1 to compare
 camDur
+camDur <- camDur[order(camDur$nestID),]
 
 ## graph total duration of video watched for each colony
 ##look at data we have so far based on each colony 
@@ -624,15 +691,15 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = nestTYPE)) +
 allNestH <- sum(camDur$nestLen)/60/60
 allForH <- sum(camDur$forLen)/60/60
 allVideosH <- sum(camDur$totalLen)/60/60
-avgNestM <- mean(camDur$nestLen)/60
-avgForM <- mean(camDur$forLen)/60
-avgTotalM <- mean(camDur$totalLen)/60
+avgNestH <- mean(camDur$nestLen)/60/60
+avgForH <- mean(camDur$forLen)/60/60
+avgTotalH <- mean(camDur$totalLen)/60
 
 # summary by group
-avgNFnestM <- mean(camDur$nestLen[camDur$nestTYPE == "NF"])/60
-avgNTnestM <- mean(camDur$nestLen[camDur$nestTYPE == "NT"])/60
-avgQFnestM <- mean(camDur$nestLen[camDur$nestTYPE == "QF"])/60
-avgQTnestM <- mean(camDur$nestLen[camDur$nestTYPE == "QT"])/60
+avgNFnestH <- mean(camDur$nestLen[camDur$nestTYPE == "NF"])/60/60
+avgNTnestH <- mean(camDur$nestLen[camDur$nestTYPE == "NT"])/60/60
+avgQFnestH <- mean(camDur$nestLen[camDur$nestTYPE == "QF"])/60/60
+avgQTnestH <- mean(camDur$nestLen[camDur$nestTYPE == "QT"])/60/60
 
 avgNFforH <- mean(camDur$forLen[camDur$nestTYPE == "NF"])/60/60
 avgNTforH <- mean(camDur$forLen[camDur$nestTYPE == "NT"])/60/60
@@ -640,20 +707,18 @@ avgQFforH <- mean(camDur$forLen[camDur$nestTYPE == "QF"])/60/60
 avgQTforH <- mean(camDur$forLen[camDur$nestTYPE == "QT"])/60/60
 
 # print summaries
-print(paste("We watched", round(allNestH, digits = 1), "hours of NEST videos overall, which is an average of", round(avgNestM, digits = 1), "minutes per colony", sep = " "))
-print(paste("We watched", round(allForH, digits = 1), "hours of FORAGING videos overall, which is an average of", round(avgForM, digits = 1), "minutes per colony", sep = " "))
-print(paste("We watched", round(allVideosH, digits = 1), "hours of ALL videos overall, which is an average of", round(avgTotalM, digits = 1), "minutes per colony", sep = " "))
+print(paste("We watched", round(allNestH, digits = 1), "hours of NEST videos overall, which is an average of", round(avgNestH, digits = 1), "hours per colony", sep = " "))
+print(paste("We watched", round(allForH, digits = 1), "hours of FORAGING videos overall, which is an average of", round(avgForH, digits = 1), "hours per colony", sep = " "))
+print(paste("We watched", round(allVideosH, digits = 1), "hours of ALL videos overall, which is an average of", round(avgTotalH, digits = 1), "hours per colony", sep = " "))
 
-print(paste("NF COLONIES: we watched an average of", round(avgNFnestM, digits = 1), "minutes of NEST and", round(avgNFforH, digits = 1), "hours of FOR", sep = " "))
-print(paste("NT COLONIES: we watched an average of", round(avgNTnestM, digits = 1), "minutes of NEST and", round(avgNTforH, digits = 1), "hours of FOR", sep = " "))
-print(paste("QF COLONIES: we watched an average of", round(avgQFnestM, digits = 1), "minutes of NEST and", round(avgQFforH, digits = 1), "hours of FOR", sep = " "))
-print(paste("QT COLONIES: we watched an average of", round(avgQTnestM, digits = 1), "minutes of NEST and", round(avgQTforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("NF COLONIES: we watched an average of", round(avgNFnestH, digits = 1), "hours of NEST and", round(avgNFforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("NT COLONIES: we watched an average of", round(avgNTnestH, digits = 1), "hours of NEST and", round(avgNTforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("QF COLONIES: we watched an average of", round(avgQFnestH, digits = 1), "hours of NEST and", round(avgQFforH, digits = 1), "hours of FOR", sep = " "))
+print(paste("QT COLONIES: we watched an average of", round(avgQTnestH, digits = 1), "hours of NEST and", round(avgQTforH, digits = 1), "hours of FOR", sep = " "))
 
 # summary by colony 
-for (i in 1:length(unique(camDur$nestID))) {
-  nestM <- assign(paste(camDur$nestID[i], "nestM", sep = ""), (sum(camDur$nestLen[camDur$nestID == unique(camDur$nestID)[i]])/60))
-  forH <- assign(paste(camDur$nestID[i], "forM", sep = ""), (sum(camDur$forLen[camDur$nestID == unique(camDur$nestID)[i]])/60/60))
-  print(paste(camDur$nestID[i], ": we watched a total of", round(nestM, digits = 1), "minutes of NEST and", round(forH, digits = 1), "hours of FOR", sep = " "))
+for (i in 1:nrow(camDur)) {
+  print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
 
 
