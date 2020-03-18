@@ -31,21 +31,27 @@ use your own git_filepath to the SarroFisher github repo to access datafiles con
 ```{r}
 ## set working directory to the git folder
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
+gitfilepath <- getwd()
+gitfilepath
+
 ```
+
 import the BORIS datafiles and combine them into a single df called all_data. this contains all the behavioral observations
 ```{r}
 ## function to return list of filenames in BORISfiles folder
   ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
   ## use full.names=TRUE so that it reads in files using absolute file path 
+getwd()
+wd <- getwd()
 getBORISfilenames <- function(gitfilepath) {
-  filenames <- list.files("../Data/BORISfiles",
+  filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
                           full.names = TRUE)
   return(filenames)
 }
 
 ## make the list of filenames
-BORISfilenames <- getBORISfilenames(wd)
+BORISfilenames <- getBORISfilenames(paste(wd, "/Data/BORISfiles", sep = ""))
 
 ## loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
 all_data <- do.call(rbind, lapply(BORISfilenames, 
@@ -76,14 +82,17 @@ import the master datasheets and combine them into a single df called master_dat
 ```{r}
 ## do the same for the master datasheets that contain bee ID numbers
 getMasterfilenames <- function(gitfilepath) {
-  filenames <- list.files("../Data/MasterDatasheets",
+  filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
                           full.names = TRUE)
   return(filenames)
 }
 
+getwd()
+wd <- getwd()
+
 ## make the list of filenames
-masterfilenames <- getMasterfilenames(wd)
+masterfilenames <- getMasterfilenames(paste(wd, "/Data/MasterDatasheets", sep = ""))
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 master_data <- do.call(rbind, lapply(masterfilenames, 
@@ -129,6 +138,19 @@ split obsID column from BORIS all_data into its component parts to enable manipu
 all_data$beeID <- as.character(all_data$beeID)
 all_data$obsID <- as.character(all_data$obsID)
 
+## edit incorrect obsID information
+## remove Kate from front of obsID name
+all_data[all_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
+## remove space in front of for in one obsID
+all_data[startsWith(all_data$obsID, " for"), 1]
+## add non to beginning of obsID that are missing for or nest
+for (i in 1:nrow(all_data)){
+  if (startsWith(all_data$obsID[i], "for") | startsWith(all_data$obsID[i], "nest")) {}
+  else {
+    all_data$obsID[i] <- paste("non", all_data$obsID[i], sep = "\t")
+    }
+}
+
 ## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
 ## element 1 is camID
 all_data$camID <- sapply(strsplit(all_data$obsID, "\t"), 
@@ -152,6 +174,7 @@ all_data$hourID <- sapply(strsplit(all_data$obsID, "\t"),
                             } )
 
 head(all_data)
+all_data
 ```
 
 ### look at how many observations we have for each nest for each BORIS download
@@ -170,10 +193,7 @@ Numbercharacter<-sapply(strsplit(all_data$nestID, ""),
                           
 all_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
-##remove first 30 rows because they are labelled incorrectly, Erica is fixing, will not be an issue next download 
-
 data_sum<- all_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
-datasum<-data_sum[-c(1:30),]
 
 sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(Observations=n())
 sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
@@ -342,6 +362,45 @@ for (i in 1:nrow(count_data)) {
 write.csv(count_data, "count_data.csv")
 
 count_data
+
+##graph the number of behaviors we have per nest
+Queencharacter <- sapply(strsplit(count_data$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+                          
+count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+data_sum <- count_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+
+sumsTYPE<-data_sum %>% group_by(nestTYPE) 
+
+##look at data we have so far based on each colony 
+
+ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+## look at data we have so far based on each type of colony 
+ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+
 ```
 ### make duration df with duration of each behavior for each bee
 output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
@@ -486,6 +545,36 @@ write.csv(camDur, "camDur.csv")
 ## check to see how much video was watched for each nest and for each treatment
 ## must be equal + ratio must be 1 to compare
 camDur
+
+## graph total duration of video watched for each colony
+##look at data we have so far based on each colony 
+
+## Make a new column for nest type ie. NT or QT 
+Queencharacter<-sapply(strsplit(camDur$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(camDur$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+                          
+camDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+sumsTYPE<-camDur %>% group_by(nestTYPE)
+ggplot(camDur, aes(x=nestID, y=forLen, fill = nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(camDur, aes(x=nestID, y=nestLen, fill = nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+## look at data we have so far based on each type of colony 
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 ```
 
 
