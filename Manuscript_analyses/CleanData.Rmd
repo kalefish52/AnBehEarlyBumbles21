@@ -38,7 +38,7 @@ To download information about all videos watched (including those without any ob
 # Load Data
 THIS ASSUMES YOUR DEFAULT WORKING DIRECTORY IS WHERE THIS DOCUMENT LIVES (MANUSCRIPT_ANALYSES)
 ```{r}
-## if your wd is not manuscript_analyses, do that here, but comment this out to knit:
+## if your wd is not manuscript_analyses, run this line of code below, but comment this out to knit:
 #setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
 ```
 import the BORIS observation datafiles and combine them into a single df called obs_data. this contains all the behavioral observations
@@ -286,7 +286,7 @@ videos_data$totalLen <- as.numeric(videos_data$totalLen)
 obs_data <- obs_data[!(obs_data$camID == "nest" & obs_data$start > 300),]
 ## print how many were removed that started after 5 minutes
 fiveMinRemov_obs <- nrow(obs_data)
-print(paste(NectPollRemov_obs - fiveMinRemov_obs, "observations were removed because they started after the five minute mark.", sep = " "))
+print(paste(NectPollRemov_obs - fiveMinRemov_obs, "nest observations were removed because they started after the five minute mark.", sep = " "))
 
 ## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
 for (i in 1:nrow(obs_data)) {                                             # for every row in the dataframe
@@ -336,6 +336,9 @@ Numbercharacter<-sapply(strsplit(obs_data$nestID, ""),
                         })    
                           
 obs_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+## remove data from nest types other than the ones we want (remove bad data)
+obs_data <- subset(obs_data, subset = (obs_data$nestTYPE == "NT" | obs_data$nestTYPE == "NF" | obs_data$nestTYPE == "QT" | obs_data$nestTYPE == "QF"))
 
 data_sum<- obs_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
 
@@ -537,6 +540,9 @@ Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
                           
 count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
+## remove data from nest types other than the ones we want (remove bad data)
+count_data <- subset(count_data, subset = (count_data$nestTYPE == "NT" | count_data$nestTYPE == "NF" | count_data$nestTYPE == "QT" | count_data$nestTYPE == "QF"))
+
 data_sum <- count_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
 
 sumsTYPE<-data_sum %>% group_by(nestTYPE) 
@@ -676,39 +682,6 @@ totalLen_data
 ## verify we have the correct number of colonies and videos
 print(paste("There are", nrow(totalLen_data), "videos out of", clean_videos, "fully cleaned videos accounted for in the totalLen_data dataframe."))
 
-
-
-
-
-
-# ## Make a new column for nest type ie. NT or QT 
-# Queencharacter<-sapply(strsplit(totalLen_data$nestID, ""), 
-#                           function(x){
-#                             x[1]
-#                           })
-# Numbercharacter<-sapply(strsplit(totalLen_data$nestID, ""),
-#                         function(x){
-#                           x[2]
-#                         })    
-# totalLen_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
-# ## summarize data by nest and also by camID
-# data_sum<- totalLen_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
-# 
-# sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(len=sum())
-# sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(len=sum())
-# 
-# data_sum
-# sumsTOTAL
-# sumsTYPE
-
-
-
-
-
-
-
-
-
 ## create empty dataframe to put length into
 camDur <- data.frame(nestID = NA,
                      forLen = NA,
@@ -718,11 +691,12 @@ camDur <- data.frame(nestID = NA,
 ## for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
 for (i in 1:length(unique(totalLen_data$nestID))) {
   sub_data <- subset(totalLen_data, nestID == unique(totalLen_data$nestID)[i]) # subset to look at a single nest
-  for_data <- subset(sub_data, sub_data$camID == "for")                 # subset foraging video only into for_data
-  nest_data <- subset(sub_data, sub_data$camID == "nest")               # subset nest video only into nest_data
-  forSum <- sum(for_data$totalLen)                                      # sum the video duration of all foraging videos
-  totNestSum <- sum(nest_data$totalLen)                                 # sum the video duration of all nest videos
-  camDur <- rbind(camDur, c(sub_data$nestID[1], forSum, totNestSum, camSum)) # add the sum totals to the camDur df
+  for_data <- subset(sub_data, sub_data$camID == "for")                        # subset foraging video only into for_data
+  nest_data <- subset(sub_data, sub_data$camID == "nest")                      # subset nest video only into nest_data
+  forSum <- sum(for_data$totalLen)                                             # sum the video duration of all foraging videos
+  nestSum <- sum(nest_data$totalLen)                                           # sum the video duration of all nest videos
+  totalSum <- sum(sub_data$totalLen)                                           # sum the video duration of all videos
+  camDur <- rbind(camDur, c(sub_data$nestID[1], forSum, nestSum, totalSum))    # add the sum totals to the camDur df
 }
 ## remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
@@ -765,6 +739,9 @@ Numbercharacter<-sapply(strsplit(camDur$nestID, ""),
                           
 camDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
+## remove data from nest types other than the ones we want (remove bad data)
+camDur <- subset(camDur, subset = (camDur$nestTYPE == "NT" | camDur$nestTYPE == "NF" | camDur$nestTYPE == "QT" | camDur$nestTYPE == "QF"))
+
 sumsTYPE<-camDur %>% group_by(nestTYPE)
 ggplot(camDur, aes(x=nestID, y=forLen, fill = nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
@@ -788,7 +765,7 @@ allForH <- sum(camDur$forLen)/60/60
 allVideosH <- sum(camDur$totalLen)/60/60
 avgNestH <- mean(camDur$nestLen)/60/60
 avgForH <- mean(camDur$forLen)/60/60
-avgTotalH <- mean(camDur$totalLen)/60
+avgTotalH <- mean(camDur$totalLen)/60/60
 
 # summary by group
 avgNFnestH <- mean(camDur$nestLen[camDur$nestTYPE == "NF"])/60/60
