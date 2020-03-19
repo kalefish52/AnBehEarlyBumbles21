@@ -36,22 +36,16 @@ To download information about all videos watched (including those without any ob
 6) Click okay without selecting any additional behaviors to subtract from total time
 
 # Load Data
-use your own git_filepath to the SarroFisher github repo to access datafiles contained within the repo
+THIS ASSUMES YOUR DEFAULT WORKING DIRECTORY IS WHERE THIS DOCUMENT LIVES (MANUSCRIPT_ANALYSES)
 ```{r}
-## set working directory to the git folder
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
-gitfilepath <- getwd()
-gitfilepath
-
+## if your wd is not manuscript_analyses, do that here, but comment this out to knit:
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
 ```
-
 import the BORIS observation datafiles and combine them into a single df called obs_data. this contains all the behavioral observations
 ```{r}
 ## function to return list of filenames in BORISfiles folder
   ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
   ## use full.names=TRUE so that it reads in files using absolute file path 
-getwd()
-wd <- getwd()
 getBORISfilenames <- function(gitfilepath) {
   filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
@@ -60,7 +54,7 @@ getBORISfilenames <- function(gitfilepath) {
 }
 
 ## make the list of filenames
-BORISfilenames <- getBORISfilenames(paste(wd, "/Data/BORISfiles", sep = ""))
+BORISfilenames <- getBORISfilenames("../Data/BORISfiles")
 
 ## loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
 obs_data <- do.call(rbind, lapply(BORISfilenames, 
@@ -85,6 +79,8 @@ obs_data <- do.call(rbind, lapply(BORISfilenames,
 ))
 
 obs_data
+init_obs <- nrow(obs_data)
+print(paste("There are", init_obs, "observations in the initial obs_data dataframe.", sep = " "))
 
 ```
 
@@ -93,8 +89,6 @@ import BORIS synthetic time budget datasheets and merge them into a single dataf
 ## function to return list of filenames in BORISfiles folder
   ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
   ## use full.names=TRUE so that it reads in files using absolute file path 
-getwd()
-wd <- getwd()
 getBORISfilenames <- function(gitfilepath) {
   filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
@@ -103,8 +97,8 @@ getBORISfilenames <- function(gitfilepath) {
 }
 
 ## make the list of filenames
-BORISfilenames <- getBORISfilenames(paste(wd, "/Data/allBORISfiles", sep = ""))
-
+BORISfilenames <- getBORISfilenames("../Data/allBORISfiles")
+BORISfilenames
 ## loop over the files in the list and import all of them into a single dataframe. skip first 3 lines of column headers and only import first 2 columns (obsID and totLen)
 videos_data <- do.call(rbind, lapply(BORISfilenames, 
                                     function(i) {
@@ -117,6 +111,8 @@ names(videos_data)[1] <- "obsID"
 names(videos_data)[2] <- "totalLen"
 
 videos_data
+init_videos <- nrow(videos_data)
+print(paste("There are", init_videos, "observations in the initial videos_data dataframe.", sep = " "))
 
 ```
 
@@ -130,11 +126,8 @@ getMasterfilenames <- function(gitfilepath) {
   return(filenames)
 }
 
-getwd()
-wd <- getwd()
-
 ## make the list of filenames
-masterfilenames <- getMasterfilenames(paste(wd, "/Data/MasterDatasheets", sep = ""))
+masterfilenames <- getMasterfilenames("../Data/MasterDatasheets")
 
 ## loop over the files and import all of them. rename column names to remove "." and make shorter
 master_data <- do.call(rbind, lapply(masterfilenames, 
@@ -170,6 +163,9 @@ master_data <- do.call(rbind, lapply(masterfilenames,
 ))
 
 master_data
+init_master <- nrow(master_data)
+
+print(paste("There are", init_master, "bees accounted for in the initial master_data dataframe.", sep = " "))
 ```
 
 
@@ -181,13 +177,15 @@ obs_data$beeID <- as.character(obs_data$beeID)
 obs_data$obsID <- as.character(obs_data$obsID)
 videos_data$obsID <- as.character(videos_data$obsID)
 
-## edit incorrect obsID information
+## edit incorrect obsID information and remove QA groups
 ## remove Kate from front of obsID name
 obs_data[obs_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 videos_data[videos_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
-## remove space in front of for in one obsID
+## remove space in front of for in one obsID and nest in another
 obs_data[startsWith(obs_data$obsID, " for"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " for"), 1], 2, str_length(x))
 videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
+obs_data[startsWith(obs_data$obsID, " nest"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " nest"), 1], 2, str_length(x))
+videos_data[startsWith(videos_data$obsID, " nest"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " nest"), 1], 2, str_length(x))
 ## add non to beginning of obsID that are missing for or nest
 for (i in 1:nrow(obs_data)){
   if (startsWith(obs_data$obsID[i], "for") | startsWith(obs_data$obsID[i], "nest")) {}
@@ -201,6 +199,14 @@ for (i in 1:nrow(videos_data)){
     videos_data$obsID[i] <- paste("non", videos_data$obsID[i], sep = "\t")
     }
 }
+## make nestID character to enable startsWith
+obs_data$nestID <- as.character(obs_data$obsID)
+videos_data$nestID <- as.character(videos_data$obsID)
+master_data$nestID <- as.character(master_data$nestID)
+## remove QA groups and bees
+obs_data <- obs_data[!startsWith(obs_data$obsID, "QA"),]
+videos_data <- videos_data[!startsWith(videos_data$obsID, "QA"),]
+master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
 
 ## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
 ## element 1 is camID
@@ -240,14 +246,26 @@ videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"),
                             x[4]
                             } )
 
+
+clean_obs <- nrow(obs_data)
+clean_videos <- nrow(videos_data)
+print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
+print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 ```
 
 Remove foraging events less than 10 seconds long and remove nest video data after first 5 minutes
 ```{r}
 ## remove all nectar foraging events under 10 seconds long
+beforeNectRemov <- nrow(obs_data)
 obs_data <- obs_data[!(obs_data$behav == "nectarforaging" & obs_data$dur < 10),]
 ## remove all pollen foraging events under 10 seconds long
+beforePollRemov <- nrow(obs_data)
 obs_data <- obs_data[!(obs_data$behav == "pollenforaging" & obs_data$dur < 10),]
+
+## print how many were removed that were under 10 seconds long
+NectPollRemov <- nrow(obs_data)
+print(paste(beforeNectRemov - beforePollRemov, "nectar foraging observations were removed because they were under 10 seconds long.", sep = " "))
+print(paste(beforePollRemov - NectPollRemov, "pollen foraging observations were removed because they were under 10 seconds long.", sep = " "))
 
 ## cut out all but the first five minutes of nest videos
 ## make time variables numeric
@@ -257,9 +275,13 @@ obs_data$totalLen <- as.numeric(obs_data$totalLen)
 videos_data$totalLen <- as.numeric(videos_data$totalLen)
 ## remove nest behaviors that start after 5 minute mark
 obs_data <- obs_data[!(obs_data$camID == "nest" & obs_data$start > 300),]
+## print how many were removed that started after 5 minutes
+fiveMinRemov_obs <- nrow(obs_data)
+print(paste(NectPollRemov_obs - fiveMinRemov_obs, "observations were removed because they started after the five minute mark.", sep = " "))
+
 ## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
 for (i in 1:nrow(obs_data)) {                                             # for every row in the dataframe
-  if ((obs_data$camID[i] == "nest") & (obs_data$totalLen[i] > 300)) {      # if it's a nest video and it is over 300 seconds long
+  if ((obs_data$camID[i] == "nest") & (obs_data$totalLen[i] > 300)) {     # if it's a nest video and it is over 300 seconds long
     obs_data$totalLen[i] <- 300                                           # make the total length of the video 300 seconds (5 minutes)
     if (obs_data$stop[i] > 300) {                                         # of those nest videos, if a behavior ends past 300 seconds
       obs_data$stop[i] <- 300                                             # set the stop time to 300 seconds
@@ -269,7 +291,7 @@ for (i in 1:nrow(obs_data)) {                                             # for 
 }
 
 for (i in 1:nrow(videos_data)) {                                             # for every row in the dataframe
-  if ((videos_data$camID[i] == "nest") & (videos_data$totalLen[i] > 300)) {      # if it's a nest video and it is over 300 seconds long
+  if ((videos_data$camID[i] == "nest") & (videos_data$totalLen[i] > 300)) {  # if it's a nest video and it is over 300 seconds long
     videos_data$totalLen[i] <- 300                                           # make the total length of the video 300 seconds (5 minutes)
   }
 }
@@ -283,13 +305,18 @@ for (i in 1:nrow(obs_data)) {
 
 head(obs_data)
 obs_data
+
+clean_obs <- nrow(obs_data)
+clean_videos <- nrow(videos_data)
+print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov_obs - fiveMinRemov_obs, "were removed above.",  sep = " "))
+print(paste("There are now", clean_videos, "out of", init_videos, "remaining videos in fully cleaned videos_data", sep = " "))
 ```
 
 ### look at how many observations we have for each nest for each BORIS download
 These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many videos have been observed for each project for foraging and nest, at the two different time points. 
 ```{r}
 
-## Make a new column for nest type ie. NT or QT 
+## Make a new column for nest type ie. NT or QT etc.
 Queencharacter<-sapply(strsplit(obs_data$nestID, ""), 
                           function(x){
                             x[1]
@@ -306,17 +333,17 @@ data_sum<- obs_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camI
 sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(Observations=n())
 sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
 
-##look at data we have so far based on each colony 
-
+##look at number of observations we have so far based on each colony 
 ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
-## look at data we have so far based on each type of colony 
+## look at number of observations we have so far based on each type of colony 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
 
-
+sumsTYPE
+sumsTOTAL
 ```
 
 ### combine master_data and obs_data
@@ -345,7 +372,8 @@ recordedBees <- recordedBees[!is.na(recordedBees$IDnum),]
 recordedBees$ID <- paste(recordedBees$nestID, recordedBees$IDnum)
 ## list only IDs
 recordedBees <- select(recordedBees, ID)
-
+## print how many bees have behaviors recorded
+print(paste("There are", nrow(recordedBees), "bees for which we have recorded behaviors.", sep = " "))
 recordedBees
 
 ## format the master_data in the same way as the obs_data
@@ -360,7 +388,8 @@ masterBees <- masterBees[!is.na(masterBees$IDnum),]
 masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
 ## list only IDs
 masterBees <- select(masterBees, ID)
-
+## print how many total bees we have
+print(paste("There are", nrow(masterBees), "total bees across all colonies in the master datasheet.", sep = " "))
 masterBees
 
 ## subset masterBees to only include those not recorded
@@ -375,7 +404,8 @@ missingBees$beeID <- sapply(strsplit(missingBees$ID, " "),
                         function(x){
                           x[2]
                         })
-  
+## print how many bees we don't have records for
+print(paste("There are", nrow(missingBees), "bees for which we do not have any recorded behaviors.", sep = " "))
 missingBees  
 
 ## add missing bees to obs_data file
@@ -400,7 +430,35 @@ for (i in 1:(nrow(obs_data))) {
 ## make NA values equal to 0
 obs_data[is.na(obs_data)] <- 0
 
-obs_data
+## check how many bees we have in the new obs_data. this is copied and pasted from the methods above. should equal the number of bees in the master_data
+## select only relevant information
+allBees <- select(obs_data, nestID, beeID)
+## remove duplicates
+allBees <- unique(allBees[c("nestID", "beeID")])
+## pull out ID number from beeID column
+allBees$IDnum <- sapply(strsplit(allBees$beeID, ")"),
+                        function(x){
+                          x[1]
+                        })
+allBees$IDnum <- sapply(strsplit(allBees$IDnum, "\\("),
+                        function(x){
+                          x[2]
+                        })
+## remove NA values
+allBees <- allBees[!is.na(allBees$IDnum),]
+## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
+allBees$ID <- paste(allBees$nestID, allBees$IDnum)
+## list only IDs
+allBees <- select(allBees, ID)
+## print how many bees have behaviors recorded
+print(paste("There are", nrow(allBees), "bees total to be included in the analyses.", sep = " "))
+if (nrow(allBees)==nrow(masterBees)) {
+  print("All bees from the master datasheets are accounted for!")
+} else {
+  print(paste("All bees are not properly accounted for. There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
+}
+allBees
+
 ```
 ### make count data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -447,6 +505,15 @@ beeTypeCharacter <- sapply(strsplit(count_data$beeID, ""),
 
 count_data$beeType <- beeTypeCharacter
 
+## print how many bees we have here. should equal masterdata
+print(paste("There are", nrow(count_data), "bees accounted for."))
+if (nrow(count_data)==nrow(masterBees)) {
+  print("All bees from the master datasheets are accounted for!")
+} else {
+  print(paste("All bees are not properly accounted for. There are", nrow(count_data), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
+}
+knownWorkers <- nrow(count_data)
+
 ## remove unknown worker data
 count_data <- count_data[!count_data$beeType == "U", ]
 count_data <- count_data[!count_data$beeType == "N", ]
@@ -464,6 +531,8 @@ for (i in 1:nrow(count_data)) {
     count_data$beeType[i] <- 0
   }
 }
+## print how many unknown workers were removed
+print(paste("There were", knownWorkers - nrow(count_data), "unknown workers removed from the dataset.", sep = " "))
  
 ##Save dataframe as .csv so it can be used in other downstream analyses 
 write.csv(count_data, "count_data.csv")
@@ -570,6 +639,14 @@ dur_data[is.na(dur_data)] <- 0
 ##save dataframe as .csv so it can be used in other downstream analyses 
 write.csv(dur_data, "dur_data.csv")
 
+## count the number of bees with behaviors
+print(paste("There are", nrow(dur_data), "bees accounted for in the duration data."))
+if (nrow(dur_data)==nrow(recordedBees)) {
+  print("All bees with recorded behaviors are accounted for!")
+} else {
+  print(paste("All bees are not properly accounted for. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "bees with recorded behaviors.", sep = " "))
+}
+
 dur_data
 ```
 
@@ -579,10 +656,13 @@ output df with total duration of video watched per colony. columns = nestID and 
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
+nVids <- nrow(videos_data)
 totalLen_data <- videos_data %>%
   select(obsID, nestID, totalLen) %>%
   unique()
 totalLen_data
+## print how many videos were removed
+print(paste("There were", nVids - nrow(totalLen_data), "duplicate videos removed.", sep = " "))
 
 ## split out obsID into camID, dateID and hourID (split based on the tab (\t) between elements)
 ## element 1 is camID
@@ -605,44 +685,72 @@ totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 ## subset the df to remove the obs, hour, and date columns
 totalLen_data <- totalLen_data %>%
   select(camID, timeID, nestID, totalLen)
-# ## make totalLen reflect only the first 5 minutes of the video, since we removed observations from after that point
-# totalLen_data$totalLen[totalLen_data$totalLen > 300] <- 300
 
 totalLen_data
+## verify we have the correct number of colonies and videos
+print(paste("There are", nrow(totalLen_data), "videos out of", clean_videos, "fully cleaned videos accounted for in the totalLen_data dataframe."))
 
 
-## for each nestID, remove nest videos that have a matching foraging video (i.e. watched twice)
-  ##  sum totalLen for all the for videos + nest videos that do not have a matching for video
+
+
+
+
+# ## Make a new column for nest type ie. NT or QT 
+# Queencharacter<-sapply(strsplit(totalLen_data$nestID, ""), 
+#                           function(x){
+#                             x[1]
+#                           })
+# Numbercharacter<-sapply(strsplit(totalLen_data$nestID, ""),
+#                         function(x){
+#                           x[2]
+#                         })    
+# totalLen_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+# ## summarize data by nest and also by camID
+# data_sum<- totalLen_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
+# 
+# sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(len=sum())
+# sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(len=sum())
+# 
+# data_sum
+# sumsTOTAL
+# sumsTYPE
+
+
+
+
+
+
+
+
 
 ## create empty dataframe to put length into
 camDur <- data.frame(nestID = NA,
                      forLen = NA,
                      nestLen = NA,
                      totalLen = NA)
+
 ## for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
-## then remove nest videos that have a matching foraging video. then sum total length of remaining nest + for videos
-## then add those values to the camDur dataframe
 for (i in 1:length(unique(totalLen_data$nestID))) {
   sub_data <- subset(totalLen_data, nestID == unique(totalLen_data$nestID)[i]) # subset to look at a single nest
-  for_data <- subset(sub_data, sub_data$camID == "for") # subset to look at foraging video only
-  nest_data <- subset(sub_data, sub_data$camID == "nest") # subset to look at nest video only
-  subNest_data <- nest_data %>%
-      filter(! timeID %in% for_data$timeID) # remove nest videos that have a matching foraging video so we don't double count time
-  forSum <- sum(for_data$totalLen) # sum the video duration of all foraging videos
-  totNestSum <- sum(nest_data$totalLen) # sum the video duration of all nest videos
-  subNestSum <- sum(subNest_data$totalLen) # sum the video duration of all nest videos that don't have a matching foraging video
-  camSum <- forSum + subNestSum # sum the video duration of forging + subsetted nest videos
+  for_data <- subset(sub_data, sub_data$camID == "for")                 # subset foraging video only into for_data
+  nest_data <- subset(sub_data, sub_data$camID == "nest")               # subset nest video only into nest_data
+  forSum <- sum(for_data$totalLen)                                      # sum the video duration of all foraging videos
+  totNestSum <- sum(nest_data$totalLen)                                 # sum the video duration of all nest videos
   camDur <- rbind(camDur, c(sub_data$nestID[1], forSum, totNestSum, camSum)) # add the sum totals to the camDur df
 }
 ## remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
 
+## count to make sure all colonies are accounted for
+print(paste("There are", nrow(camDur), "colonies accounted for in the camDur dataframe out of", nrow(master_data), "master colonies.", sep = " "))
+
 ## make columns numeric so i can calculate ratio in next step
 camDur$totalLen <- as.numeric(camDur$totalLen)
 camDur$forLen <- as.numeric(camDur$forLen)
 camDur$nestLen <- as.numeric(camDur$nestLen)
+camDur$nestID <- as.character(camDur$nestID)
 
-## make new column with the ratio of foraging to nest video length. should be ~1 for each colony. if it's not, need to watch more videos
+## make new column with the ratio of foraging to nest video length. should be ~12 for each colony. if it's not, need to watch more videos
 camDur$FNratio <- NA
 for (i in 1:nrow(camDur)) {
   camDur$FNratio[i] <- camDur$forLen[i] / camDur$nestLen[i]
