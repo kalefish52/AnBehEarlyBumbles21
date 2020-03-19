@@ -112,7 +112,7 @@ names(videos_data)[2] <- "totalLen"
 
 videos_data
 init_videos <- nrow(videos_data)
-print(paste("There are", init_videos, "observations in the initial videos_data dataframe.", sep = " "))
+print(paste("There are", init_videos, "videos in the initial videos_data dataframe.", sep = " "))
 
 ```
 
@@ -246,6 +246,15 @@ videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"),
                             x[4]
                             } )
 
+## pull out ID number from beeID column (instead of "Worker 5 (76)" or "Queen (43)" etc)
+obs_data$beeID <- sapply(strsplit(obs_data$beeID, ")"),
+                        function(x){
+                          x[1]
+                        })
+obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
+                        function(x){
+                          x[2]
+                        })
 
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
@@ -348,6 +357,7 @@ sumsTOTAL
 
 ### combine master_data and obs_data
 merge obs_data to master_data to add bees who did not carry out any recorded behaviors (ie missing from obs_data file)
+Remove behaviors from all unidentified bees from future analyses
 ```{r}
 ## subset master_data to only include nests in the obs_data file
 master_data <- subset(master_data, nestID %in% obs_data$nestID)
@@ -357,23 +367,18 @@ master_data <- subset(master_data, nestID %in% obs_data$nestID)
 recordedBees <- select(obs_data, nestID, beeID)
 ## remove duplicates
 recordedBees <- unique(recordedBees[c("nestID", "beeID")])
-## pull out ID number from beeID column
-recordedBees$IDnum <- sapply(strsplit(recordedBees$beeID, ")"),
-                        function(x){
-                          x[1]
-                        })
-recordedBees$IDnum <- sapply(strsplit(recordedBees$IDnum, "\\("),
-                        function(x){
-                          x[2]
-                        })
-## remove NA values
-recordedBees <- recordedBees[!is.na(recordedBees$IDnum),]
+
+## remove NA values from total number of recorded bees -- these are the unknown or no focal subject observations**
+nRecordedBeesTotal <- nrow(recordedBees)
+recordedBees <- recordedBees[!is.na(recordedBees$beeID),]
+nRecordedIdentifiedBees <- nrow(recordedBees)
+print(paste("There were", nRecordedBeesTotal - nRecordedIdentifiedBees, "unidentified bees removed from the recordedBees df.", sep = " "))
 ## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
-recordedBees$ID <- paste(recordedBees$nestID, recordedBees$IDnum)
+recordedBees$ID <- paste(recordedBees$nestID, recordedBees$beeID)
 ## list only IDs
-recordedBees <- select(recordedBees, ID)
+# recordedBees <- select(recordedBees, ID)
 ## print how many bees have behaviors recorded
-print(paste("There are", nrow(recordedBees), "bees for which we have recorded behaviors.", sep = " "))
+print(paste("There are", nrow(recordedBees), "identified bees for which we have recorded behaviors.", sep = " "))
 recordedBees
 
 ## format the master_data in the same way as the obs_data
@@ -382,12 +387,14 @@ masterBees <- master_data %>%
   gather(QID, WID1, WID2, WID3, WID4, WID5, 
          key = "IDtype", 
          value = "IDnum")
-## remove NA values
+## remove NA values **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
 masterBees <- masterBees[!is.na(masterBees$IDnum),]
+## select only relevant information
+masterBees <- select(masterBees, nestID, IDnum)
 ## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
 masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
 ## list only IDs
-masterBees <- select(masterBees, ID)
+# masterBees <- select(masterBees, ID)
 ## print how many total bees we have
 print(paste("There are", nrow(masterBees), "total bees across all colonies in the master datasheet.", sep = " "))
 masterBees
@@ -395,15 +402,6 @@ masterBees
 ## subset masterBees to only include those not recorded
 missingBees <- subset(masterBees, !(ID %in% recordedBees$ID))
 
-## split back out nestID and beeID
-missingBees$nestID <- sapply(strsplit(missingBees$ID, " "),
-                        function(x){
-                          x[1]
-                        })
-missingBees$beeID <- sapply(strsplit(missingBees$ID, " "),
-                        function(x){
-                          x[2]
-                        })
 ## print how many bees we don't have records for
 print(paste("There are", nrow(missingBees), "bees for which we do not have any recorded behaviors.", sep = " "))
 missingBees  
@@ -418,7 +416,7 @@ obs_data <- rbind(obs_data, emptydf)
 ## fill the empty rows just added to obs_data with the missing bee nestID and beeID
 for (i in 0:(nrow(missingBees) - 1)) {
   obs_data$nestID[nrow(obs_data) - i] <- missingBees$nestID[i+1]
-  obs_data$beeID[nrow(obs_data) - i] <- missingBees$beeID[i+1]
+  obs_data$beeID[nrow(obs_data) - i] <- missingBees$IDnum[i+1]
 }
 
 ## add random number column to make table compatible with pivot_wider in future steps. needs a unique identifier for each individual
@@ -426,6 +424,9 @@ obs_data$rand <- NA
 for (i in 1:(nrow(obs_data))) {
   obs_data$rand[i] <- runif(1)
 }
+
+## remove NA beeID values from obs_data ** THIS REMOVES ALL UNIDENTIFIED BEES FROM ALL FUTURE ANALYSES **
+obs_data <- obs_data[!is.na(obs_data$beeID),]
 
 ## make NA values equal to 0
 obs_data[is.na(obs_data)] <- 0
@@ -435,29 +436,14 @@ obs_data[is.na(obs_data)] <- 0
 allBees <- select(obs_data, nestID, beeID)
 ## remove duplicates
 allBees <- unique(allBees[c("nestID", "beeID")])
-## pull out ID number from beeID column
-allBees$IDnum <- sapply(strsplit(allBees$beeID, ")"),
-                        function(x){
-                          x[1]
-                        })
-allBees$IDnum <- sapply(strsplit(allBees$IDnum, "\\("),
-                        function(x){
-                          x[2]
-                        })
-## remove NA values
-allBees <- allBees[!is.na(allBees$IDnum),]
-## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
-allBees$ID <- paste(allBees$nestID, allBees$IDnum)
-## list only IDs
-allBees <- select(allBees, ID)
-## print how many bees have behaviors recorded
-print(paste("There are", nrow(allBees), "bees total to be included in the analyses.", sep = " "))
+
+#print how many bees are now included in obs_data
+print(paste("There are", nrow(allBees), "bees total to be included in the analyses, not including unknown and unaccounted for bees.", sep = " "))
 if (nrow(allBees)==nrow(masterBees)) {
   print("All bees from the master datasheets are accounted for!")
 } else {
-  print(paste("All bees are not properly accounted for. There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
+  print(paste("ERROR! There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
 }
-allBees
 
 ```
 ### make count data df with counts of each behavior observed for each bee
