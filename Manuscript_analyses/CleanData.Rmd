@@ -342,8 +342,8 @@ obs_data <- subset(obs_data, subset = (obs_data$nestTYPE == "NT" | obs_data$nest
 
 data_sum<- obs_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
 
-sumsTOTAL<-datasum %>% group_by(nestID, camID) %>% summarise(Observations=n())
-sumsTYPE<-datasum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
+sumsTOTAL<-data_sum %>% group_by(nestID, camID) %>% summarise(Observations=n())
+sumsTYPE<-data_sum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
 
 ##look at number of observations we have so far based on each colony 
 ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
