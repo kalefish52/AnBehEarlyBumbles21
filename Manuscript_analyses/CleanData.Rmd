@@ -268,6 +268,10 @@ obs_data <- obs_data[!obs_data$obsID == "QF01",]
 videos_data <- videos_data[!videos_data$obsID == "QF01",]
 master_data <- master_data[!master_data$nestID == "QF01",]
 
+##subset observations and videos to remove nests we don't want to include
+obs_data <- subset(obs_data, nestID %in% master_data$nestID)
+videos_data <- subset(videos_data, nestID %in% master_data$nestID)
+
 
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
