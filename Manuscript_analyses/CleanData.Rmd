@@ -135,7 +135,8 @@ master_data <- do.call(rbind, lapply(masterfilenames,
                                       read.csv(i, 
                                                header = FALSE, 
                                                skip = 1,
-                                               na.strings=c("", " ", "NA", "na", "x", "X", "xp", "-", "#VALUE!", "Died", "died"),
+                                               na.strings=c("", " ", "NA", "na", "x", "X", "xp", "-", "#VALUE!", 
+                                                            "Died", "died", "died ", "died prior to freezing", "all died"),
                                                col.names = c("nestID",
                                                              "Qnatal",
                                                              "Qpulled",
@@ -177,7 +178,7 @@ obs_data$beeID <- as.character(obs_data$beeID)
 obs_data$obsID <- as.character(obs_data$obsID)
 videos_data$obsID <- as.character(videos_data$obsID)
 
-## edit incorrect obsID information and remove QA groups
+## edit incorrect obsID information
 ## remove Kate from front of obsID name
 obs_data[obs_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 videos_data[videos_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
@@ -199,14 +200,6 @@ for (i in 1:nrow(videos_data)){
     videos_data$obsID[i] <- paste("non", videos_data$obsID[i], sep = "\t")
     }
 }
-## make nestID character to enable startsWith
-obs_data$nestID <- as.character(obs_data$obsID)
-videos_data$nestID <- as.character(videos_data$obsID)
-master_data$nestID <- as.character(master_data$nestID)
-## remove QA groups and bees
-obs_data <- obs_data[!startsWith(obs_data$obsID, "QA"),]
-videos_data <- videos_data[!startsWith(videos_data$obsID, "QA"),]
-master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
 
 ## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
 ## element 1 is camID
@@ -256,10 +249,32 @@ obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
                           x[2]
                         })
 
+## make nestID character to enable startsWith
+obs_data$nestID <- as.character(obs_data$nestID)
+videos_data$nestID <- as.character(videos_data$nestID)
+master_data$nestID <- as.character(master_data$nestID)
+## remove QA groups and bees
+obs_data <- obs_data[!startsWith(obs_data$obsID, "QA"),]
+videos_data <- videos_data[!startsWith(videos_data$obsID, "QA"),]
+master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
+
+## remove additional colonies we don't want to include
+## remove colonies that were not frozen from master_data
+master_data <- master_data[!is.na(master_data$FreezeDate),]
+master_data
+
+## remove QF01 (it was frozen and males eclosed, but all adults died)
+obs_data <- obs_data[!obs_data$obsID == "QF01",]
+videos_data <- videos_data[!videos_data$obsID == "QF01",]
+master_data <- master_data[!master_data$nestID == "QF01",]
+
+
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
+clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
+print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
 ```
 
 Remove foraging events less than 10 seconds long and remove nest video data after first 5 minutes
@@ -572,32 +587,12 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 ```
 
 ### make duration df with duration of each behavior for each bee
-output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values
+output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values.
+this data includes unidentified bees
 ```{r}
 ## rename for clarity
 dur_data <- obs_data
 
-
-## only look at first 5 minutes of the watched video to standardize. we only ever watched 5 minutes of nest videos, 
-  ## so remove anything over 5 minutes of foraging video to standardize the amount of video watched in each category
-
-## only look at first 5 minutes (300 seconds) of the watched video to standardize
-# dur_data$start <- as.numeric(dur_data$start)
-# dur_data$stop <- as.numeric(dur_data$stop)
-# dur_data <- dur_data[dur_data$start <= 300, ]
-# ## make behaviors stop at the end of 5 minutes
-# for (i in 1:(nrow(dur_data))) {
-#   if (dur_data$stop[i] > 300) {
-#     dur_data$stop[i] <- 301
-#   }
-# }
-# 
-# ## recalculate duration data to account for stop time at 5 minutes
-# for (i in 1:nrow(dur_data)) {
-#   dur_data$dur[i] <- dur_data$stop[i] - dur_data$start[i]
-# }
-
-## make duration of all brood feeding events 1 second duration to enable duration comparisons
 for (i in 1:nrow(dur_data)) {
   if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") {
     dur_data$dur[i] <- 1
@@ -636,7 +631,7 @@ print(paste("There are", nrow(dur_data), "bees accounted for in the duration dat
 if (nrow(dur_data)==nrow(recordedBees)) {
   print("All bees with recorded behaviors are accounted for!")
 } else {
-  print(paste("All bees are not properly accounted for. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "bees with recorded behaviors.", sep = " "))
+  print(paste("There is a mismatch between identified bees and the number of bees in the duration dataframe. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "identified bees with recorded behaviors. Right now, duration df includes unidentified bees, which will make it larger than the identifed bees with recorded behaviors.", sep = " "))
 }
 
 dur_data
