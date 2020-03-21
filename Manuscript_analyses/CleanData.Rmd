@@ -183,10 +183,15 @@ videos_data$obsID <- as.character(videos_data$obsID)
 obs_data[obs_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 videos_data[videos_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 ## remove space in front of for in one obsID and nest in another
-obs_data[startsWith(obs_data$obsID, " for"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " for"), 1], 2, str_length(x))
-videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
-obs_data[startsWith(obs_data$obsID, " nest"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " nest"), 1], 2, str_length(x))
-videos_data[startsWith(videos_data$obsID, " nest"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " nest"), 1], 2, str_length(x))
+obs_data[startsWith(obs_data$obsID, " for"), 1] <- sub(".", "", obs_data[startsWith(obs_data$obsID, " for"), 1])
+videos_data[startsWith(videos_data$obsID, " for"), 1] <- sub(".", "", videos_data[startsWith(videos_data$obsID, " for"), 1])
+obs_data[startsWith(obs_data$obsID, " nest"), 1] <- sub(".", "", obs_data[startsWith(obs_data$obsID, " nest"), 1])
+videos_data[startsWith(videos_data$obsID, " nest"), 1] <- sub(".", "", videos_data[startsWith(videos_data$obsID, " nest"), 1])
+
+# obs_data[startsWith(obs_data$obsID, " for"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " for"), 1], 2, str_length(x))
+# videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
+# obs_data[startsWith(obs_data$obsID, " nest"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " nest"), 1], 2, str_length(x))
+# videos_data[startsWith(videos_data$obsID, " nest"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " nest"), 1], 2, str_length(x))
 ## add non to beginning of obsID that are missing for or nest
 for (i in 1:nrow(obs_data)){
   if (startsWith(obs_data$obsID[i], "for") | startsWith(obs_data$obsID[i], "nest")) {}
@@ -305,7 +310,7 @@ videos_data$totalLen <- as.numeric(videos_data$totalLen)
 obs_data <- obs_data[!(obs_data$camID == "nest" & obs_data$start > 300),]
 ## print how many were removed that started after 5 minutes
 fiveMinRemov_obs <- nrow(obs_data)
-print(paste(NectPollRemov_obs - fiveMinRemov_obs, "nest observations were removed because they started after the five minute mark.", sep = " "))
+print(paste(NectPollRemov - fiveMinRemov_obs, "nest observations were removed because they started after the five minute mark.", sep = " "))
 
 ## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
 for (i in 1:nrow(obs_data)) {                                             # for every row in the dataframe
@@ -336,7 +341,7 @@ obs_data
 
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
-print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov_obs - fiveMinRemov_obs, "were removed above.",  sep = " "))
+print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov - fiveMinRemov_obs, "were removed above.",  sep = " "))
 print(paste("There are now", clean_videos, "out of", init_videos, "remaining videos in fully cleaned videos_data", sep = " "))
 ```
 
@@ -639,11 +644,50 @@ if (nrow(dur_data)==nrow(recordedBees)) {
 }
 
 dur_data
+
+##graph the number of behaviors we have per nest
+Queencharacter <- sapply(strsplit(count_data$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+                          
+dur_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+## remove data from nest types other than the ones we want (remove bad data)
+dur_data <- subset(dur_data, subset = (dur_data$nestTYPE == "NT" | dur_data$nestTYPE == "NF" | dur_data$nestTYPE == "QT" | dur_data$nestTYPE == "QF"))
+
+data_sum <- dur_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+
+sumsTYPE<-data_sum %>% group_by(nestTYPE) 
+
+##look at data we have so far based on each colony 
+
+ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+## look at data we have so far based on each type of colony 
+ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 ```
 
 ### duration of video watched for each colony
 output df with total duration of video watched per colony. columns = nestID and totalLen
-**this currently does not include videos with 0 observations, so it is a vast underestimate of the videos we've watched
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
