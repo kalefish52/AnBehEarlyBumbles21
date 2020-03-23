@@ -254,24 +254,18 @@ obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
                           x[2]
                         })
 
-## make nestID character to enable startsWith
-obs_data$nestID <- as.character(obs_data$nestID)
-videos_data$nestID <- as.character(videos_data$nestID)
+## make nestID character to enable startsWith (will remove nests from master_data first, then subset other dataframes)
 master_data$nestID <- as.character(master_data$nestID)
 ## remove QA groups and bees
-obs_data <- obs_data[!startsWith(obs_data$obsID, "QA"),]
-videos_data <- videos_data[!startsWith(videos_data$obsID, "QA"),]
 master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
-
 ## remove additional colonies we don't want to include
 ## remove colonies that were not frozen from master_data
 master_data <- master_data[!is.na(master_data$FreezeDate),]
-master_data
-
 ## remove QF01 (it was frozen and males eclosed, but all adults died)
-obs_data <- obs_data[!obs_data$obsID == "QF01",]
-videos_data <- videos_data[!videos_data$obsID == "QF01",]
 master_data <- master_data[!master_data$nestID == "QF01",]
+## remove QF08 & NT07 (missing workers)
+master_data <- master_data[!master_data$nestID == "QF08",]
+master_data <- master_data[!master_data$nestID == "NT07",]
 
 ##subset observations and videos to remove nests we don't want to include
 obs_data <- subset(obs_data, nestID %in% master_data$nestID)
@@ -835,7 +829,10 @@ print(paste("QT COLONIES: we watched an average of", round(avgQTnestH, digits = 
 for (i in 1:nrow(camDur)) {
   print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
+```
 
+# visualize amount of video for each of the two timepoints (late and early)
+```{r}
 
 ```
 
