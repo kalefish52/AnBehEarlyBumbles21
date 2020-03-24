@@ -948,13 +948,14 @@ dateDur <- dateDur %>%
 
 dateDur$videoType <- factor(dateDur$videoType, levels = c("early_forSum", "late_forSum", "early_nestSum", "late_nestSum"))
 
-sumsTYPE <- dateDur %>% group_by(nestTYPE)
-ggplot(dateDur[order(dateDur$videoType),], aes(x = nestID, y = length, fill = videoType)) +
+sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
+ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   geom_bar(stat ="identity") + 
   theme(axis.text.x = element_text(angle = 90))
 
-sumsTOTAL<-dateDur %>% group_by(videoType)
-ggplot(sumsTOTAL, aes(x=nestTYPE, y = length, fill = videoType)) +
+
+sumsTYPE <- dateDur %>% group_by(nestTYPE)
+ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
   geom_bar(stat = "identity") + 
   theme(axis.text.x = element_text(angle = 90))
 
