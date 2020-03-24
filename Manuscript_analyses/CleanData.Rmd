@@ -897,21 +897,6 @@ dates_data
 ```
 ```{r}
 #plot it!
-# 
-# # create empty df
-# timepointDur <- data.frame(nestID = NA,
-#                           forLen = NA,
-#                           nestLen = NA,
-#                           totalLen = NA,
-#                           timepoint = NA))
-# # for each row in the old df
-# 
-#   # if that row camID + nestID + timepoint = row in new df
-#     
-#     # add length to length for that row in new df
-# 
-#   # else add that row to new df 
-
 
 # subset the df to remove the obs, hour, and date columns
 timepoint_data <- dates_data %>%
@@ -943,53 +928,6 @@ for (i in 1:length(unique(dates_data$nestID))) {
 dateDur <- dateDur[2:nrow(dateDur),]
 dateDur
 
-# # subset the df to remove the obs, hour, and date columns
-# lateDur <- lateDur %>%
-#   select(camID, nestID, totalLen)
-# # create empty dataframe to put length into
-# lateDur <- data.frame(nestID = NA,
-#                       forLen = NA,
-#                       nestLen = NA,
-#                       totalLen = NA,
-#                       timepoint = NA)
-# # for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
-# for (i in 1:length(unique(late_data$nestID))) {
-#   sub_data <- subset(late_data, nestID == unique(late_data$nestID)[i])         # subset to look at a single nest
-#   for_data <- subset(sub_data, sub_data$camID == "for")                        # subset foraging video only into for_data
-#   nest_data <- subset(sub_data, sub_data$camID == "nest")                      # subset nest video only into nest_data
-#   forSum <- sum(for_data$totalLen)                                             # sum the video duration of all foraging videos
-#   nestSum <- sum(nest_data$totalLen)                                           # sum the video duration of all nest videos
-#   earlytotalSum <- sum(sub_data$totalLen)                                      # sum the video duration of all videos
-#   dateDur <- rbind(lateDur, c(sub_data$nestID[1], forSum, nestSum, totalSum))  # add the sum totals to the dateDur df
-# }
-# # remove NA row initially created
-# lateDur <- lateDur[2:nrow(dateDur),]
-
-# ## count to make sure all colonies are accounted for
-# print(paste("There are", nrow(dateDur), "colonies accounted for in the camDur dataframe out of", nrow(master_data), "master colonies.", sep = " "))
-
-# ## make columns numeric so i can calculate ratio in next step
-# dateDur$totalLen <- as.numeric(dateDur$totalLen)
-# dateDur$forLen <- as.numeric(dateDur$forLen)
-# dateDur$nestLen <- as.numeric(dateDur$nestLen)
-# dateDur$nestID <- as.character(dateDur$nestID)
-# 
-# ## make new column with the ratio of foraging to nest video length. should be ~12 for each colony. if it's not, need to watch more videos
-# dateDur$FNratio <- NA
-# for (i in 1:nrow(dateDur)) {
-#   dateDur$FNratio[i] <- dateDur$forLen[i] / dateDur$nestLen[i]
-# }
-
-# ##Save dataframe as .csv so it can be used in other downstrea analyses 
-# write.csv(dateDur, "dateDur")
-
-# ## check to see how much video was watched for each nest and for each treatment
-# ## must be equal + ratio must be 1 to compare
-# dateDur
-# dateDur <- dateDur[order(dateDur$nestID),]
-
-## graph total duration of video watched for each colony
-##look at data we have so far based on each colony 
 
 ## Make a new column for nest type ie. NT or QT 
 Queencharacter<-sapply(strsplit(dateDur$nestID, ""), 
@@ -1001,20 +939,6 @@ Numbercharacter<-sapply(strsplit(dateDur$nestID, ""),
                           x[2]
                         })    
 dateDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
-# ## Make a new column for nest type ie. NT or QT 
-# Queencharacter<-sapply(strsplit(lateDur$nestID, ""), 
-#                           function(x){
-#                             x[1]
-#                           })
-# Numbercharacter<-sapply(strsplit(datesDur$nestID, ""),
-#                         function(x){
-#                           x[2]
-#                         })    
-#                           
-# lateDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
-# 
-# # ## remove data from nest types other than the ones we want (remove bad data)
-# dateDur <- subset(dateDur, subset = (dateDur$nestTYPE == "NT" | dateDur$nestTYPE == "NF" | dateDur$nestTYPE == "QT" | dateDur$nestTYPE == "QF"))
 
 ## gather sums into a single column to graph together
 dateDur <- dateDur %>%
@@ -1038,13 +962,6 @@ dateDur
 sumsTOTAL
 sumsTYPE
 
-# ## look at data we have so far based on each type of colony 
-# 
-# ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = timepoint)) +
-#   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-# 
-# ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = timepoint)) +
-#   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 ```
 
 
