@@ -948,10 +948,22 @@ dateDur <- dateDur %>%
 
 dateDur$videoType <- factor(dateDur$videoType, levels = c("early_forSum", "late_forSum", "early_nestSum", "late_nestSum"))
 
-sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
-ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
-  geom_bar(stat ="identity") + 
-  theme(axis.text.x = element_text(angle = 90))
+#proportion of early to late for NF
+sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NF")
+sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90)) 
+
+#proportion of early to late for NT
+sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NT")
+sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90)) 
+
+#proportion of early to late for QT
+sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QT")
+sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90)) 
+
+#proportion of early to late for QF
+sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QF")
+sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90)) 
+
 
 
 sumsTYPE <- dateDur %>% group_by(nestTYPE)
