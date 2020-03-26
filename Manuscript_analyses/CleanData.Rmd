@@ -978,7 +978,7 @@ sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) +
 sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
 ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   geom_bar(stat ="identity") + 
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
 
 #all nests by group
 sumsTYPE <- dateDur %>% group_by(nestTYPE)
