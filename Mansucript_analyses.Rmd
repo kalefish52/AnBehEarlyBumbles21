@@ -1,0 +1,30 @@
+---
+title: "Manuscript Analyses for DOL Paper" 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load Packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(cluster)    # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+```
+
+# Manuscript Analyses
+
+## Question One: Are there patterns of division of labor? 
+```{r}
+Countdata <- read.csv("./Manuscript_analyses/dur_data.csv")
+
+
+```
+
