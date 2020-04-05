@@ -17,14 +17,56 @@ library(cluster)    # clustering algorithms
 library(factoextra)
 library(vegan) 
 library(lme4)
+library(plotly)
 ```
 
 # Manuscript Analyses
-
-## Question One: Are there patterns of division of labor? 
+## Data manipulation
+Add a column for group type (NT, QT, NF, QF) and a column with total foraging (pollen + nectar foraging)
 ```{r}
-Countdata <- read.csv("./Manuscript_analyses/dur_data.csv")
+Countdata <- read.csv("./Manuscript_analyses/count_data.csv")
+head(Countdata)
 
+Countdata<- Countdata %>% arrange(nestID) ## See if any observations are mislabelled 
+Countdata
+
+## Add colony type column ## Make a new column for nest type ie. NT or QT 
+Countdata$nestID<- as.character(Countdata$nestID)
+Queencharacter<-sapply(strsplit(Countdata$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Numbercharacter<-sapply(strsplit(Countdata$nestID, ""),
+                        function(x){
+                          x[2]
+                        })    
+Countdata$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+
+
+
+
+
+
+```
+
+## Question 2: Are there patterns of division of labor? 
+```{r}
+
+
+
+
+
+
+
+# Clustering analysis one - Kmeans 
+# K Means Cluster Analyses -- determine whether points cluster into two or more groups
+
+
+
+
+
+
+# Clustering analysis two - NMDS 
 
 ```
 
