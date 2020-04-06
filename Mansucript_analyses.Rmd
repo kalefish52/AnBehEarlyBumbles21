@@ -24,36 +24,41 @@ library(plotly)
 ## Data manipulation
 Add a column for group type (NT, QT, NF, QF) and a column with total foraging (pollen + nectar foraging)
 ```{r}
-Countdata <- read.csv("./Manuscript_analyses/count_data.csv")
+Countdata <- read.csv("./Manuscript_analyses/count_stats.csv")
 head(Countdata)
 
-Countdata<- Countdata %>% arrange(nestID) ## See if any observations are mislabelled 
-Countdata
+## Add column with total foraging 
+Countdata$nectarforaging <-as.numeric(Countdata$nectarforaging)
+Countdata$pollenforaging <-as.numeric(Countdata$pollenforaging)
 
-## Add colony type column ## Make a new column for nest type ie. NT or QT 
-Countdata$nestID<- as.character(Countdata$nestID)
-Queencharacter<-sapply(strsplit(Countdata$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(Countdata$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-Countdata$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+Totalforaging <- Countdata$nectarforaging + Countdata$pollenforaging
+Totalforaging <-as.vector(Totalforaging)
 
-
-
-
+Countdata <- Countdata %>% add_column(Totalforaging)
+head(Countdata)
 
 
 ```
 
 ## Question 2: Are there patterns of division of labor? 
 ```{r}
+# Convert dataframes into matrices - two sets one with combined foraging and one with separated foraging 
+# have to remove rownames and replace with joinID so that the analysis works
 
+# Matrices total for - Combined foraging, egg laying, brood feeding
+NF.matrix <- Countdata %>% filter(nestTYPE == "NF") %>% select(joinID, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinID")
+NT.matrix <- Countdata %>% filter(nestTYPE == "NT") %>% select(joinID, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinID")
+QF.matrix <- Countdata %>% filter(nestTYPE == "QF") %>% select(joinID, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinID")
+QT.matrix <- Countdata %>% filter(nestTYPE == "QT") %>% select(joinID, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinID")
+All.matrix<-Countdata %>% select(joinID, nestTYPE, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinID")
 
-
+Matrices_Totalfor<- list()
+Matrices_Totalfor[[1]]<-NF.matrix
+Matrices_Totalfor[[2]]<-NT.matrix
+Matrices_Totalfor[[3]]<-QF.matrix
+Matrices_Totalfor[[4]]<-QT.matrix
+Matrices_Totalfor[[5]]<-All.matrix
+Matrices_Totalfor
 
 
 
@@ -67,6 +72,21 @@ Countdata$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
 
 # Clustering analysis two - NMDS 
+
+
+
+
+
+# Clustering analysis three - Principle coordinate analysis
+
+
+
+
+
+
+
+
+
 
 ```
 
