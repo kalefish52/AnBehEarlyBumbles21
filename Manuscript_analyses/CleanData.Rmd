@@ -1028,6 +1028,10 @@ allBehavs<-right_join(neweggs, countdata, by="joinc")    # joins neweggs (left) 
 allBehavs %>% tally() 
 #yay :) 
 head(allBehavs)
+
+#Replace NAs with 0 for egglaying events 
+allBehavs <- allBehavs %>% mutate(egglaying=replace_na(egglaying, 0))
+
 #Select columns to remove duplicated columns 
 allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
