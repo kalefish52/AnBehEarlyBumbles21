@@ -992,6 +992,23 @@ sumsTYPE
 
 ```
 
+# Add egg laying events to count_data and make a new csv file - count_stats.csv
+
+```{r}
+egglaying<-read.csv("./Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na
+
+#make new dataframe with summarized counts of egglaying events 
+neweggs<-egglaying %>% select(MicrocolonyID, WorkerID) %>% group_by(MicrocolonyID, WorkerID) %>% 
+                                tally() %>% as.data.frame() %>% rename(egglaying = n)
+#Make common join column to join two dataframes 
+neweggs$joinID <- paste(neweggs$MicrocolonyID, neweggs$WorkerID, sep="_")
+countdata<-as.data.frame(count_data)
+countdata$joinID <-paste(countdata$nestID, countdata$beeID, sep="_")                    
+                  
+allBehavs<-inner_join(neweggs, countdata, by="joinID")               
+
+write.csv(allBehavs, "count_stats.csv")
+```
 
 
 
