@@ -995,21 +995,41 @@ sumsTYPE
 # Add egg laying events to count_data and make a new csv file - count_stats.csv
 
 ```{r}
-egglaying<-read.csv("./Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na
+# warning messages of uninitalised column are normal - its a glitch 
+countdata<-as.data.frame(count_data) 
+#make sure there are the correct number of individuals for each nest 
+countdata %>% group_by(nestID) %>% tally()
+countdata %>% tally()
+
+#Read in egg laying document, select only relevant variables and rename microcolony id and worker id
+# to match count data dataframe
+egglaying<-read.csv("./Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na %>% 
+  rename(nestID=MicrocolonyID) %>%
+  rename(beeID=WorkerID) 
 
 #make new dataframe with summarized counts of egglaying events 
-neweggs<-egglaying %>% select(MicrocolonyID, WorkerID) %>% group_by(MicrocolonyID, WorkerID) %>% 
+neweggs<-egglaying %>% select(nestID, beeID) %>% group_by(nestID, beeID) %>% 
                                 tally() %>% as.data.frame() %>% rename(egglaying = n)
-#Make common join column to join two dataframes 
-neweggs$joinID <- paste(neweggs$MicrocolonyID, neweggs$WorkerID, sep="_")
-countdata<-as.data.frame(count_data)
-countdata$joinID <-paste(countdata$nestID, countdata$beeID, sep="_")                    
+neweggs %>% group_by(nestID) %>% tally()
+neweggs %>% tally()
+
+#make common column joinc for both data frames
+neweggs$joinc <- paste(neweggs$nestID, neweggs$beeID, sep="_")
+head(neweggs)
+neweggs %>% tally()
+
+countdata$joinc <-paste(countdata$nestID, countdata$beeID, sep="_")
+countdata %>% tally()
+head(countdata)
 
 #Join two data sets and check to make sure they joined correctly 
-allBehavs<-inner_join(neweggs, countdata, by="joinID")               
-
+allBehavs<-right_join(neweggs, countdata, by="joinc")    # joins neweggs (left) to rows in countdata
+# make sure we still have same number of rows as countdata %>% tally()
+allBehavs %>% tally() 
+#yay :) 
+head(allBehavs)
 #Select columns to remove duplicated columns 
-allBehavs <- allBehavs %>% select(MicrocolonyID, WorkerID, egglaying, joinID, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
+allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
 write.csv(allBehavs, "count_stats.csv")
 ```
