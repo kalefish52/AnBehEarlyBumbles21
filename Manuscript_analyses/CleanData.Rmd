@@ -1004,8 +1004,12 @@ neweggs<-egglaying %>% select(MicrocolonyID, WorkerID) %>% group_by(MicrocolonyI
 neweggs$joinID <- paste(neweggs$MicrocolonyID, neweggs$WorkerID, sep="_")
 countdata<-as.data.frame(count_data)
 countdata$joinID <-paste(countdata$nestID, countdata$beeID, sep="_")                    
-                  
+
+#Join two data sets and check to make sure they joined correctly 
 allBehavs<-inner_join(neweggs, countdata, by="joinID")               
+
+#Select columns to remove duplicated columns 
+allBehavs <- allBehavs %>% select(MicrocolonyID, WorkerID, egglaying, joinID, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
 write.csv(allBehavs, "count_stats.csv")
 ```
