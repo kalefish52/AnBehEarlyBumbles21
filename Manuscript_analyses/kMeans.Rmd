@@ -35,7 +35,9 @@ set.seed(123)
 ## compute and plot total within sum of squares for 2-10 clusters
 k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
+count_data$totalForaging <- count_data$pollenforaging + count_data$nectarforaging
 data <- count_data %>% select(egglaying, feedsbrood, nectarforaging, pollenforaging)
+
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
 wss
@@ -52,7 +54,7 @@ run k means analysis
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 3
+k <- 2
 
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
@@ -67,8 +69,8 @@ count_data$cluster <- as.factor(test$cluster)
 ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
 ## make egg laying workers x 
 plot_ly(x = count_data$feedsbrood, 
-        y = count_data$nectarforaging, 
-        z = count_data$pollenforaging, 
+        y = count_data$egglaying, 
+        z = count_data$totalForaging, 
         type="scatter3d", 
         mode="markers",
         symbol = count_data$beeType, symbols = c('square', 'circle','o'),
@@ -77,8 +79,8 @@ plot_ly(x = count_data$feedsbrood,
     title = "k means clustering",
     scene = list(
       xaxis = list(title = "feedsbrood"),
-      yaxis = list(title = "nectarforaging"),
-      zaxis = list(title = "pollenforaging"))
+      yaxis = list(title = "egglaying"),
+      zaxis = list(title = "totalForaging"))
   )
 ```
                      
