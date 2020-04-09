@@ -21,7 +21,8 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to wh
 ```
 
 ```{r}
-count_data <- read.csv(paste(wd, "/count_data.csv", sep = ""))
+## assumes the working directory is the project folder ./SarroFisher
+count_data <- read.csv("./Data/tempData/count_stats.csv", sep = ",")
 count_data
 ```
 
@@ -34,7 +35,7 @@ set.seed(123)
 ## compute and plot total within sum of squares for 2-10 clusters
 k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
-data <- count_data[, 4:6]
+data <- count_data %>% select(egglaying, feedsbrood, nectarforaging, pollenforaging)
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
 wss
@@ -55,7 +56,7 @@ k <- 3
 
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
-test <- kmeans(count_data[, 4:6], k, nstart = 20)
+test <- kmeans(data, k, nstart = 20)
 test
 ```
  graph k means analysis
@@ -71,7 +72,7 @@ plot_ly(x = count_data$feedsbrood,
         type="scatter3d", 
         mode="markers",
         symbol = count_data$beeType, symbols = c('square', 'circle','o'),
-        color = count_data$cluster)%>%
+        color = count_data$cluster) %>%
   layout(
     title = "k means clustering",
     scene = list(

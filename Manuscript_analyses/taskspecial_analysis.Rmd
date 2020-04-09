@@ -21,7 +21,7 @@ library(scatterplot3d)
 
 Read in count_data from CleanData.Rmd and make it into a matrix that can be used in clusetering analyses 
 ```{r}
-count_data<-read.csv("/Users/kaleighfisher/Dropbox/SarroFisher/Manuscript_analyses/count_data.csv")
+count_data<-read.csv("/Users/kaleighfisher/Dropbox/SarroFisher/Data/tempData/count_data.csv")
 head(count_data)
 
 count_data<- count_data %>% arrange(nestID) ## See if any observations are mislabelled 

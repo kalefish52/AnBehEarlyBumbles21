@@ -542,7 +542,7 @@ for (i in 1:nrow(count_data)) {
 print(paste("There were", knownWorkers - nrow(count_data), "unknown workers removed from the dataset.", sep = " "))
  
 ##Save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(count_data, "count_data.csv")
+write.csv(count_data, "../Data/tempData/count_data.csv")
 
 count_data
 
@@ -627,7 +627,7 @@ dur_data <- dur_data %>%
 dur_data[is.na(dur_data)] <- 0
 
 ##save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(dur_data, "dur_data.csv")
+write.csv(dur_data, "../Data/tempData/dur_data.csv")
 
 ## count the number of bees with behaviors
 print(paste("There are", nrow(dur_data), "bees accounted for in the duration data."))
@@ -754,7 +754,7 @@ for (i in 1:nrow(camDur)) {
 }
 
 ##Save dataframe as .csv so it can be used in other downstrea analyses 
-write.csv(camDur, "camDur.csv")
+write.csv(camDur, "../Data/tempData/camDur.csv")
 
 ## check to see how much video was watched for each nest and for each treatment
 ## must be equal + ratio must be 1 to compare
@@ -1003,7 +1003,7 @@ countdata %>% tally()
 
 #Read in egg laying document, select only relevant variables and rename microcolony id and worker id
 # to match count data dataframe
-egglaying<-read.csv("./Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na %>% 
+egglaying<-read.csv("../Data/Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na %>% 
   rename(nestID=MicrocolonyID) %>%
   rename(beeID=WorkerID) 
 
@@ -1035,7 +1035,7 @@ allBehavs <- allBehavs %>% mutate(egglaying=replace_na(egglaying, 0))
 #Select columns to remove duplicated columns 
 allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
-write.csv(allBehavs, "count_stats.csv")
+write.csv(allBehavs, "../Data/tempData/count_stats.csv")
 ```
 
 
