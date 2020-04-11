@@ -1044,6 +1044,43 @@ counts_time<-right_join(merged, nestDEV, by="joinc")
 
 head(counts_time)
 counts_time <- counts_time %>% select(timeID.x, nestID.x, timepoint, beeID, behav, rand)
+
+## add a column with value 1 that counts the behavioral observations this makes each behavior a count of 1 
+counts_time$count <- 1  
+## condense data frame into relevant columns, each row is a single observation for an individual
+counts_time <- counts_time %>%
+  pivot_wider(id_cols = c("nestID.x", "beeID", "behav", "timepoint"), 
+              names_from = rand, 
+              values_from = count) 
+
+## add column to fill with sum of counts for each behav
+counts_time$totCount <- rowSums(count_data[5:ncol(count_data)], na.rm = TRUE)
+
+## subset dataframe so that all is left is nestID, beeID, behav, and totCount
+count_data <- count_data %>%
+  select(nestID, beeID, behav, totCount)
+
+## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
+count_data <- count_data %>%
+  pivot_wider(id_cols = c("nestID", "beeID"), 
+              names_from = behav, 
+              values_from = totCount)
+
+## replace NA values with 0
+count_data[is.na(count_data)] <- 0
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 # Add egg laying events to count_data and make a new csv file - count_stats.csv
