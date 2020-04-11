@@ -1024,20 +1024,26 @@ nestDEV$hourID <- sapply(strsplit(nestDEV$obsID, "\t"),
 nestDEV$timeID <- paste(nestDEV$dateID, nestDEV$hourID)
 
 ## select variables we need for count analysis from nestDEV
-nestDEV <- nestDEV %>% select(behav, nestID, nestTYPE, beeID, timeID)
+nestDEV <- nestDEV %>% select(behav, nestID, beeID, timeID, rand)
 
 #select variables we need for count analysis from dates_data 
 
 merge_dates<-dates_data %>% select(timeID, nestID, timepoint)
 
 ## Join nestDEV and merge_dates by timeID
-dates_data$joinc<-paste(dates_data$timeID, dates_data$nestID, sep="_")
-nestDEV$joinc<-paste(nestDEV$timeID, nestDEV$nestID, sep="_")
-counts_time<-right_join(dates_data, nestDEV, by="joinc")
-head(counts_time)
-counts_time <- counts_time %>% select(timeID.x, nestID.x, timepoint, nestTYPE, beeID)
-counts_time
+merge_dates$joinc<-paste(dates_data$timeID, dates_data$nestID, sep="_")
+merge_dates%>% tally() 
+#merge_dates has duplicates from foraging/nest videos, we only need the time point information so we can remove these duplicates
+merged<-merge_dates %>% unique()
+merged %>% tally()
 
+nestDEV$joinc<-paste(nestDEV$timeID, nestDEV$nestID, sep="_")
+nestDEV %>% tally()
+
+counts_time<-right_join(merged, nestDEV, by="joinc")
+
+head(counts_time)
+counts_time <- counts_time %>% select(timeID.x, nestID.x, timepoint, beeID, behav, rand)
 ```
 
 # Add egg laying events to count_data and make a new csv file - count_stats.csv
