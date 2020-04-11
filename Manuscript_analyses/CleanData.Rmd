@@ -475,6 +475,7 @@ output df with each bee as a single row, behaviors as columns, count of frequenc
   ## (and any other behaviors recorded), with counts for each behavior in as values
   ## assumes rand number is not duplicated across individuals. 
 
+head(obs_data)
 ## rename to count_data for clarity 
 count_data <- obs_data
 ## add a column with value 1 that counts the behavioral observations this makes each behavior a count of 1 
@@ -894,6 +895,8 @@ early_data$timepoint <- "early"
 late_data$timepoint <- "late"
 dates_data <- rbind(early_data, late_data)
 dates_data
+head(dates_data)
+
 ```
 ```{r}
 #plot it!
@@ -989,6 +992,51 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
 dateDur
 sumsTOTAL
 sumsTYPE
+
+```
+
+# Add time (early/late) to count_data
+```{r}
+# Add early/late column to obs_data using join 
+head(obs_data)
+head(dates_data)
+head(totalLen_data)
+#Make obs_data into new dataframe so we don't interfere in upstream code
+nestDEV<-obs_data
+
+# make timeID column in obs_data
+nestDEV$camID <- sapply(strsplit(nestDEV$obsID, "\t"), 
+                          function(x){
+                            x[1]
+                            } )
+## element 3 is dateID
+nestDEV$dateID <- sapply(strsplit(nestDEV$obsID, "\t"), 
+                          function(x){ 
+                            x[3]
+                            } )
+## element 4 is hourID
+nestDEV$hourID <- sapply(strsplit(nestDEV$obsID, "\t"), 
+                          function(x){ 
+                            x[4]
+                            } )
+
+## combine date and hour into a single column called timeID
+nestDEV$timeID <- paste(nestDEV$dateID, nestDEV$hourID)
+
+## select variables we need for count analysis from nestDEV
+nestDEV <- nestDEV %>% select(behav, nestID, nestTYPE, beeID, timeID)
+
+#select variables we need for count analysis from dates_data 
+
+merge_dates<-dates_data %>% select(timeID, nestID, timepoint)
+
+## Join nestDEV and merge_dates by timeID
+dates_data$joinc<-paste(dates_data$timeID, dates_data$nestID, sep="_")
+nestDEV$joinc<-paste(nestDEV$timeID, nestDEV$nestID, sep="_")
+counts_time<-right_join(dates_data, nestDEV, by="joinc")
+head(counts_time)
+counts_time <- counts_time %>% select(timeID.x, nestID.x, timepoint, nestTYPE, beeID)
+counts_time
 
 ```
 
