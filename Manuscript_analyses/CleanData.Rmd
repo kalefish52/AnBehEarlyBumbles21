@@ -1077,7 +1077,6 @@ counts_time[is.na(counts_time)] <- 0
 
 ```{r}
 # warning messages of uninitalised column are normal - its a glitch 
-
 countdata<-as.data.frame(count_data) 
 #make sure there are the correct number of individuals for each nest 
 countdata %>% group_by(nestID) %>% tally()
@@ -1118,6 +1117,50 @@ allBehavs <- allBehavs %>% mutate(egglaying=replace_na(egglaying, 0))
 allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
 write.csv(allBehavs, "../Data/tempData/count_stats.csv")
+
+
+###### Make count data file with early/late time information ###########
+counts_time <- counts_time %>% rename(nestID=nestID.x)
+
+counts_time %>% group_by(nestID) %>% tally()
+counts_time %>% tally()
+
+#Read in egg laying document, select only relevant variables and rename microcolony id and worker id
+# to match count data dataframe
+egglaying<-read.csv("../Data/Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, timepoint) %>% drop_na%>% 
+  rename(nestID=MicrocolonyID) %>%
+  rename(beeID=WorkerID) 
+
+#make new dataframe with summarized counts of egglaying events 
+neweggs<-egglaying %>% select(nestID, beeID, timepoint, Date.Eggs.Laid) %>% group_by(nestID, beeID, timepoint) %>% tally() %>% as.data.frame() %>% rename(egglaying=n)
+
+
+#make common column joinc for both data frames
+neweggs$joinc <- paste(neweggs$nestID, neweggs$beeID, sep="_")
+head(neweggs)
+neweggs %>% tally()
+
+counts_time$joinc <-paste(counts_time$nestID, counts_time$beeID, sep="_")
+counts_time %>% tally()
+head(counts_time)
+
+#Join two data sets and check to make sure they joined correctly 
+allBehavs_time<-left_join(neweggs, counts_time, by="joinc")    # joins neweggs (left) to rows in countdata
+# make sure we still have same number of rows as countdata %>% tally()
+allBehavs_time %>% tally() 
+#yay :) 
+head(allBehavs_time)
+allBehavs_time
+
+#Select columns to remove duplicated columns 
+allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
+
+write.csv(allBehavs, "../Data/tempData/count_stats.csv")
+
+
+
+
+
 ```
 
 
