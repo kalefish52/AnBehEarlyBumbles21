@@ -1135,6 +1135,8 @@ egglaying<-read.csv("../Data/Egg_laying_Events.csv", header=TRUE) %>% select(Mic
 neweggs<-egglaying %>% select(nestID, beeID, timepoint, Date.Eggs.Laid) %>% group_by(nestID, beeID, timepoint) %>% tally() %>% as.data.frame() %>% rename(egglaying=n)
 
 
+#Need to add egglaying counts to existing count_data
+
 #make common column joinc for both data frames
 neweggs$joinc <- paste(neweggs$nestID, neweggs$beeID, sep="_")
 head(neweggs)
@@ -1155,7 +1157,7 @@ allBehavs_time
 #Select columns to remove duplicated columns 
 allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
-write.csv(allBehavs, "../Data/tempData/count_stats.csv")
+
 
 
 
