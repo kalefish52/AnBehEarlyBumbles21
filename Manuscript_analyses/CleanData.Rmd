@@ -836,7 +836,7 @@ for (i in 1:nrow(camDur)) {
 ```{r}
 # rename it so i can manipulate from here
 dates_data <- totalLen_data
-
+dates_data
 # pull out dateID from time ID
 dates_data$dateID <- sapply(strsplit(dates_data$timeID, " "), 
                           function(x){
@@ -995,12 +995,11 @@ sumsTYPE
 
 ```
 
-# Add time (early/late) to count_data and then add egg laying data 
+# Add early/late to obs_data and then make into counts_data
 ```{r}
 # Add early/late column to obs_data using join 
 head(obs_data)
-head(dates_data)
-head(totalLen_data)
+
 #Make obs_data into new dataframe so we don't interfere in upstream code
 nestDEV<-obs_data
 
@@ -1022,6 +1021,14 @@ nestDEV$hourID <- sapply(strsplit(nestDEV$obsID, "\t"),
 
 ## combine date and hour into a single column called timeID
 nestDEV$timeID <- paste(nestDEV$dateID, nestDEV$hourID)
+
+## add early/late time information 
+
+
+
+
+
+
 
 ## select variables we need for count analysis from nestDEV
 nestDEV <- nestDEV %>% select(behav, nestID, beeID, timeID, rand)
