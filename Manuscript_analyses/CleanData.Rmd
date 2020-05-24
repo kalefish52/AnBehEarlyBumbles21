@@ -55,6 +55,7 @@ getBORISfilenames <- function(gitfilepath) {
 
 ## make the list of filenames
 BORISfilenames <- getBORISfilenames("../Data/BORISfiles")
+getwd()
 
 ## loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
 obs_data <- do.call(rbind, lapply(BORISfilenames, 
@@ -852,6 +853,7 @@ dates_data$timepoint <- NA
 # sort by nestID, then dateID
 dates_data <- dates_data[order(dates_data$dateID),]
 dates_data <- dates_data[order(dates_data$nestID),]
+dates_data
 
 # make empty early df
 early_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(dates_data)))
@@ -1017,7 +1019,7 @@ nestDEV$timepoint <- NA
 # sort by nestID, then dateID
 nestDEV <- nestDEV[order(nestDEV$dateID),]
 nestDEV <- nestDEV[order(nestDEV$nestID),]
-nestDEV
+nestDEV <- nestDEV[!is.na(nestDEV$dateID),]
 
 # make empty early df
 nestDEVearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
@@ -1049,7 +1051,7 @@ for(i in 1:length(unique(nestDEV$nestID))) {
       nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
     }
     # if dateID is more than or equal to previous dateID + 4
-    else  if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
       #   move that row to late_data df
       nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
      else {
@@ -1058,14 +1060,23 @@ for(i in 1:length(unique(nestDEV$nestID))) {
   }
 }
 
+nestDEVearly
+nestDEVlate
+nestDEVerror
+print(paste("There are", nrow(nestDEV) - nrow(nestDEVearly) - nrow(nestDEVlate), "missing observations", sep = " "))
+nrow(nestDEV)
+nrow(nestDEVearly)
+nrow(nestDEVlate)
+
 
 nestDEVearly$timepoint <- "early"
 nestDEVlate$timepoint <- "late"
 nestDEV <- rbind(nestDEVearly, nestDEVlate)
 nestDEV
 head(nestDEV)
+```
 
-
+```{r}
 
 
 
