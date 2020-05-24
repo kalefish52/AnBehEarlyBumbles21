@@ -899,6 +899,44 @@ head(dates_data)
 
 ```
 ```{r}
+#What is going on 
+for(i in 1:length(unique(dates_data$nestID))) {
+  # make a temporary dataframe containing info from only that nest
+  nestid_data <- dates_data[dates_data$nestID == unique(dates_data$nestID)[i],] 
+  early_data <- rbind(early_data, nestid_data[1,])
+  }
+  
+  
+  early_data
+
+  
+  # add first row to early_data
+  early_data <- rbind(early_data, nestid_data[1,])
+  # for each dateID
+  for(j in 2:nrow(nestid_data)) {
+    # if dateID is less than or equal to previous dateID + 2
+    if(nestid_data$dateID[j] <= nestid_data$dateID[1] + 2) {
+      #   move that row to early_data df
+      early_data <- rbind(early_data, nestid_data[j,])
+    }
+    # if dateID is more than or equal to previous dateID + 4
+    else if(nestid_data$dateID[j] >= nestid_data$dateID[1] + 4) {
+      #   move that row to late_data df
+      late_data <- rbind(late_data, nestid_data[j,])
+    } else {
+      error_data <- rbind(error_data, nestid_data[j,])
+    }
+  }
+}
+
+
+```
+
+
+
+
+
+```{r}
 #plot it!
 
 # subset the df to remove the obs, hour, and date columns
@@ -997,32 +1035,68 @@ sumsTYPE
 
 # Add early/late to obs_data and then make into counts_data
 ```{r}
-# Add early/late column to obs_data using join 
-head(obs_data)
 
+head(obs_data)
 #Make obs_data into new dataframe so we don't interfere in upstream code
 nestDEV<-obs_data
 
-# make timeID column in obs_data
-nestDEV$camID <- sapply(strsplit(nestDEV$obsID, "\t"), 
-                          function(x){
-                            x[1]
-                            } )
-## element 3 is dateID
-nestDEV$dateID <- sapply(strsplit(nestDEV$obsID, "\t"), 
-                          function(x){ 
-                            x[3]
-                            } )
-## element 4 is hourID
-nestDEV$hourID <- sapply(strsplit(nestDEV$obsID, "\t"), 
-                          function(x){ 
-                            x[4]
-                            } )
+# Re-used Erica code to add early/late data into obs_data
 
-## combine date and hour into a single column called timeID
-nestDEV$timeID <- paste(nestDEV$dateID, nestDEV$hourID)
+# add column for timepoint filled with NA values
+nestDEV$timepoint <- NA
 
-## add early/late time information 
+# sort by nestID, then dateID
+nestDEV <- nestDEV[order(nestDEV$dateID),]
+nestDEV <- nestDEV[order(nestDEV$nestID),]
+
+# make empty early df
+nestDEVearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
+## make column names the same
+names(nestDEVearly) <- names(nestDEV)
+
+# make empty late df
+nestDEVlate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
+## make column names the same
+names(nestDEVlate) <- names(nestDEV)
+
+# make empty error df
+nestDEVerror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
+## make column names the same
+names(nestDEVerror) <- names(nestDEV)
+
+for(i in 1:length(unique(nestDEV$nestID))) {
+  # make a temporary dataframe containing info from only that nest
+  NDnestid_data <- nestDEV[nestDEV$nestID == unique(nestDEV$nestID)[i],]
+  # add first row to early_data
+  nestDEVearly <- rbind(nestDEVearly, NDnestid_data[1,])
+  # for each dateID
+  for(j in 2:nrow(NDnestid_data)) {
+    # if dateID is less than or equal to previous dateID + 2
+    if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
+      #   move that row to early_data df
+      nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
+    }
+    # if dateID is more than or equal to previous dateID + 4
+    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+      #   move that row to late_data df
+      nestDEVlate <- rbind(nestDEVlate, NDnestid_data[j,])
+    } else {
+      nestDEVlate<- rbind(nestDEVerror, NDnestid_data[j,])
+    }
+  }
+}
+
+
+
+
+
+early_data$timepoint <- "early"
+late_data$timepoint <- "late"
+dates_data <- rbind(early_data, late_data)
+dates_data
+head(dates_data)
+
+
 
 
 
