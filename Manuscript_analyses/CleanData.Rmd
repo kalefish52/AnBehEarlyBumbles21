@@ -898,39 +898,6 @@ dates_data
 head(dates_data)
 
 ```
-```{r}
-#What is going on 
-for(i in 1:length(unique(dates_data$nestID))) {
-  # make a temporary dataframe containing info from only that nest
-  nestid_data <- dates_data[dates_data$nestID == unique(dates_data$nestID)[i],] 
-  early_data <- rbind(early_data, nestid_data[1,])
-  }
-  
-  
-  early_data
-
-  
-  # add first row to early_data
-  early_data <- rbind(early_data, nestid_data[1,])
-  # for each dateID
-  for(j in 2:nrow(nestid_data)) {
-    # if dateID is less than or equal to previous dateID + 2
-    if(nestid_data$dateID[j] <= nestid_data$dateID[1] + 2) {
-      #   move that row to early_data df
-      early_data <- rbind(early_data, nestid_data[j,])
-    }
-    # if dateID is more than or equal to previous dateID + 4
-    else if(nestid_data$dateID[j] >= nestid_data$dateID[1] + 4) {
-      #   move that row to late_data df
-      late_data <- rbind(late_data, nestid_data[j,])
-    } else {
-      error_data <- rbind(error_data, nestid_data[j,])
-    }
-  }
-}
-
-
-```
 
 
 
@@ -1039,6 +1006,8 @@ sumsTYPE
 head(obs_data)
 #Make obs_data into new dataframe so we don't interfere in upstream code
 nestDEV<-obs_data
+nestDEV
+nestDEV$dateID <- as.Date(nestDEV$dateID, "%Y%m%d")
 
 # Re-used Erica code to add early/late data into obs_data
 
@@ -1048,6 +1017,7 @@ nestDEV$timepoint <- NA
 # sort by nestID, then dateID
 nestDEV <- nestDEV[order(nestDEV$dateID),]
 nestDEV <- nestDEV[order(nestDEV$nestID),]
+nestDEV
 
 # make empty early df
 nestDEVearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
@@ -1059,11 +1029,13 @@ nestDEVlate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
 ## make column names the same
 names(nestDEVlate) <- names(nestDEV)
 
+
 # make empty error df
 nestDEVerror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
 ## make column names the same
 names(nestDEVerror) <- names(nestDEV)
 
+# for a given nestID
 for(i in 1:length(unique(nestDEV$nestID))) {
   # make a temporary dataframe containing info from only that nest
   NDnestid_data <- nestDEV[nestDEV$nestID == unique(nestDEV$nestID)[i],]
@@ -1077,24 +1049,21 @@ for(i in 1:length(unique(nestDEV$nestID))) {
       nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
     }
     # if dateID is more than or equal to previous dateID + 4
-    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+    else  if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
       #   move that row to late_data df
-      nestDEVlate <- rbind(nestDEVlate, NDnestid_data[j,])
-    } else {
-      nestDEVlate<- rbind(nestDEVerror, NDnestid_data[j,])
+      nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
+     else {
+      nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
     }
   }
 }
 
 
-
-
-
-early_data$timepoint <- "early"
-late_data$timepoint <- "late"
-dates_data <- rbind(early_data, late_data)
-dates_data
-head(dates_data)
+nestDEVearly$timepoint <- "early"
+nestDEVlate$timepoint <- "late"
+nestDEV <- rbind(nestDEVearly, nestDEVlate)
+nestDEV
+head(nestDEV)
 
 
 
