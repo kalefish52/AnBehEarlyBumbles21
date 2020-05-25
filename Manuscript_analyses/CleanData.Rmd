@@ -1084,10 +1084,88 @@ egglaying<-read.csv("../Data/Egg_laying_Events.csv")
 head(egglaying)
 #Change date to same format as above
 egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%m/%d/%y")
-#Change date name in egglaying to match dateID in nestDEV 
+#Change date name and microcolony name in egglaying to match dateID in nestDEV 
 egglaying$dateID<-egglaying$Date.Eggs.Laid
+egglaying$nestID<-egglaying$MicrocolonyID
 
 #Need to write a loop to calculate midpoint between dates of egglaying for each nest and then assign before midpoint early and then after midpoint late 
+egglaying$timepoint <- NA
+
+# sort by nestID, then dateID
+egglaying <- egglaying[order(egglaying$dateID),]
+egglaying <- egglaying[order(egglaying$nestID),]
+
+# make empty early df
+eggsearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+## make column names the same
+names(eggsearly) <- names(egglaying)
+
+# make empty late df
+eggslate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+## make column names the same
+names(eggslate) <- names(egglaying)
+
+
+# make empty error df
+eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+## make column names the same
+names(eggserror) <- names(egglaying)
+
+# for a given nestID
+for(i in 1:length(unique(egglaying$nestID))) {
+  # make a temporary dataframe containing info from only that nest [nestidEggs]<-temporary dataframe
+  nestidEggs <- egglaying[egglaying$nestID == unique(egglaying$nestID)[i],] 
+  #for each nest calculate midpoint
+  for(j in 1:nrow(nestidEggs)){
+    midpoint<-((max(nestidEggs$dateID[j])-min(nestidEggs$dateID[j]))/2)+min(nestidEggs$dateID[j])
+    for(p in 1:nrow(nestidEggs)){
+      if (nestidEggs$dateID[j]<= midpoint[j]){
+        eggsearly<-rbind(eggsearly, nestidEggs[j,])
+      }
+      else if (nestidEggs$dateID[j]>midpoint[j]){
+        eggslate<-rbind(eggslate, nestidEggs[j,])
+      }
+      else {
+        eggserror<-rbind(eggserror, nestidEggs[j,])
+      }
+    }
+  }}
+
+#I think the problem is that there are NAs for midpoints for dates that dont have a date midpoint
+ egglaying$dateID
+    
+    
+    
+    
+    
+    
+    
+  # for each dateID
+  for(j in 2:nrow(NDnestid_data)) {
+    # if dateID is less than or equal to previous dateID + 2
+    if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
+      #   move that row to early_data df
+      nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
+    }
+    # if dateID is more than or equal to previous dateID + 4
+    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+      #   move that row to late_data df
+      nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
+     else {
+      nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
