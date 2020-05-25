@@ -1134,7 +1134,8 @@ for(i in 1:length(unique(egglaying$nestID))) {
 #I think the problem is that there are NAs for midpoints for dates that dont have a date midpoint
  egglaying$dateID
     
-    
+lala<-egglaying %>% filter(nestID=="NF10") 
+(max(lala$dateID)-min(lala$dateID)/2)+min(lala$dateID)
     
     
     
