@@ -1078,9 +1078,12 @@ head(nestDEV)
 
 ```{r}
 
+#Import egglaying data - need to figure out time point and then merge to nestDEV
 
-
-
+egglaying<-read.csv("../Data/Egg_laying_Events.csv")
+head(egglaying)
+#Change date to same format as above
+egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%Y%m%d")
 
 
 
