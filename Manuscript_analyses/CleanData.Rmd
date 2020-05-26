@@ -1111,22 +1111,48 @@ eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
 ## make column names the same
 names(eggserror) <- names(egglaying)
 
+
+
 # for a given nestID
+egglaying
+try<-egglaying %>% group_by(nestID) %>% 
+
+
+
+
 for(i in 1:length(unique(egglaying$nestID))) {
   # make a temporary dataframe containing info from only that nest [nestidEggs]<-temporary dataframe
   nestidEggs <- egglaying[egglaying$nestID == unique(egglaying$nestID)[i],] 
+  midpoint<-(((ceiling(max(nestidEggs$dateID[i],)-min(nestidEggs$dateID[i])))/2)+
+      min(nestidEggs$dateID[i]) ) 
+  
+  }
+## write everything out not in a loop and then integrate into a loop 
+midpoint
   #for each nest calculate midpoint
-  for(j in 1:nrow(nestidEggs)){
-    midpoint<-((max(nestidEggs$dateID[j])-min(nestidEggs$dateID[j]))/2)+min(nestidEggs$dateID[j])
-    for(p in 1:nrow(nestidEggs)){
-      if (nestidEggs$dateID[j]<= midpoint[j]){
-        eggsearly<-rbind(eggsearly, nestidEggs[j,])
+  #floor() rounds down and celing() rounds up
+ 
+
+  nestidEggs  
+
+
+    #now we need to add this midpoint back to the data 
+    
+    
+
+
+
+    
+
+    for(p in 1:nrow(midpoint)){
+      if (nestidEggs$dateID[p]<= midpoint[p]){
+        eggsearly<-rbind(eggsearly, nestidEggs[p,])
       }
-      else if (nestidEggs$dateID[j]>midpoint[j]){
-        eggslate<-rbind(eggslate, nestidEggs[j,])
+      else if (nestidEggs$dateID[p]>midpoint[p]){
+        eggslate<-rbind(eggslate, nestidEggs[p,])
       }
       else {
-        eggserror<-rbind(eggserror, nestidEggs[j,])
+        eggserror<-rbind(eggserror, nestidEggs[p,])
       }
     }
   }}
@@ -1135,10 +1161,12 @@ for(i in 1:length(unique(egglaying$nestID))) {
  egglaying$dateID
     
 lala<-egglaying %>% filter(nestID=="NF10") 
-(max(lala$dateID)-min(lala$dateID)/2)+min(lala$dateID)
+
+
+
+
     
-    
-    
+
     
     
   # for each dateID
