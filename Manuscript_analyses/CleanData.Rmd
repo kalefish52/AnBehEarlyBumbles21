@@ -1082,14 +1082,24 @@ head(nestDEV)
 head(nestDEV)
 egglaying<-read.csv("../Data/Egg_laying_Events.csv")
 head(egglaying)
+
 #Change date to same format as above
 egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%m/%d/%y")
-#Change date name and microcolony name in egglaying to match dateID in nestDEV 
-egglaying$dateID<-egglaying$Date.Eggs.Laid
-egglaying$nestID<-egglaying$MicrocolonyID
 
-#Need to write a loop to calculate midpoint between dates of egglaying for each nest and then assign before midpoint early and then after midpoint late 
-egglaying$timepoint <- NA
+#Rename date name and microcolony name in egglaying to match dateID in nestDEV 
+egglaying<-egglaying %>% rename(dateID=Date.Eggs.Laid)
+egglaying<-egglaying %>% rename(nestID=MicrocolonyID)
+
+#Calculate median date between egg laying events for each nestID
+datesmedian<-egglaying %>% group_by(nestID) %>% summarize(median=(ceiling(max(dateID)-min(dateID))/2)+min(dateID))
+
+#Combine median date information with egglaying dataframe
+egglayingmedian<-left_join(egglaying, datesmedian, by="nestID")
+
+#Now write a loop to go through each row and add it either to late or early 
+egglayingmedian$timepoint<-NA
+
+
 
 # sort by nestID, then dateID
 egglaying <- egglaying[order(egglaying$dateID),]
@@ -1111,80 +1121,18 @@ eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
 ## make column names the same
 names(eggserror) <- names(egglaying)
 
-
-
-# for a given nestID
-egglaying
-try<-egglaying %>% group_by(nestID) %>% 
-
-
-
-
-for(i in 1:length(unique(egglaying$nestID))) {
-  # make a temporary dataframe containing info from only that nest [nestidEggs]<-temporary dataframe
-  nestidEggs <- egglaying[egglaying$nestID == unique(egglaying$nestID)[i],] 
-  midpoint<-(((ceiling(max(nestidEggs$dateID[i],)-min(nestidEggs$dateID[i])))/2)+
-      min(nestidEggs$dateID[i]) ) 
-  
+for(i in 1:nrow(egglayingmedian)){
+  #if dateID is less than or equal to median
+  if(egglayingmedian$dateID[i]<=egglayingmedian$median[i]){
+    #move that row to early data df
+    eggsearly<-rbind(eggsearly, egglayingmedian[i])
   }
-## write everything out not in a loop and then integrate into a loop 
-midpoint
-  #for each nest calculate midpoint
-  #floor() rounds down and celing() rounds up
- 
-
-  nestidEggs  
-
-
-    #now we need to add this midpoint back to the data 
-    
-    
-
-
-
-    
-
-    for(p in 1:nrow(midpoint)){
-      if (nestidEggs$dateID[p]<= midpoint[p]){
-        eggsearly<-rbind(eggsearly, nestidEggs[p,])
-      }
-      else if (nestidEggs$dateID[p]>midpoint[p]){
-        eggslate<-rbind(eggslate, nestidEggs[p,])
-      }
-      else {
-        eggserror<-rbind(eggserror, nestidEggs[p,])
-      }
-    }
-  }}
-
-#I think the problem is that there are NAs for midpoints for dates that dont have a date midpoint
- egglaying$dateID
-    
-lala<-egglaying %>% filter(nestID=="NF10") 
-
-
-
-
-    
-
-    
-    
-  # for each dateID
-  for(j in 2:nrow(NDnestid_data)) {
-    # if dateID is less than or equal to previous dateID + 2
-    if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
-      #   move that row to early_data df
-      nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
-    }
-    # if dateID is more than or equal to previous dateID + 4
-    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
-      #   move that row to late_data df
-      nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
-     else {
-      nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
-    }
+  else if (egglayingmedian$dateID[i]>egglayingmedian$median[i]){
+    eggslate<-rbind(eggslate, egglayingmedian[i])
   }
+  else {eggserror<-rbind(eggserror, egglayingmedian[i])}
 }
+
 
 
 
