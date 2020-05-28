@@ -1099,40 +1099,34 @@ egglayingmedian<-left_join(egglaying, datesmedian, by="nestID")
 #Now write a loop to go through each row and add it either to late or early 
 egglayingmedian$timepoint<-NA
 
-
-
-# sort by nestID, then dateID
-egglaying <- egglaying[order(egglaying$dateID),]
-egglaying <- egglaying[order(egglaying$nestID),]
-
 # make empty early df
-eggsearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+eggsearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
 ## make column names the same
-names(eggsearly) <- names(egglaying)
-
+names(eggsearly) <- names(egglayingmedian)
 # make empty late df
-eggslate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+eggslate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
 ## make column names the same
-names(eggslate) <- names(egglaying)
-
-
+names(eggslate) <- names(egglayingmedian)
 # make empty error df
-eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglaying)))
+eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
 ## make column names the same
-names(eggserror) <- names(egglaying)
+names(eggserror) <- names(egglayingmedian)
 
 for(i in 1:nrow(egglayingmedian)){
   #if dateID is less than or equal to median
   if(egglayingmedian$dateID[i]<=egglayingmedian$median[i]){
     #move that row to early data df
-    eggsearly<-rbind(eggsearly, egglayingmedian[i])
+    eggsearly<-rbind(eggsearly,egglayingmedian[i,])
   }
   else if (egglayingmedian$dateID[i]>egglayingmedian$median[i]){
-    eggslate<-rbind(eggslate, egglayingmedian[i])
+    eggslate<-rbind(eggslate, egglayingmedian[i,])
   }
-  else {eggserror<-rbind(eggserror, egglayingmedian[i])}
+  else {eggserror<-rbind(eggserror, egglayingmedian[i,])}
 }
 
+eggslate
+
+```
 
 
 
@@ -1141,13 +1135,7 @@ for(i in 1:nrow(egglayingmedian)){
 
 
 
-
-
-
-
-
-
-
+```{r}
 
 ## select variables we need for count analysis from nestDEV
 nestDEV <- nestDEV %>% select(behav, nestID, beeID, timeID, rand)
