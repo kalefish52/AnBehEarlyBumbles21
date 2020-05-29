@@ -1137,14 +1137,33 @@ head(eggsmerge)
 
 ```
 
+Combine egg laying and nestDEV to make count data 
+```{r}
+head(eggsmerge)
+#make behav column with egglaying
+eggsmerge <- eggsmerge %>% mutate(behav="egglaying")
+#Make sure they have the same column headers so that we can do rbind
+eggsmergebind<-eggsmerge %>% rename(beeID=WorkerID) %>% select(nestID, beeID, Caste, timepoint, behav, dateID)
+head(nestDEV)
+nestDEVbind<-nestDEV %>% select(nestID, dateID, timepoint, behav, beeID) %>% mutate(Caste="worker")
+#Combine egglaying and worker behaviors
+mergedbehavs<-rbind(nestDEVbind, eggsmergebind)
+mergedbehavs
+
+#Now turn mergedbehavs into count data so we can do stats :) 
 
 
+```
 
 
 
 
 
 ```{r}
+
+
+
+
 
 ## select variables we need for count analysis from nestDEV
 nestDEV <- nestDEV %>% select(behav, nestID, beeID, timeID, rand)
