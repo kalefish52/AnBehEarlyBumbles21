@@ -1151,8 +1151,7 @@ mergedbehavs<-rbind(nestDEVbind, eggsmergebind)
 mergedbehavs
 
 #Now turn mergedbehavs into count data so we can do stats :) 
-
-
+mergedbehavs$count<-1
 ```
 
 
