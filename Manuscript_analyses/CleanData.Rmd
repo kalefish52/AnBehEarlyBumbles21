@@ -1152,159 +1152,31 @@ mergedbehavs
 
 #Now turn mergedbehavs into count data so we can do stats :) 
 mergedbehavs$count<-1
-```
+
+## add random number column to make table compatible with pivot_wider. needs a unique identifier for each individual
+mergedbehavs$rand <- NA
+for (i in 1:(nrow(mergedbehavs))) {
+  mergedbehavs$rand[i] <- runif(1)
+}
 
 
-
-
-
-```{r}
-
-
-
-
-
-## select variables we need for count analysis from nestDEV
-nestDEV <- nestDEV %>% select(behav, nestID, beeID, timeID, rand)
-
-#select variables we need for count analysis from dates_data 
-
-merge_dates<-dates_data %>% select(timeID, nestID, timepoint)
-
-## Join nestDEV and merge_dates by timeID
-merge_dates$joinc<-paste(dates_data$timeID, dates_data$nestID, sep="_")
-merge_dates%>% tally() 
-#merge_dates has duplicates from foraging/nest videos, we only need the time point information so we can remove these duplicates
-merged<-merge_dates %>% unique()
-merged %>% tally()
-
-nestDEV$joinc<-paste(nestDEV$timeID, nestDEV$nestID, sep="_")
-nestDEV %>% tally()
-
-counts_time<-right_join(merged, nestDEV, by="joinc")
-
-head(counts_time)
-
-counts_time <- counts_time %>% select(timeID.x, nestID.x, timepoint, beeID, behav, rand)
-
-## add a column with value 1 that counts the behavioral observations this makes each behavior a count of 1 
-counts_time$count <- 1  
 ## condense data frame into relevant columns, each row is a single observation for an individual
-counts_time <- counts_time %>%
-  pivot_wider(id_cols = c("nestID.x", "beeID", "behav", "timepoint"), 
+counts_final <- mergedbehavs %>%
+  pivot_wider(id_cols = c("nestID", "beeID", "behav", "timepoint", "Caste", "timepoint"),
               names_from = rand, 
               values_from = count) 
-
-## add column to fill with sum of counts for each behav
-counts_time$totCount <- rowSums(counts_time[5:ncol(counts_time)], na.rm = TRUE)
-
-
-## subset dataframe so that all is left is nestID, beeID, behav, timepoint and #totCount
-counts_time <- counts_time %>%
-  select(nestID.x, beeID, behav, timepoint, totCount)
-
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-counts_time <- counts_time %>%
-  pivot_wider(id_cols = c("nestID.x", "beeID", "timepoint"), 
-              names_from = behav, 
-              values_from = totCount)
-
-## replace NA values with 0
-counts_time[is.na(counts_time)] <- 0
-
+counts_final
+counts_final$totCount <- rowSums(counts_final[6:ncol(counts_final)], na.rm = TRUE)
+#Select variables of interest 
+countsDATA<-counts_final %>% select(nestID, beeID, behav, timepoint, Caste, totCount)
+countsDATA
 ```
 
-# Add egg laying events to count_data and counts_time and make a new csv file - count_stats.csv
-
-```{r}
-# warning messages of uninitalised column are normal - its a glitch 
-countdata<-as.data.frame(count_data) 
-#make sure there are the correct number of individuals for each nest 
-countdata %>% group_by(nestID) %>% tally()
-countdata %>% tally()
-
-#Read in egg laying document, select only relevant variables and rename microcolony id and worker id
-# to match count data dataframe
-egglaying<-read.csv("../Data/Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, Time, assigned.To) %>% drop_na %>% 
-  rename(nestID=MicrocolonyID) %>%
-  rename(beeID=WorkerID) 
-
-#make new dataframe with summarized counts of egglaying events 
-neweggs<-egglaying %>% select(nestID, beeID) %>% group_by(nestID, beeID) %>% 
-                                tally() %>% as.data.frame() %>% rename(egglaying = n)
-neweggs %>% group_by(nestID) %>% tally()
-neweggs %>% tally()
-
-#make common column joinc for both data frames
-neweggs$joinc <- paste(neweggs$nestID, neweggs$beeID, sep="_")
-head(neweggs)
-neweggs %>% tally()
-
-countdata$joinc <-paste(countdata$nestID, countdata$beeID, sep="_")
-countdata %>% tally()
-head(countdata)
-
-#Join two data sets and check to make sure they joined correctly 
-allBehavs<-right_join(neweggs, countdata, by="joinc")    # joins neweggs (left) to rows in countdata
-# make sure we still have same number of rows as countdata %>% tally()
-allBehavs %>% tally() 
-#yay :) 
-head(allBehavs)
-
-#Replace NAs with 0 for egglaying events 
-allBehavs <- allBehavs %>% mutate(egglaying=replace_na(egglaying, 0))
-
-#Select columns to remove duplicated columns 
-allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
-
-write.csv(allBehavs, "../Data/tempData/count_stats.csv")
-
-
-###### Make count data file with early/late time information ###########
-counts_time <- counts_time %>% rename(nestID=nestID.x)
-
-counts_time %>% group_by(nestID) %>% tally()
-counts_time %>% tally()
-
-#Read in egg laying document, select only relevant variables and rename microcolony id and worker id
-# to match count data dataframe
-egglaying<-read.csv("../Data/Egg_laying_Events.csv", header=TRUE) %>% select(MicrocolonyID, Date.Eggs.Laid, WorkerID, Caste, timepoint) %>% drop_na%>% 
-  rename(nestID=MicrocolonyID) %>%
-  rename(beeID=WorkerID) 
-
-#make new dataframe with summarized counts of egglaying events 
-neweggs<-egglaying %>% select(nestID, beeID, timepoint, Date.Eggs.Laid) %>% group_by(nestID, beeID, timepoint) %>% tally() %>% as.data.frame() %>% rename(egglaying=n)
-
-
-#Need to add egglaying counts to existing count_data
-
-#make common column joinc for both data frames
-neweggs$joinc <- paste(neweggs$nestID, neweggs$beeID, sep="_")
-head(neweggs)
-neweggs %>% tally()
-
-counts_time$joinc <-paste(counts_time$nestID, counts_time$beeID, sep="_")
-counts_time %>% tally()
-head(counts_time)
-
-#Join two data sets and check to make sure they joined correctly 
-allBehavs_time<-left_join(neweggs, counts_time, by="joinc")    # joins neweggs (left) to rows in countdata
-# make sure we still have same number of rows as countdata %>% tally()
-allBehavs_time %>% tally() 
-#yay :) 
-head(allBehavs_time)
-allBehavs_time
-
-#Select columns to remove duplicated columns 
-allBehavs <- allBehavs %>% select(nestID.y, beeID.y, egglaying, joinc, feedsbrood, nectarforaging, pollenforaging, nBehavs, nestTYPE)
 
 
 
 
 
-
-
-```
 
 
 
