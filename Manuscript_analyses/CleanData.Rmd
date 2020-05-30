@@ -1157,20 +1157,28 @@ CasteInformation<-CasteInfo %>% rename(beeID=IDnum) %>% mutate(beeID=as.characte
 CasteInformation
 nestDEVcaste<-left_join(nestDEVbind, CasteInformation, by=c("nestID", "beeID" ))
 head(nestDEVcaste)
+
 #Use string split to make a column with either W (worker) or Q (queen) from IDtype
 nestDEVcaste$Caste<-sapply(strsplit(nestDEVcaste$IDtype, ""),
                            function(x){
                              x[1]
                            })
-
 nestDEVcaste
-
-
+#Assign castes either as queens or workers 
+workers<-nestDEVcaste %>% filter(Caste=="W") %>% mutate(Caste="worker")
+queens<-nestDEVcaste %>% filter(Caste=="Q") %>% mutate(Caste="queen")
+#Fix NAs by double checking master data sheet 
+#All worker colonies except QT02, and queen is 85 - no queen behavioral observations
+#so label all NAs as worker caste 
+nahs<-nestDEVcaste %>% filter(!Caste %in% c("W", "Q")) %>% mutate(Caste="worker")
+nahs
+nestDEVCaste<-rbind(workers, queens, nahs)
+nestDEVCaste<-nestDEVCaste %>% select(nestID, dateID, timepoint, behav, beeID, Caste)
 
 #Combine egglaying and worker behaviors
-mergedbehavs<-rbind(nestDEVbind, eggsmergebind)
+mergedbehavs<-rbind(nestDEVCaste, eggsmergebind)
 mergedbehavs
-
+eggsmergebind %>% filter(nestID=="QT12")
 #Now turn mergedbehavs into count data so we can do stats :) 
 mergedbehavs$count<-1
 
@@ -1190,7 +1198,8 @@ counts_final
 counts_final$totCount <- rowSums(counts_final[6:ncol(counts_final)], na.rm = TRUE)
 #Select variables of interest 
 countsDATA<-counts_final %>% select(nestID, beeID, behav, timepoint, Caste, totCount)
-countsDATA
+write.csv(countsDATA, "../Data/countsanalysis.csv") 
+
 
 
 
