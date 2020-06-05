@@ -1,0 +1,123 @@
+---
+title: "Manuscript Analyses for DOL Paper" 
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load Packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(cluster)    # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+```
+
+# Manuscript Analyses
+## Data manipulation
+Add a column for group type (NT, QT, NF, QF) and a column with total foraging (pollen + nectar foraging)
+```{r}
+# Combine pollen and nectar foraging (don't have that many for each) and then remove columns other than egg laying, brood feeding and foraging 
+
+dataSTATS <- read.csv("../Data/countsanalysis.csv")
+dataSTATS
+
+##add column with total foraging 
+allforaging<-dataSTATS %>% pivot_wider(names_from=behav, values_from=totCount) %>%
+  select(!c( fillshoneypot, other, end, broodmanipulate, offbrood, incubate, waxmanipulate, laysegg, eatsbrood)) %>% replace(is.na(.), 0)
+
+forage_polnec<-allforaging %>% select(!X) %>% pivot_longer(cols=c(feedsbrood, nectarforaging, pollenforaging, egglaying), names_to="behav", values_to="Count") 
+
+combforaging<-allforaging %>% mutate(combfor=nectarforaging+pollenforaging) %>% select(!c(X, nectarforaging, pollenforaging))
+
+forag_comb<-combforaging %>% pivot_longer(cols=c(feedsbrood, combfor, egglaying), names_to="behav", values_to="Count")
+```
+
+## Question 2: Are there patterns of division of labor? 
+```{r}
+# Convert dataframes into matrices - two sets one with combined foraging and one with separated foraging 
+# have to remove rownames and replace with joinID so that the analysis works
+
+# Matrices total for - Combined foraging, egg laying, brood feeding
+NF.matrix <- dataSTATS %>% filter(nestTYPE == "NF") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+NT.matrix <- dataSTATS %>% filter(nestTYPE == "NT") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+QF.matrix <- dataSTATS %>% filter(nestTYPE == "QF") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+QT.matrix <- dataSTATS %>% filter(nestTYPE == "QT") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+All.matrix<-dataSTATS %>% select(joinc, nestTYPE, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+
+#Make a list of matrices so we can use a loop or fancy lapply to do stats 
+Matrices_Totalfor<- list()
+Matrices_Totalfor[[1]]<-NF.matrix
+Matrices_Totalfor[[2]]<-NT.matrix
+Matrices_Totalfor[[3]]<-QF.matrix
+Matrices_Totalfor[[4]]<-QT.matrix
+Matrices_Totalfor[[5]]<-All.matrix
+Matrices_Totalfor
+kasdjflkj
+
+
+head(NF.matrix)
+
+
+
+
+
+
+# Clustering analysis one - Kmeans 
+# K Means Cluster Analyses -- determine whether points cluster into two or more groups
+
+
+
+
+
+
+# Clustering analysis two - NMDS 
+## Need to remove rows (row=individual) that has 0 for all observations - maybe we want to change this someway so we can see clustering of individuals doing nothing 
+
+
+NF.matrix <- NF.matrix[rowSums(NF.matrix)!=0, ] 
+NMDS_NF<-metaMDS(NF.matrix, k=2)
+stressplot(NMDS_NF)
+ordiplot(NMDS_NF, display="species")
+
+plot(NMDS_NF)
+ordiplot(NMDS_NF, type="n")
+orditorp(NMDS_NF,display="sites", col="red", air=0.001)
+orditorp(NMDS_NF, display="species", cex=1.25, air=0.01)
+
+
+# Clustering analysis three - Principle coordinate analysis (MDS)
+#samples should be rows in the matrix - center and scale the measurements for each behavior
+distance.matrixNF<-dist(scale((NF.matrix), center=TRUE, scale=TRUE), method="euclidean")
+# use eigen values to calculate variation in the distance matrix is from each axis in the final plot
+mds.stuffNF<-cmdscale(distance.matrixNF, eig=TRUE, x.ret=TRUE) 
+#Calculate the amount of variation each axis in the MDS plot accounts for using eigen values
+mds.var.per <- round(mds.stuffNF$eig/sum(mds.stuffNF$eig)*100, 1)
+mds.var.per
+mds.values<-mds.stuffNF$points
+mds.data<-data.frame(Sample=rownames(mds.values), 
+                     x=mds.values[,1],
+                     y=mds.values[,2])
+mds.data
+
+#Plot it
+ggplot(data=mds.data, aes(x=x, y=y, label=Sample)) +
+  geom_text()+
+  theme_bw()+
+  xlab(paste("MDS1-", mds.var.per[1], "%", sep="")) +
+  ylab(paste("MDS2-", mds.var.per[2], "%", sep="")) +
+  ggtitle("MDS plot using Euclidean Distance")
+
+
+
+
+```
+
+
