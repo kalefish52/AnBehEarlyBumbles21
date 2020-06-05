@@ -40,7 +40,7 @@ combforaging<-allforaging %>% mutate(combfor=nectarforaging+pollenforaging) %>% 
 forag_comb<-combforaging %>% pivot_longer(cols=c(feedsbrood, combfor, egglaying), names_to="behav", values_to="Count")
 
 forag_comb
-
+#test
 
 #Make a nest type column for separate pollen and nectar foraging 
 Letteronep<-sapply(strsplit(forage_polnec$nestID, ""), 
