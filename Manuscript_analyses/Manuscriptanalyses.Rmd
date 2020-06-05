@@ -30,14 +30,46 @@ dataSTATS <- read.csv("../Data/countsanalysis.csv")
 dataSTATS
 
 ##add column with total foraging 
-allforaging<-dataSTATS %>% pivot_wider(names_from=behav, values_from=totCount) %>%
-  select(!c( fillshoneypot, other, end, broodmanipulate, offbrood, incubate, waxmanipulate, laysegg, eatsbrood)) %>% replace(is.na(.), 0)
+allforaging<-dataSTATS %>% select(!X)  %>% pivot_wider(names_from=behav, values_from=totCount) %>% replace(is.na(.), 0) %>% select(!c(fillshoneypot, other, end, broodmanipulate, offbrood, incubate, waxmanipulate, laysegg, eatsbrood))
 
-forage_polnec<-allforaging %>% select(!X) %>% pivot_longer(cols=c(feedsbrood, nectarforaging, pollenforaging, egglaying), names_to="behav", values_to="Count") 
 
-combforaging<-allforaging %>% mutate(combfor=nectarforaging+pollenforaging) %>% select(!c(X, nectarforaging, pollenforaging))
+forage_polnec<-allforaging %>% pivot_longer(cols=c(feedsbrood, nectarforaging, pollenforaging, egglaying), names_to="behav", values_to="Count") 
+
+combforaging<-allforaging %>% mutate(combfor=nectarforaging+pollenforaging) %>% select(!c(nectarforaging, pollenforaging))
 
 forag_comb<-combforaging %>% pivot_longer(cols=c(feedsbrood, combfor, egglaying), names_to="behav", values_to="Count")
+
+forag_comb
+
+
+#Make a nest type column for separate pollen and nectar foraging 
+Letteronep<-sapply(strsplit(forage_polnec$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Lettertwop<-sapply(strsplit(forage_polnec$nestID, ""),
+                        function(x){
+                          x[2]
+                        })   
+forage_polnec$nestTYPE<-paste0(Letteronep, Lettertwop)
+
+
+
+#Make a nest type column for combined foraging
+Letterone<-sapply(strsplit(forag_comb$nestID, ""), 
+                          function(x){
+                            x[1]
+                          })
+Lettertwo<-sapply(strsplit(forag_comb$nestID, ""),
+                        function(x){
+                          x[2]
+                        })   
+forag_comb$nestTYPE<-paste0(Letterone, Lettertwo)
+
+
+
+
+
 ```
 
 ## Question 2: Are there patterns of division of labor? 
