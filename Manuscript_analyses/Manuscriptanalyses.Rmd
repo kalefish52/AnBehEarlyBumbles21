@@ -66,8 +66,8 @@ Lettertwo<-sapply(strsplit(forag_comb$nestID, ""),
                         })   
 forag_comb$nestTYPE<-paste0(Letterone, Lettertwo)
 
-
-
+#Use forage_polnect to analyze pollen and nectar foraging separately 
+#Use forage_comb to analyze all foraging - may have to do this so we have enough 
 
 
 ```
