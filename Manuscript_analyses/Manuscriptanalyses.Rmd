@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
-library(cluster)    # clustering algorithms
+library(cluster) # clustering algorithms
 library(factoextra)
 library(vegan) 
 library(lme4)
