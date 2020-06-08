@@ -409,15 +409,16 @@ masterBees <- master_data %>%
   gather(QID, WID1, WID2, WID3, WID4, WID5, 
          key = "IDtype", 
          value = "IDnum")
-
+masterBees
 ## remove NA values **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
 masterBees <- masterBees[!is.na(masterBees$IDnum),]
 
-## select only relevant information
-
-masterBees <- select(masterBees, nestID, IDnum)
 #So we can add caste information to the counts data 
 CasteInfo <- select(masterBees, nestID, IDnum, IDtype)
+CasteInfo
+## select only relevant information
+masterBees <- select(masterBees, nestID, IDnum)
+
 ## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
 masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
 ## list only IDs
@@ -1148,9 +1149,11 @@ head(eggsmerge)
 eggsmerge <- eggsmerge %>% mutate(behav="egglaying")
 #Make sure they have the same column headers so that we can do rbind
 eggsmergebind<-eggsmerge %>% rename(beeID=WorkerID) %>% select(nestID, beeID, Caste, timepoint, behav, dateID)
+head(eggsmergebind)
 head(nestDEV)
 nestDEVbind<-nestDEV %>% select(nestID, dateID, timepoint, behav, beeID) 
 nestDEVbind
+
 #Add caste information to nestDEVbind from CasteInfo
 head(CasteInfo)
 CasteInformation<-CasteInfo %>% rename(beeID=IDnum) %>% mutate(beeID=as.character(beeID))
