@@ -72,17 +72,62 @@ forag_comb$nestTYPE<-paste0(Letterone, Lettertwo)
 
 ```
 
-## Question 2: Are there patterns of division of labor? 
+## Question 2: Are there patterns of division of labor? NMDS Analysis
 ```{r}
 # Convert dataframes into matrices - two sets one with combined foraging and one with separated foraging 
-# have to remove rownames and replace with joinID so that the analysis works
+# Convert dataframe so that each worker is a row 
+# Need to add a unique number to each worker in case there are repeats 
+
+forag_comb$rowID<-paste(forag_comb$beeID, 1:length(forag_comb$beeID), sep="_")
+head(forag_comb)
+
+#modify dataframe so that behaviors are columns 
+nmdsALL<-forag_comb %>% select(!beeID) %>% pivot_wider(names_from=behav, values_from=Count) %>% replace(is.na(.), 0)
+head(nmdsALL)
+
+#Choose only behavior columns to run nmds
+ALL=nmdsALL[,6:ncol(nmdsALL)]
+#Make dataframe into a matrix
+m_ALL=as.matrix(ALL)
+
+#Set seed so that random number draw is the same
+set.seed(123)
+
+#Run NMDS with euclidean distance
+ALL.mds<-metaMDS(m_ALL, distance="euclidean", k=3, trymax=50, autotransform=FALSE, wassccores=TRUE, noshare=FALSE)
+plot(ALL.mds)
+##Get coordinates to graph it 
+#Gets NMDS info for each individual
+data.scores<-as.data.frame(scores(QT.mds))
+data.scores$behav<-rownames(data.scores)
+data.scores$timepoint<-nmdsQT$timepoint
+head(data.scores)
+
+#Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(QT.mds, "species"))
+behav.scores$behav<-rownames(behav.scores)
+head(behav.scores)
+
+## Plot it using ggplot
+ggplot() + geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=timepoint)) + 
+  coord_cartesian(xlim=c(-1, 1)) + geom_jitter(width=0.1, height=0.1)
+
+```
+
+
+```{r}
 
 # Matrices total for - Combined foraging, egg laying, brood feeding
-NF.matrix <- dataSTATS %>% filter(nestTYPE == "NF") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
-NT.matrix <- dataSTATS %>% filter(nestTYPE == "NT") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
-QF.matrix <- dataSTATS %>% filter(nestTYPE == "QF") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
-QT.matrix <- dataSTATS %>% filter(nestTYPE == "QT") %>% select(joinc, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
-All.matrix<-dataSTATS %>% select(joinc, nestTYPE, feedsbrood, Totalforaging, egglaying) %>% remove_rownames %>% column_to_rownames(var="joinc")
+NF.matrix <- forag_comb %>% filter(nestTYPE == "NF") %>% column_to_rownames(var="rowID") %>% as.matrix()
+
+NT.matrix <- forag_comb %>% filter(nestTYPE == "NT") %>% column_to_rownames(var="rowID") %>% as.matrix()
+
+QF.matrix <- forag_comb %>% filter(nestTYPE == "QF") %>% column_to_rownames(var="rowID") %>% as.matrix()
+
+QT.matrix <- forag_comb %>% filter(nestTYPE == "QT") %>% column_to_rownames(var="rowID") %>% as.matrix()
+
+All.matrix<-forag_comb %>% column_to_rownames(var="rowID") %>% as.matrix()
 
 #Make a list of matrices so we can use a loop or fancy lapply to do stats 
 Matrices_Totalfor<- list()
@@ -91,17 +136,12 @@ Matrices_Totalfor[[2]]<-NT.matrix
 Matrices_Totalfor[[3]]<-QF.matrix
 Matrices_Totalfor[[4]]<-QT.matrix
 Matrices_Totalfor[[5]]<-All.matrix
-Matrices_Totalfor
-kasdjflkj
-
 
 head(NF.matrix)
+```
 
 
-
-
-
-
+```{r}
 # Clustering analysis one - Kmeans 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
 
