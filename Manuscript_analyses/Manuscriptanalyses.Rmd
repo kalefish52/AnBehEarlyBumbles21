@@ -27,44 +27,28 @@ Add a column for group type (NT, QT, NF, QF) and a column with total foraging (p
 # Combine pollen and nectar foraging (don't have that many for each) and then remove columns other than egg laying, brood feeding and foraging 
 
 dataSTATS <- read.csv("../Data/countsanalysis.csv")
-dataSTATS
+
+
+#Remove rows with unidentified bee observations - go back and fix these later? 
+data<-dataSTATS %>% filter(beeID != "NA")
 
 ##add column with total foraging 
-allforaging<-dataSTATS %>% select(!X)  %>% pivot_wider(names_from=behav, values_from=totCount) %>% replace(is.na(.), 0) %>% select(!c(fillshoneypot, other, end, broodmanipulate, offbrood, incubate, waxmanipulate, laysegg, eatsbrood))
-
-
-forage_polnec<-allforaging %>% pivot_longer(cols=c(feedsbrood, nectarforaging, pollenforaging, egglaying), names_to="behav", values_to="Count") 
-
-combforaging<-allforaging %>% mutate(combfor=nectarforaging+pollenforaging) %>% select(!c(nectarforaging, pollenforaging))
-
-forag_comb<-combforaging %>% pivot_longer(cols=c(feedsbrood, combfor, egglaying), names_to="behav", values_to="Count")
-
-forag_comb
-#test
-
-#Make a nest type column for separate pollen and nectar foraging 
-Letteronep<-sapply(strsplit(forage_polnec$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Lettertwop<-sapply(strsplit(forage_polnec$nestID, ""),
-                        function(x){
-                          x[2]
-                        })   
-forage_polnec$nestTYPE<-paste0(Letteronep, Lettertwop)
-
+allforaging<-data %>% select(!X)  %>% pivot_wider(names_from=behav, values_from=totCount) %>% select(!c(fillshoneypot, other, end, broodmanipulate, offbrood, incubate, waxmanipulate, laysegg, eatsbrood))
+#Replace NAs with 0 
+forage<-allforaging %>% mutate_all(~replace(., is.na(.), 0)) %>% mutate(combfor=nectarforaging+pollenforaging) %>% select(!c(nectarforaging, pollenforaging))
 
 
 #Make a nest type column for combined foraging
-Letterone<-sapply(strsplit(forag_comb$nestID, ""), 
+Letterone<-sapply(strsplit(forage$nestID, ""), 
                           function(x){
                             x[1]
                           })
-Lettertwo<-sapply(strsplit(forag_comb$nestID, ""),
+Lettertwo<-sapply(strsplit(forage$nestID, ""),
                         function(x){
                           x[2]
                         })   
-forag_comb$nestTYPE<-paste0(Letterone, Lettertwo)
+forage$nestTYPE<-paste0(Letterone, Lettertwo)
+forage
 
 #Use forage_polnect to analyze pollen and nectar foraging separately 
 #Use forage_comb to analyze all foraging - may have to do this so we have enough 
@@ -78,42 +62,185 @@ forag_comb$nestTYPE<-paste0(Letterone, Lettertwo)
 # Convert dataframe so that each worker is a row 
 # Need to add a unique number to each worker in case there are repeats 
 
-forag_comb$rowID<-paste(forag_comb$beeID, 1:length(forag_comb$beeID), sep="_")
-head(forag_comb)
+forage$rowID<-paste(forage$beeID, 1:length(forage$beeID), sep="_")
+head(forage)
 
-#modify dataframe so that behaviors are columns 
-nmdsALL<-forag_comb %>% select(!beeID) %>% pivot_wider(names_from=behav, values_from=Count) %>% replace(is.na(.), 0)
-head(nmdsALL)
+#Reorder columsn so behaviors are last and remove any workers that have 0 observations
+forage<-forage[,c("nestID", "beeID", "timepoint", "Caste", "nestTYPE", "rowID", "feedsbrood","egglaying", "combfor")]
+head(forage)
+forage2<-forage[rowSums(forage[,-(1:6)]) >0,]
+forage2 
 
 #Choose only behavior columns to run nmds
-ALL=nmdsALL[,6:ncol(nmdsALL)]
+ALL=forage2[,7:ncol(forage2)] 
+
+
+
 #Make dataframe into a matrix
 m_ALL=as.matrix(ALL)
+m_ALL 
 
-#Set seed so that random number draw is the same
-set.seed(123)
 
 #Run NMDS with euclidean distance
-ALL.mds<-metaMDS(m_ALL, distance="euclidean", k=3, trymax=50, autotransform=FALSE, wassccores=TRUE, noshare=FALSE)
+ALL.mds<-metaMDS(m_ALL)
 plot(ALL.mds)
+
 ##Get coordinates to graph it 
 #Gets NMDS info for each individual
-data.scores<-as.data.frame(scores(QT.mds))
-data.scores$behav<-rownames(data.scores)
-data.scores$timepoint<-nmdsQT$timepoint
+data.scores<-as.data.frame(scores(ALL.mds))
+data.scores$Caste <- forage2$Caste
+data.scores$nestTYPE <-forage2$nestTYPE
+data.scores$timepoint <-forage2$timepoint
+data.scores$beeID<-forage2$beeID
+
 head(data.scores)
 
 #Gets NMDS info for each behavior
-behav.scores<-as.data.frame(scores(QT.mds, "species"))
+behav.scores<-as.data.frame(scores(ALL.mds, "species"))
 behav.scores$behav<-rownames(behav.scores)
 head(behav.scores)
 
 ## Plot it using ggplot
 ggplot() + geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
-  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=timepoint)) + 
-  coord_cartesian(xlim=c(-1, 1)) + geom_jitter(width=0.1, height=0.1)
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+
+
 
 ```
+```{r}
+#NT and NF plots 
+
+#NT NMDS
+NTfor <- forage2 %>% filter(nestTYPE=="NT")
+NTfor
+#Choose only behavior columns to run nmds
+NT=NTfor[,7:ncol(NTfor)] 
+#Make dataframe into a matrix
+m_NT=as.matrix(NT)
+#Run NMDS with euclidean distance
+NT.mds<-metaMDS(m_NT)
+plot(NT.mds)
+
+##Get coordinates to graph it 
+#Gets NMDS info for each individual
+data.scores.NT<-as.data.frame(scores(NT.mds))
+data.scores.NT$Caste <- NTfor$Caste
+data.scores.NT$nestTYPE <-NTfor$nestTYPE
+data.scores.NT$timepoint <-NTfor$timepoint
+data.scores.NT$beeID<-NTfor$beeID
+
+head(data.scores.NT)
+
+#Gets NMDS info for each behavior
+behav.scores.NT<-as.data.frame(scores(NT.mds, "species"))
+behav.scores.NT$behav<-rownames(behav.scores.NT)
+head(behav.scores.NT)
+
+## Plot it using ggplot
+ggplot() + geom_text(data=behav.scores.NT, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores.NT, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+
+#NF NMDS
+NFfor <- forage2 %>% filter(nestTYPE=="NF")
+NFfor
+#Choose only behavior columns to run nmds
+NF=NFfor[,7:ncol(NFfor)] 
+#Make dataframe into a matrix
+m_NF=as.matrix(NF)
+#Run NMDS with euclidean distance
+NF.mds<-metaMDS(m_NF)
+plot(NF.mds)
+
+##Get coordinates to graph it 
+#Gets NMDS info for each individual
+data.scores.NF<-as.data.frame(scores(NF.mds))
+data.scores.NF$Caste <- NFfor$Caste
+data.scores.NF$nestTYPE <-NFfor$nestTYPE
+data.scores.NF$timepoint <-NFfor$timepoint
+data.scores.NF$beeID<-NFfor$beeID
+
+head(data.scores.NF)
+
+#Gets NMDS info for each behavior
+behav.scores.NF<-as.data.frame(scores(NF.mds, "species"))
+behav.scores.NF$behav<-rownames(behav.scores.NF)
+head(behav.scores.NF)
+
+## Plot it using ggplot
+ggplot() + geom_text(data=behav.scores.NF, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores.NF, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+
+```
+
+```{r}
+#QT and QFs
+#QT
+QTfor <- forage2 %>% filter(nestTYPE=="QT")
+QTfor
+#Choose only behavior columns to run nmds
+QT=QTfor[,7:ncol(QTfor)] 
+#Make dataframe into a matrix
+m_QT=as.matrix(QT)
+#Run NMDS with euclidean distance
+QT.mds<-metaMDS(m_QT)
+plot(QT.mds)
+
+##Get coordinates to graph it 
+#Gets NMDS info for each individual
+data.scores.QT<-as.data.frame(scores(QT.mds))
+data.scores.QT$Caste <- QTfor$Caste
+data.scores.QT$nestTYPE <-QTfor$nestTYPE
+data.scores.QT$timepoint <-QTfor$timepoint
+data.scores.QT$beeID<-QTfor$beeID
+
+head(data.scores.QT)
+
+#Gets NMDS info for each behavior
+behav.scores.QT<-as.data.frame(scores(QT.mds, "species"))
+behav.scores.QT$behav<-rownames(behav.scores.QT)
+head(behav.scores.QT)
+
+## Plot it using ggplot
+ggplot() + geom_text(data=behav.scores.QT, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores.QT, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+
+#QF
+QFfor <- forage2 %>% filter(nestTYPE=="QF")
+QFfor
+#Choose only behavior columns to run nmds
+QF=QFfor[,7:ncol(QFfor)] 
+#Make dataframe into a matrix
+m_QF=as.matrix(QF)
+#Run NMDS with euclidean distance
+QF.mds<-metaMDS(m_QF)
+plot(QF.mds)
+
+##Get coordinates to graph it 
+#Gets NMDS info for each individual
+data.scores.QF<-as.data.frame(scores(QF.mds))
+data.scores.QF$Caste <- QFfor$Caste
+data.scores.QF$nestTYPE <-QFfor$nestTYPE
+data.scores.QF$timepoint <-QFfor$timepoint
+data.scores.QF$beeID<-QFfor$beeID
+
+head(data.scores.QF)
+
+#Gets NMDS info for each behavior
+behav.scores.QF<-as.data.frame(scores(QF.mds, "species"))
+behav.scores.QF$behav<-rownames(behav.scores.QF)
+head(behav.scores.QF)
+
+## Plot it using ggplot
+ggplot() + geom_text(data=behav.scores.QF, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores.QF, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
+  coord_cartesian(xlim=c(-2, 2)) + geom_jitter(width=0.1, height=0.1)
+
+```
+
 
 
 ```{r}
