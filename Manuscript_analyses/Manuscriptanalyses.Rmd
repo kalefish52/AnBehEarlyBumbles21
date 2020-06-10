@@ -140,7 +140,7 @@ head(behav.scores.NT)
 ## Plot it using ggplot
 ggplot() + geom_text(data=behav.scores.NT, aes(x=NMDS1, y=NMDS2, label=behav)) +
   geom_point(data=data.scores.NT, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
-  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1) + ggtitle("NT")
 
 #NF NMDS
 NFfor <- forage2 %>% filter(nestTYPE=="NF")
@@ -171,7 +171,7 @@ head(behav.scores.NF)
 ## Plot it using ggplot
 ggplot() + geom_text(data=behav.scores.NF, aes(x=NMDS1, y=NMDS2, label=behav)) +
   geom_point(data=data.scores.NF, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
-  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1) +ggtitle("NF")
 
 ```
 
@@ -206,7 +206,7 @@ head(behav.scores.QT)
 ## Plot it using ggplot
 ggplot() + geom_text(data=behav.scores.QT, aes(x=NMDS1, y=NMDS2, label=behav)) +
   geom_point(data=data.scores.QT, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
-  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1)
+  coord_cartesian(xlim=c(-1, 2)) + geom_jitter(width=0.1, height=0.1) +ggtitle("QT")
 
 #QF
 QFfor <- forage2 %>% filter(nestTYPE=="QF")
@@ -237,7 +237,7 @@ head(behav.scores.QF)
 ## Plot it using ggplot
 ggplot() + geom_text(data=behav.scores.QF, aes(x=NMDS1, y=NMDS2, label=behav)) +
   geom_point(data=data.scores.QF, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=Caste)) + 
-  coord_cartesian(xlim=c(-2, 2)) + geom_jitter(width=0.1, height=0.1)
+  coord_cartesian(xlim=c(-2, 2)) + geom_jitter(width=0.1, height=0.1) + ggtitle("QF")
 
 ```
 
