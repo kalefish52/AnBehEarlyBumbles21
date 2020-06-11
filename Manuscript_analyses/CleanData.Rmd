@@ -193,6 +193,7 @@ videos_data[startsWith(videos_data$obsID, " nest"), 1] <- sub(".", "", videos_da
 # videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
 # obs_data[startsWith(obs_data$obsID, " nest"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " nest"), 1], 2, str_length(x))
 # videos_data[startsWith(videos_data$obsID, " nest"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " nest"), 1], 2, str_length(x))
+
 ## add non to beginning of obsID that are missing for or nest
 for (i in 1:nrow(obs_data)){
   if (startsWith(obs_data$obsID[i], "for") | startsWith(obs_data$obsID[i], "nest")) {}
@@ -245,6 +246,12 @@ videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"),
                             x[4]
                             } )
 
+## pull out caste from beeID column
+obs_data$caste <- sapply(strsplit(obs_data$beeID, ""), 
+                          function(x){
+                            x[1]
+                          })
+
 ## pull out ID number from beeID column (instead of "Worker 5 (76)" or "Queen (43)" etc)
 obs_data$beeID <- sapply(strsplit(obs_data$beeID, ")"),
                         function(x){
@@ -279,6 +286,8 @@ clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
+
+obs_data
 ```
 
 Remove foraging events less than 10 seconds long and remove nest video data after first 5 minutes
@@ -410,14 +419,22 @@ masterBees <- master_data %>%
          key = "IDtype", 
          value = "IDnum")
 masterBees
+
+## pull out caste from masterBees
+masterBees$caste <- sapply(strsplit(masterBees$IDtype, ""), 
+                          function(x){
+                            x[1]
+                          })
+
 ## remove NA values **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
 masterBees <- masterBees[!is.na(masterBees$IDnum),]
 
-#So we can add caste information to the counts data 
-CasteInfo <- select(masterBees, nestID, IDnum, IDtype)
-CasteInfo
+# #So we can add caste information to the counts data 
+# CasteInfo <- select(masterBees, nestID, IDnum, IDtype)
+# CasteInfo
+
 ## select only relevant information
-masterBees <- select(masterBees, nestID, IDnum)
+masterBees <- select(masterBees, nestID, IDnum, caste)
 
 ## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
 masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
@@ -441,10 +458,15 @@ emptydf <- data.frame(matrix(NA, nrow = nrow(missingBees), ncol = ncol(obs_data)
 names(emptydf) <- names(obs_data)
 ## rbind the data. emptydf is at the tail of obs_data
 obs_data <- rbind(obs_data, emptydf)  
+
+
+masterBees
+
 ## fill the empty rows just added to obs_data with the missing bee nestID and beeID
 for (i in 0:(nrow(missingBees) - 1)) {
   obs_data$nestID[nrow(obs_data) - i] <- missingBees$nestID[i+1]
-  obs_data$beeID[nrow(obs_data) - i] <- missingBees$IDnum[i+1]}
+  obs_data$beeID[nrow(obs_data) - i] <- missingBees$IDnum[i+1]
+  obs_data$caste[nrow(obs_data) - i] <- missingBees$caste[i+1]}
 
 ## add random number column to make table compatible with pivot_wider in future steps. needs a unique identifier for each individual
 obs_data$rand <- NA
@@ -460,7 +482,7 @@ obs_data[is.na(obs_data)] <- 0
 
 ## check how many bees we have in the new obs_data. this is copied and pasted from the methods above. should equal the number of bees in the master_data
 ## select only relevant information
-allBees <- select(obs_data, nestID, beeID)
+allBees <- select(obs_data, nestID, beeID, caste)
 ## remove duplicates
 allBees <- unique(allBees[c("nestID", "beeID")])
 
@@ -488,20 +510,20 @@ count_data <- obs_data
 count_data$count <- 1  
 ## condense data frame into relevant columns, each row is a single observation for an individual
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
+  pivot_wider(id_cols = c("nestID", "beeID", "caste", "behav"), 
               names_from = rand, 
               values_from = count) 
 
 ## add column to fill with sum of counts for each behav
-count_data$totCount <- rowSums(count_data[4:ncol(count_data)], na.rm = TRUE)
-
-## subset dataframe so that all is left is nestID, beeID, behav, and totCount
+count_data$totCount <- rowSums(count_data[5:ncol(count_data)], na.rm = TRUE)
+count_data
+## subset dataframe so that all is left is nestID, beeID, behav, totCount, and caste
 count_data <- count_data %>%
-  select(nestID, beeID, behav, totCount)
+  select(nestID, beeID, behav, totCount, caste)
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), 
+  pivot_wider(id_cols = c("nestID", "beeID", "caste"), 
               names_from = behav, 
               values_from = totCount)
 
@@ -509,15 +531,15 @@ count_data <- count_data %>%
 count_data[is.na(count_data)] <- 0
 
 ## sum rows excluding first two (nestID and beeID) to see total number of behaviors carried out by each indiv
-count_data$nBehavs <- rowSums(count_data[, 3:ncol(count_data)], na.rm = TRUE)
-
-## add column for queen / worker status based on first letter in beeID
-beeTypeCharacter <- sapply(strsplit(count_data$beeID, ""), 
-                          function(x){
-                            x[1]
-                          })
-
-count_data$beeType <- beeTypeCharacter
+count_data$nBehavs <- rowSums(count_data[, 4:ncol(count_data)], na.rm = TRUE)
+# 
+# ## add column for queen / worker status based on first letter in beeID
+# beeTypeCharacter <- sapply(strsplit(count_data$beeID, ""), 
+#                           function(x){
+#                             x[1]
+#                           })
+# 
+# count_data$beeType <- beeTypeCharacter
 
 ## print how many bees we have here. should equal masterdata
 print(paste("There are", nrow(count_data), "bees accounted for."))
@@ -529,20 +551,36 @@ if (nrow(count_data)==nrow(masterBees)) {
 knownWorkers <- nrow(count_data)
 
 ## remove unknown worker data
-count_data <- count_data[!count_data$beeType == "U", ]
-count_data <- count_data[!count_data$beeType == "N", ]
+# count_data <- count_data[!count_data$beeType == "U", ]
+# count_data <- count_data[!count_data$beeType == "N", ]
+count_data <- count_data[!count_data$caste == "U", ]
+count_data <- count_data[!count_data$caste == "N", ]
+
 ## make missingBees beeType NA
+# for (i in 1:nrow(count_data)) {
+#   if (count_data$beeType[i] == 1 || 
+#       count_data$beeType[i] == 2 || 
+#       count_data$beeType[i] == 3 ||
+#       count_data$beeType[i] == 4 ||
+#       count_data$beeType[i] == 5 ||
+#       count_data$beeType[i] == 6 ||
+#       count_data$beeType[i] == 7 ||
+#       count_data$beeType[i] == 8 ||
+#       count_data$beeType[i] == 9) {
+#     count_data$beeType[i] <- 0
+#   }
+# }
 for (i in 1:nrow(count_data)) {
-  if (count_data$beeType[i] == 1 || 
-      count_data$beeType[i] == 2 || 
-      count_data$beeType[i] == 3 ||
-      count_data$beeType[i] == 4 ||
-      count_data$beeType[i] == 5 ||
-      count_data$beeType[i] == 6 ||
-      count_data$beeType[i] == 7 ||
-      count_data$beeType[i] == 8 ||
-      count_data$beeType[i] == 9) {
-    count_data$beeType[i] <- 0
+  if (count_data$caste[i] == 1 || 
+      count_data$caste[i] == 2 || 
+      count_data$caste[i] == 3 ||
+      count_data$caste[i] == 4 ||
+      count_data$caste[i] == 5 ||
+      count_data$caste[i] == 6 ||
+      count_data$caste[i] == 7 ||
+      count_data$caste[i] == 8 ||
+      count_data$caste[i] == 9) {
+    count_data$caste[i] <- 0
   }
 }
 ## print how many unknown workers were removed
@@ -612,21 +650,21 @@ for (i in 1:nrow(dur_data)) {
 ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
 ## values = duration of each behav
 dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav"), 
+  pivot_wider(id_cols = c("nestID", "beeID", "behav", "caste"), 
               names_from = rand, 
               values_from = dur, 
               names_repair = "minimal")
 
 ## add column with the sum of durations for each behav
-dur_data$totDur <- rowSums(dur_data[4:ncol(dur_data)], na.rm = TRUE)
+dur_data$totDur <- rowSums(dur_data[5:ncol(dur_data)], na.rm = TRUE)
 
 ## subset dataframe so that all is left is nestID, beeID, behav, and totDur
 dur_data <- dur_data %>%
-  select(nestID, beeID, behav, totDur)
+  select(nestID, beeID, behav, caste, totDur)
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID"), 
+  pivot_wider(id_cols = c("nestID", "beeID", "caste"), 
               names_from = behav, 
               values_from = totDur)
 
@@ -1148,40 +1186,59 @@ head(eggsmerge)
 #make behav column with egglaying
 eggsmerge <- eggsmerge %>% mutate(behav="egglaying")
 #Make sure they have the same column headers so that we can do rbind
-eggsmergebind<-eggsmerge %>% rename(beeID=WorkerID) %>% select(nestID, beeID, Caste, timepoint, behav, dateID)
+eggsmergebind<-eggsmerge %>% rename(beeID=WorkerID) %>% rename(caste=Caste) %>% select(nestID, beeID, caste, timepoint, behav, dateID)
 head(eggsmergebind)
 head(nestDEV)
-nestDEVbind<-nestDEV %>% select(nestID, dateID, timepoint, behav, beeID) 
+nestDEVbind<-nestDEV %>% select(nestID, dateID, timepoint, behav, beeID, caste) 
 nestDEVbind
 
-#Add caste information to nestDEVbind from CasteInfo
-head(CasteInfo)
-CasteInformation<-CasteInfo %>% rename(beeID=IDnum) %>% mutate(beeID=as.character(beeID))
-CasteInformation
-nestDEVcaste<-left_join(nestDEVbind, CasteInformation, by=c("nestID", "beeID" ))
-head(nestDEVcaste)
+# #Add caste information to nestDEVbind from CasteInfo
+# head(CasteInfo)
+# CasteInformation<-CasteInfo %>% rename(beeID=IDnum) %>% mutate(beeID=as.character(beeID))
+# CasteInformation
+# nestDEVcaste<-left_join(nestDEVbind, CasteInformation, by=c("nestID", "beeID" ))
+# head(nestDEVcaste)
 
-#Use string split to make a column with either W (worker) or Q (queen) from IDtype
-nestDEVcaste$Caste<-sapply(strsplit(nestDEVcaste$IDtype, ""),
-                           function(x){
-                             x[1]
-                           })
-nestDEVcaste
+# #Use string split to make a column with either W (worker) or Q (queen) from IDtype
+# nestDEVcaste$Caste<-sapply(strsplit(nestDEVcaste$IDtype, ""),
+#                            function(x){
+#                              x[1]
+#                            })
+# nestDEVcaste
+
+# #Assign castes either as queens or workers 
+# workers<-nestDEVcaste %>% filter(Caste=="W") %>% mutate(Caste="worker")
+# queens<-nestDEVcaste %>% filter(Caste=="Q") %>% mutate(Caste="queen")
+# #Fix NAs by double checking master data sheet 
+# #All worker colonies except QT02, and queen is 85 - no queen behavioral observations
+# #so label all NAs as worker caste 
+# nahs<-nestDEVcaste %>% filter(!Caste %in% c("W", "Q")) %>% mutate(Caste="worker")
+# nahs
+# nestDEVCaste<-rbind(workers, queens, nahs)
+# nestDEVCaste<-nestDEVCaste %>% select(nestID, dateID, timepoint, behav, beeID, Caste)
+
 #Assign castes either as queens or workers 
-workers<-nestDEVcaste %>% filter(Caste=="W") %>% mutate(Caste="worker")
-queens<-nestDEVcaste %>% filter(Caste=="Q") %>% mutate(Caste="queen")
+workers<-nestDEVbind %>% filter(caste=="W") %>% mutate(caste="worker")
+queens<-nestDEVbind %>% filter(caste=="Q") %>% mutate(caste="queen")
 #Fix NAs by double checking master data sheet 
 #All worker colonies except QT02, and queen is 85 - no queen behavioral observations
 #so label all NAs as worker caste 
-nahs<-nestDEVcaste %>% filter(!Caste %in% c("W", "Q")) %>% mutate(Caste="worker")
+nahs<-nestDEVbind %>% filter(!caste %in% c("W", "Q")) %>% mutate(caste="worker")
 nahs
-nestDEVCaste<-rbind(workers, queens, nahs)
-nestDEVCaste<-nestDEVCaste %>% select(nestID, dateID, timepoint, behav, beeID, Caste)
+nestDEVbind<-rbind(workers, queens, nahs)
+nestDEVbind<-nestDEVbind %>% select(nestID, dateID, timepoint, behav, beeID, caste)
 
 #Combine egglaying and worker behaviors
-mergedbehavs<-rbind(nestDEVCaste, eggsmergebind)
+mergedbehavs<-rbind(nestDEVbind, eggsmergebind)
 mergedbehavs
 eggsmergebind %>% filter(nestID=="QT12")
+
+
+
+
+
+
+
 #Now turn mergedbehavs into count data so we can do stats :) 
 mergedbehavs$count<-1
 
@@ -1191,16 +1248,34 @@ for (i in 1:(nrow(mergedbehavs))) {
   mergedbehavs$rand[i] <- runif(1)
 }
 
-
 ## condense data frame into relevant columns, each row is a single observation for an individual
 counts_final <- mergedbehavs %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav", "timepoint", "Caste", "timepoint"),
+  pivot_wider(id_cols = c("nestID", "beeID", "caste", "behav", "timepoint"),
               names_from = rand, 
               values_from = count) 
-counts_final
+
+
+
+
+
+
+
+## add column to fill with sum of counts for each behav
 counts_final$totCount <- rowSums(counts_final[6:ncol(counts_final)], na.rm = TRUE)
-#Select variables of interest 
-countsDATA<-counts_final %>% select(nestID, beeID, behav, timepoint, Caste, totCount)
+
+## subset dataframe so that all is left is variables of interest
+counts_final <- counts_final %>%
+  select(nestID, beeID, caste, timepoint, behav, totCount)
+
+## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
+counts_final <- counts_final %>%
+  pivot_wider(id_cols = c("nestID", "beeID", "caste", "timepoint"), 
+              names_from = behav, 
+              values_from = totCount)
+
+## sum rows excluding first 4 (nestID and beeID, caste, timepoint) to see total number of behaviors carried out by each indiv
+counts_final$nBehavs <- rowSums(counts_final[, 5:ncol(counts_final)], na.rm = TRUE)
+
 write.csv(countsDATA, "../Data/countsanalysis.csv") 
 
 
