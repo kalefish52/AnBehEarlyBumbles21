@@ -1276,9 +1276,13 @@ counts_final <- counts_final %>%
 ## sum rows excluding first 4 (nestID and beeID, caste, timepoint) to see total number of behaviors carried out by each indiv
 counts_final$nBehavs <- rowSums(counts_final[, 5:ncol(counts_final)], na.rm = TRUE)
 
+## subset to remove the behaviors we're not interested in (behavs only used in erica's time budgeting)
+countsDATA <- counts_final %>%
+  select(nestID, beeID, caste, timepoint, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+
 write.csv(countsDATA, "../Data/countsanalysis.csv") 
 
-
+countsDATA
 
 
 ```
