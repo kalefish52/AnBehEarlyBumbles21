@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load Packages
 ```{r}
 library(tidyverse)
-if(!require(plotly)){install.packages("plotly")}
 library(plotly)
 ```
 ## Load Data
@@ -22,7 +21,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to wh
 
 ```{r}
 ## assumes the working directory is the project folder ./SarroFisher
-count_data <- read.csv("./Data/tempData/count_stats.csv", sep = ",")
+count_data <- read.csv("./Data/countsanalysis.csv", sep = ",")
 count_data
 ```
 
@@ -54,7 +53,7 @@ run k means analysis
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 2
+k <- 3
 
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage

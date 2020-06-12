@@ -1277,15 +1277,18 @@ counts_final <- counts_final %>%
 counts_final$nBehavs <- rowSums(counts_final[, 5:ncol(counts_final)], na.rm = TRUE)
 
 ## add column for nest type ie. NT or QT etc.
-queenlessChar <- sapply(strsplit(obs_data$nestID, ""), 
+queenlessChar <- sapply(strsplit(counts_final$nestID, ""), 
                           function(x){
                             x[1]
                           })
-numberChar <- sapply(strsplit(obs_data$nestID, ""),
+numberChar <- sapply(strsplit(counts_final$nestID, ""),
                         function(x){
                           x[2]
                         })    
-counts_final$nestTYPE <- paste0(queenlesChar, numberChar)
+counts_final$nestTYPE <- paste0(queenlessChar, numberChar)
+
+## make NA values equal to 0
+counts_final[is.na(counts_final)] <- 0
 
 ## subset to remove the behaviors we're not interested in (behavs only used in erica's time budgeting)
 countsDATA <- counts_final %>%
