@@ -9,18 +9,25 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # load packages
 ```{r}
-
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
 ```
 
 # load data
 ```{r}
-count_data <- read.csv("../Data/countsanalysis.csv")
-count_data
+initial_data <- read.csv("../Data/countsanalysis.csv")
+initial_data
 ```
 
-# convert counts to proportions out of total behaviors per individual
+### convert counts to proportions out of total behaviors per individual
 ```{r}
-prop_data <- count_data
+prop_data <- initial_data
 prop_data$feedsbrood <- prop_data$feedsbrood / prop_data$nBehavs
 prop_data$nectarforaging <- prop_data$nectarforaging / prop_data$nBehavs
 prop_data$pollenforaging <- prop_data$pollenforaging / prop_data$nBehavs
@@ -28,6 +35,361 @@ prop_data$egglaying <- prop_data$egglaying / prop_data$nBehavs
 prop_data
 ```
 
+### add summary row with column sums to both prop_data and count_data, also split out by early/late
 ```{r}
+# here, the first behavior starts in column 7. adjust as necessary
+firstBehav <- 7
+
+
+# ALL COUNT DATA
+
+count_data <- initial_data
+
+# sum columns for each behavior
+behavCounts <- colSums(count_data[,firstBehav:ncol(count_data)], na.rm = TRUE)
+
+# add a row to count_data with NA values
+count_data <- rbind(count_data, NA)
+
+# label it as all
+count_data$timepoint[nrow(count_data)] <- "all"
+
+# populate that row with behavCounts
+for (i in 1:length(behavCounts)) {
+  count_data[nrow(count_data), firstBehav + i-1] <- behavCounts[i]
+}
+
+
+# EARLY COUNT DATA
+
+# subset early timepoint
+count_early <- count_data[count_data$timepoint == "early",]
+
+# sum columns for each behavior
+behavCounts_early <- colSums(count_early[,firstBehav:ncol(count_early)], na.rm = TRUE)
+
+# add a row to count_data with NA values
+count_data <- rbind(count_data, NA)
+
+# label it as early
+count_data$timepoint[nrow(count_data)] <- "early"
+
+# populate that row with behavCounts
+for (i in 1:length(behavCounts)) {
+  count_data[nrow(count_data), firstBehav + i-1] <- behavCounts_early[i]
+}
+
+
+# LATE COUNT DATA
+
+# subset late timepoint
+count_late <- count_data[count_data$timepoint == "late",]
+
+# sum columns for each behavior
+behavCounts_late <- colSums(count_late[,firstBehav:ncol(count_late)], na.rm = TRUE)
+
+# add a row to count_data with NA values
+count_data <- rbind(count_data, NA)
+
+# label it as late
+count_data$timepoint[nrow(count_data)] <- "late"
+
+# populate that row with behavCounts
+for (i in 1:length(behavCounts)) {
+  count_data[nrow(count_data), firstBehav + i-1] <- behavCounts_late[i]
+}
+
+
+# COPY SUMS OVER TO PROP_DATA
+
+# rbind the last three rows of count_data (the total, early, and late sum rows created above) to prop_data
+prop_data <- rbind(prop_data, count_data[(nrow(count_data)-2):nrow(count_data),])
+```
+
+### check out what queens are doing
+```{r}
+count_queen <- count_data[count_data$caste == "queen",] 
+count_queen <- count_queen[order(count_queen$nBehavs, decreasing = TRUE),]
+count_queen
+# NMDS on queens only
+
+### prep the data
+
+# rename initial count data frame
+nmds_data <- count_queen[1:(nrow(count_queen)-3),]
+# make NA values 0
+nmds_data[is.na(nmds_data)] <- 0
+# remove bees lacking any behaviors 
+nmds_data <-nmds_data[rowSums(nmds_data[(7:(ncol(nmds_data) - 1))]) > 0, ]
+# remove bees with NA beeID
+nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
+# remane beeID to combine nestID and beeID to account for duplicates
+nmds_data$beeID <- paste0(nmds_data$nestID, nmds_data$beeID)
+nmds_data
+
+### NMDS on all count data pooled
+
+# make matrix of only behavior counts for all timepoints
+nmds_all <- as.matrix(nmds_data[,7:(ncol(nmds_data) - 1)])
+
+# Run NMDS with euclidean distance
+nmds_all <- metaMDS(nmds_all)
+plot(nmds_all)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores <- as.data.frame(scores(nmds_all))
+data.scores$caste <- nmds_data$caste
+data.scores$nestTYPE <-nmds_data$nestTYPE
+data.scores$timepoint <-nmds_data$timepoint
+data.scores$beeID <-nmds_data$beeID
+data.scores
+
+# Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(nmds_all, "species"))
+behav.scores$behav<-rownames(behav.scores)
+behav.scores
+
+# Plot it using ggplot
+ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=nestTYPE, shape=timepoint), 
+             size = 3, position = position_jitter(width=0.03, height=0.03)) + 
+  # scale_shape_manual(values = c(21, 16)) +
+  geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.35, position = position_jitter(width = 0, height = 0), 
+           arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2.25, 1), ylim=c(-1.5, 1.1))
+```
+
+# NMDS on count data
+### prep the data
+```{r}
+# Convert dataframes into matrices - two sets: one with combined foraging and one with separated foraging 
+# Need to add a unique number to each worker in case there are repeats 
+
+# rename initial count data frame
+nmds_data <- initial_data
+# make NA values 0
+nmds_data[is.na(nmds_data)] <- 0
+
+numBees <- nrow(nmds_data)
+# remove bees lacking any behaviors
+nmds_data <-nmds_data[rowSums(nmds_data[(7:(ncol(nmds_data) - 1))]) > 0, ]
+numDatapoints <- nrow(nmds_data)
+print(paste( (numBees - numDatapoints), "bees were removed from the nmds data because they had 0 recorded behaviors", sep = " "))
+
+# # add dummy variable to include lazy workers
+# nmds_data$nothing <- 0.01
+
+# remove bees with NA beeID
+nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
+# remane beeID to combine nestID and beeID to account for duplicates
+nmds_data$beeID <- paste0(nmds_data$nestID, nmds_data$beeID)
+nmds_data
+```
+### NMDS on all count data pooled
+```{r}
+# make matrix of only behavior counts for all timepoints
+nmds_all <- as.matrix(nmds_data[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+nmds_all
+
+# Run NMDS with euclidean distance
+nmds_all <- metaMDS(nmds_all)
+plot(nmds_all)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores <- as.data.frame(scores(nmds_all))
+data.scores$caste <- nmds_data$caste
+data.scores$nestTYPE <-nmds_data$nestTYPE
+data.scores$timepoint <-nmds_data$timepoint
+data.scores$beeID <-nmds_data$beeID
+data.scores
+
+# Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(nmds_all, "species"))
+behav.scores$behav<-rownames(behav.scores)
+behav.scores
+
+# Plot it using ggplot
+ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=caste), size = 2, position = position_jitter(width=0.1, height=0.1)) + 
+  scale_shape_manual(values = c(21, 16)) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0), 
+  #          arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+
+ggsave("../figures/nmds_all_count.pdf")
+```
+
+# NMDS on proportion data
+### prep the data
+```{r}
+# rename initial count data frame
+nmds_prop <- prop_data[1:(nrow(prop_data)-3),]
+# make NA values 0
+nmds_prop[is.na(nmds_prop)] <- 0
+
+numBees <- nrow(nmds_prop)
+# remove bees lacking any behaviors
+nmds_prop <-nmds_prop[rowSums(nmds_prop[(7:(ncol(nmds_prop) - 1))]) > 0, ]
+numDatapoints <- nrow(nmds_prop)
+print(paste( (numBees - numDatapoints), "bees were removed from the nmds data because they had 0 recorded behaviors", sep = " "))
+
+# remove bees with NA beeID
+nmds_prop <- nmds_prop[!is.na(nmds_prop$beeID),]
+# remane beeID to combine nestID and beeID to account for duplicates
+nmds_prop$beeID <- paste0(nmds_prop$nestID, nmds_prop$beeID)
+nmds_prop
+```
+### NMDS on all proportion data pooled
+```{r}
+# make matrix of only behavior proportions for all timepoints
+nmds_all.prop <- as.matrix(nmds_prop[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+# Run NMDS with euclidean distance
+nmds_all.prop <- metaMDS(nmds_all.prop)
+plot(nmds_all.prop)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores.prop <- as.data.frame(scores(nmds_all.prop))
+data.scores.prop$caste <- nmds_data$caste
+data.scores.prop$nestTYPE <-nmds_data$nestTYPE
+data.scores.prop$timepoint <-nmds_data$timepoint
+data.scores.prop$beeID <-nmds_data$beeID
+data.scores.prop
+
+# Gets NMDS info for each behavior
+behav.scores.prop <- as.data.frame(scores(nmds_all.prop, "species"))
+behav.scores.prop$behav <- rownames(behav.scores.prop)
+behav.scores.prop
+
+# Plot it using ggplot
+ggplot() + 
+  geom_text(data=behav.scores.prop, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores.prop, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=caste), size = 2, position = position_jitter(width=0.1, height=0.1)) +
+  scale_shape_manual(values = c(21, 16)) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0), 
+  #          arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-1.5, 2))
+
+ggsave("../figures/nmds_all_prop.pdf")
+```
+# repeatability analyses
+https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
+```{r}
+library(rptR)
+
+# rename
+countScores <- data.scores
+
+# take a look at distribution of scores
+# both of these are very irregularly distributed
+hist(countScores$NMDS1)
+hist(countScores$NMDS2)
+
+# run repeatibility estimation using lmm method
+# DATA IS NOT GAUSSIAN -- NEED TO ADDRESS THIS
+
+# NMDS1: low = egg laying, high = foraging, mid = brood feeding
+rep1 <- rpt(NMDS1 ~ (1|beeID),
+    grname = "beeID", data = countScores, datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(rep1)
+plot(rep1, cex.main = 1)
+
+rep1Exp <- rpt(NMDS1 ~ nestTYPE + caste + (1|beeID),
+    grname = "beeID", data = countScores, datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(rep1Exp)
+plot(rep1Exp, cex.main = 1)
+
+# NMDS2: low = brood feeding, mid = egg laying + foraging
+rep2Exp <- rpt(NMDS2 ~ nestTYPE + caste + (1|beeID),
+    grname = "beeID", data = countScores, datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(rep2Exp)
+plot(rep2Exp, cex.main = 1)
+```
+
+# division of labor index
+
+this yeilds a DOL index between 0 (no division) and 1 (complete division) for each bee
+issues = does not describe which behavior a bee is specializing on. specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
+
+https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
+
+https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAArAwggKsBgkqhkiG9w0BBwagggKdMIICmQIBADCCApIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM0mGmfTsnhsoK-Y_uAgEQgIICY-aMO-F9oEaBklacEnjaMSJCFsghtzm6jKWajfSFUi1WmnoBV8zpdiY0ztkvgG8k3Vi7Vaby0gWJGaGto13hllldFKZg-C-TNDdv7yJt81TrpV3M_ooNiYcjJq92Y6ObRoYrlxUJfi77RK3_cDBJ9Ag8JjhA03UWwerFU5FE71P3-7ptplP8rI8QYpXNZdtZbyoYrEN80JYxjgt1o2zAFGvRF3r-_1ExlhdpKr5k0OxGqlCa11kFUpBAjFpMun5qR6JL-8bkcbRIAmNnBBduCg1CSXoUBpx18ouZnNJu_v9OQodZ7hBYPfu62SRjQ9TNEZqadgMAt0mMreuH60st2TagmvXlqLPPyoIu7-0ZBvdD6nvcmJ-miBhUw7Z6vCia1KhrvpvKvhZem2N3zsGsNSp_UFSvVSwtNeHdguMtId5zSe70mWdbDBfTJAsag1sf5YAeCd0XwDSRsfarD2aAYlmQ0ARCd8qC8yxdUlKqohn3Xsh70IBQL1jc_l32k1Q7fiplJiD6hQ69Yge2M961fZML1G5vIQa5DxBgThNYg5GyQxXnyzCFHWJIDhqKwHtWgiWQgbA63qMK2IHNicOSw8JhrpaWlWgEUX8NiaiF7ICzNxFh2pcdL-hnazO1StB1anJtiTo-RHgeLji4E9qYFpT3DYcw6ptUAxjLUql3d1M0aByMRS0EhoZCoUfER_8iiUicTNGUi4w85O5mm55B4vRheg5XGSlby26I0_H9zOtK-eQ3PmKHB4DyPvd-Ch24hp4FBEFJM4pI_sCZJc8_p8JuYOonUk_M3aqNLQKGznrL_xu2
+```{r}
+# start with matrix where each row is an individual, and each column is a behavior
+# transform the data so that all values sum to 1
+
+# rename and split out early and late timepoints
+alldol <- count_data 
+earlydol <- count_data[count_data$timepoint == "early", ]
+latedol <- count_data[count_data$timepoint == "late", ]
+
+# CALCULATE FOR ALL DATA
+
+# remove bees without behaviors
+alldol <- alldol[alldol$nBehavs > 0, ]
+# reformat to sum to 1
+totBehavs <- alldol$nBehavs[nrow(alldol)]
+alldol$feedsbrood <- alldol$feedsbrood / totBehavs
+alldol$nectarforaging <- alldol$nectarforaging / totBehavs
+alldol$pollenforaging <- alldol$pollenforaging / totBehavs
+alldol$egglaying <- alldol$egglaying / totBehavs
+# reformat as matrix with only behavior info
+alldol_M <- as.matrix(alldol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+# calculate shannon's index for distributions of individuals across tasks
+H <- diversity(alldol_M, index = "shannon")
+hist(H)
+# add shannon index into dataframe with bee info
+alldol <- cbind(alldol, H)
+# # calculate mutal entropy for entire matrix
+# mutEntropy <- x
+# # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe
+# alldol$dol <- mutEntropy / alldol$H
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
