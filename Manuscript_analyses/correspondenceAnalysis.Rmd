@@ -106,61 +106,6 @@ for (i in 1:length(behavCounts)) {
 prop_data <- rbind(prop_data, count_data[(nrow(count_data)-2):nrow(count_data),])
 ```
 
-### check out what queens are doing
-```{r}
-count_queen <- count_data[count_data$caste == "queen",] 
-count_queen <- count_queen[order(count_queen$nBehavs, decreasing = TRUE),]
-count_queen
-# NMDS on queens only
-
-### prep the data
-
-# rename initial count data frame
-nmds_data <- count_queen[1:(nrow(count_queen)-3),]
-# make NA values 0
-nmds_data[is.na(nmds_data)] <- 0
-# remove bees lacking any behaviors 
-nmds_data <-nmds_data[rowSums(nmds_data[(7:(ncol(nmds_data) - 1))]) > 0, ]
-# remove bees with NA beeID
-nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
-# remane beeID to combine nestID and beeID to account for duplicates
-nmds_data$beeID <- paste0(nmds_data$nestID, nmds_data$beeID)
-nmds_data
-
-### NMDS on all count data pooled
-
-# make matrix of only behavior counts for all timepoints
-nmds_all <- as.matrix(nmds_data[,7:(ncol(nmds_data) - 1)])
-
-# Run NMDS with euclidean distance
-nmds_all <- metaMDS(nmds_all)
-plot(nmds_all)
-
-# Get coordinates to graph it 
-# Gets NMDS info for each individual
-data.scores <- as.data.frame(scores(nmds_all))
-data.scores$caste <- nmds_data$caste
-data.scores$nestTYPE <-nmds_data$nestTYPE
-data.scores$timepoint <-nmds_data$timepoint
-data.scores$beeID <-nmds_data$beeID
-data.scores
-
-# Gets NMDS info for each behavior
-behav.scores<-as.data.frame(scores(nmds_all, "species"))
-behav.scores$behav<-rownames(behav.scores)
-behav.scores
-
-# Plot it using ggplot
-ggplot() + 
-  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
-  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=nestTYPE, shape=timepoint), 
-             size = 3, position = position_jitter(width=0.03, height=0.03)) + 
-  # scale_shape_manual(values = c(21, 16)) +
-  geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.35, position = position_jitter(width = 0, height = 0), 
-           arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
-  coord_cartesian(xlim=c(-2.25, 1), ylim=c(-1.5, 1.1))
-```
-
 # NMDS on count data
 ### prep the data
 ```{r}
@@ -278,7 +223,47 @@ ggplot() +
 
 ggsave("../figures/nmds_all_prop.pdf")
 ```
-# repeatability analyses
+
+# glmm on NMDS coordinates
+```{r}
+
+# rename for analyses
+nmdsData <- data.scores
+
+library(car)
+library(MASS)
+
+############ CAN'T FIGURE OUT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
+# normal distribution
+qqp(nmdsData$NMDS1, "norm")
+
+# lnorm means lognormal
+qqp(nmdsData$NMDS1, "lnorm")
+
+# gamma must be positive numbers
+# gamma <- fitdistr(nmdsData$NMDS1, "gamma")
+# qqp(nmdsData$NMDS1, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+
+# run model on NMDS1: egg laying VS foraging (brood feeding in between)
+library(lme4)
+nmds1 <- glmer(NMDS1 ~ nestTYPE + caste + timepoint + (1|beeID),
+              data = nmdsData)
+
+# p values
+library(sjPlot)
+tab_model(nmds1)
+
+# run model on NMDS2: brood feeding VS egg laying + foraging
+library(lme4)
+nmds2 <- glmer(NMDS2 ~ nestTYPE + caste + timepoint + (1|beeID),
+              data = nmdsData)
+
+# p values
+library(sjPlot)
+tab_model(nmds2)
+```
+
+# repeatability analyses on NMDS coordinates
 https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
 ```{r}
 library(rptR)
@@ -292,7 +277,8 @@ hist(countScores$NMDS1)
 hist(countScores$NMDS2)
 
 # run repeatibility estimation using lmm method
-# DATA IS NOT GAUSSIAN -- NEED TO ADDRESS THIS
+
+############### DATA IS NOT GAUSSIAN -- NEED TO ADDRESS THIS ####################
 
 # NMDS1: low = egg laying, high = foraging, mid = brood feeding
 rep1 <- rpt(NMDS1 ~ (1|beeID),
@@ -351,7 +337,37 @@ alldol <- cbind(alldol, H)
 # mutEntropy <- x
 # # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe
 # alldol$dol <- mutEntropy / alldol$H
+alldol
+```
 
+# glmm on H
+```{r}
+
+# add one to data so that all nonzero values
+alldol$H1 <- alldol$H + 0.01
+
+library(car)
+library(MASS)
+
+############ CAN'T FIGURE OUT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
+# normal distribution
+qqp(alldol$H1, "norm")
+
+# lnorm means lognormal
+qqp(alldol$H1, "lnorm")
+
+# gamma must be positive numbers
+gamma <- fitdistr(alldol$H1, "gamma")
+qqp(alldol$H1, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+
+# run model
+library(lme4)
+dol1 <- glmer(H ~ nestTYPE + caste + timepoint + (1|beeID),
+              data = alldol)
+
+# p values
+library(sjPlot)
+tab_model(dol1)
 ```
 
 
