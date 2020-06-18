@@ -287,6 +287,8 @@ print(paste("There are", clean_obs, "out of", init_obs, "remaining observations 
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
 
+write.csv(master_data, "../Data/cleanMasterData.csv")
+
 obs_data
 ```
 
