@@ -22,6 +22,9 @@ nest_data <- read.csv("../Data/NestDissections.csv", header = TRUE)
 
 # wing length data
 wing_data <- read.csv("../Data/MaleWingMeasurements.csv", header = TRUE)
+
+# development times data
+dev_data <- read.csv("../Data/cleanMasterData.csv")
 ```
 
 ## clean and reformat data
@@ -40,7 +43,7 @@ wing_data <- wing_data[!wing_data$nestID == "NT07",]          # missing workers
 # add bee identifier to wing_data
 wing_data$bee <- 1:nrow(wing_data)
 
-# add nestTYPE column to both datasets, add columns for number of workers, number of queens, and number of bees
+# add nestTYPE column to all datasets, add columns for number of workers, number of queens, and number of bees
 qChar <- sapply(strsplit(nest_data$nestID, ""), function(x) {x[1]} )
 wChar <- sapply(strsplit(nest_data$nestID, ""), function(x) {x[2]} )
 nest_data$nestTYPE <- paste0(qChar, wChar)
@@ -69,6 +72,20 @@ wing_data$nQueen <- as.numeric(wing_data$nQueen)
 wing_data$nBees <- wing_data$nWorkers + wing_data$nQueen
 wing_data
 
+qChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[1]} )
+wChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[2]} )
+dev_data$nestTYPE <- paste0(qChar, wChar)
+dev_data$nWorkers <- wChar
+dev_data$nWorkers[dev_data$nWorkers == "F"] <- 5
+dev_data$nWorkers[dev_data$nWorkers == "T"] <- 3
+dev_data$nQueen <- qChar
+dev_data$nQueen[dev_data$nQueen == "N"] <- 0
+dev_data$nQueen[dev_data$nQueen == "Q"] <- 1
+dev_data$nWorkers <- as.numeric(dev_data$nWorkers)
+dev_data$nQueen <- as.numeric(dev_data$nQueen)
+dev_data$nBees <- dev_data$nWorkers + dev_data$nQueen
+dev_data
+
 # sum total number of brood in nest_data
 nest_data$blackLarvae <- as.numeric(nest_data$blackLarvae)
 nest_data$males <- as.numeric(nest_data$males)
@@ -84,7 +101,7 @@ nest_data$eggs <- rowSums(nest_data[, c("e1", "e2", "e3", "e4", "e5", "e6", "e7"
 
 # mixed models
 ```{r}
-# response variables = # brood total, # brood split out by type, male size
+# response variables = # brood total, # brood split out by type, male size, # days to lay eggs, # days eggs to eclosion
 # fixed effects = nest type (or bee number + queen presence)
 # random effects = worker natal colony (include queen natal colony?)
 ```
@@ -222,6 +239,75 @@ egg2 <- lm(eggs ~ nQueen + nBees, data = nest_data)
 anova(egg1)
 anova(egg2)
 ```
+
+### number of days to lay first eggs: NS
+data is approximately normal
+```{r}
+# visualize the distribution
+ggdensity(dev_data$DaysToEggs)
+# normal 
+qqp(dev_data$DaysToEggs, "norm")
+# # lnorm means lognormal
+# qqp(dev_data$DaysToEggs, "lnorm")
+# # gamma must be positive numbers
+# gamma <- fitdistr(dev_data$DaysToEggs, "gamma")
+# qqp(dev_data$DaysToEggs, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+
+# define model
+dayEggs1 <- lm(DaysToEggs ~ nestTYPE, data = dev_data)
+dayEggs2 <- lm(DaysToEggs ~ nQueen + nBees, data = dev_data)
+
+# check for significance
+anova(dayEggs1)
+anova(dayEggs2)
+```
+
+### number of days from eggs to eclosion: NS 
+data is approximately normal
+```{r}
+# visualize the distribution
+ggdensity(dev_data$EggsToEclosion)
+# normal 
+qqp(dev_data$EggsToEclosion, "norm")
+# # lnorm means lognormal
+# qqp(dev_data$EggsToEclosion, "lnorm")
+# # gamma must be positive numbers
+# gamma <- fitdistr(dev_data$EggsToEclosion, "gamma")
+# qqp(dev_data$EggsToEclosion, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+
+# define model
+dayEclos1 <- lm(EggsToEclosion ~ nestTYPE, data = dev_data)
+dayEclos2 <- lm(EggsToEclosion ~ nQueen + nBees, data = dev_data)
+
+# check for significance
+anova(dayEclos1)
+anova(dayEclos2)
+```
+
+### number of days from nest start to eclosion: nestTYPE p < 0.01, nBees < 0.01 
+data is approximately normal
+```{r}
+# visualize the distribution
+ggdensity(dev_data$TotalNestTime)
+# normal 
+qqp(dev_data$TotalNestTime, "norm")
+# # lnorm means lognormal
+# qqp(dev_data$TotalNestTime, "lnorm")
+# # gamma must be positive numbers
+# gamma <- fitdistr(dev_data$TotalNestTime, "gamma")
+# qqp(dev_data$TotalNestTime, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+
+# define model
+dayNest1 <- lm(TotalNestTime ~ nestTYPE, data = dev_data)
+dayNest2 <- lm(TotalNestTime ~ nQueen + nBees, data = dev_data)
+
+# check for significance
+anova(dayNest1)
+anova(dayNest2)
+dev_data
+```
+
+
 #####
 ##########
 ######################
