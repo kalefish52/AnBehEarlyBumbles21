@@ -107,7 +107,6 @@ prop_data <- rbind(prop_data, count_data[(nrow(count_data)-2):nrow(count_data),]
 ```
 
 # NMDS on count data
-### prep the data
 ```{r}
 # Convert dataframes into matrices - two sets: one with combined foraging and one with separated foraging 
 # Need to add a unique number to each worker in case there are repeats 
@@ -131,9 +130,7 @@ nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
 # remane beeID to combine nestID and beeID to account for duplicates
 nmds_data$beeID <- paste0(nmds_data$nestID, nmds_data$beeID)
 nmds_data
-```
-### NMDS on all count data pooled
-```{r}
+
 # make matrix of only behavior counts for all timepoints
 nmds_all <- as.matrix(nmds_data[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
 
@@ -170,7 +167,6 @@ ggsave("../figures/nmds_all_count.pdf")
 ```
 
 # NMDS on proportion data
-### prep the data
 ```{r}
 # rename initial count data frame
 nmds_prop <- prop_data[1:(nrow(prop_data)-3),]
@@ -188,9 +184,7 @@ nmds_prop <- nmds_prop[!is.na(nmds_prop$beeID),]
 # remane beeID to combine nestID and beeID to account for duplicates
 nmds_prop$beeID <- paste0(nmds_prop$nestID, nmds_prop$beeID)
 nmds_prop
-```
-### NMDS on all proportion data pooled
-```{r}
+
 # make matrix of only behavior proportions for all timepoints
 nmds_all.prop <- as.matrix(nmds_prop[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
 
@@ -224,7 +218,7 @@ ggplot() +
 ggsave("../figures/nmds_all_prop.pdf")
 ```
 
-# glmm on NMDS coordinates
+# glmm on NMDS coordinates across time, nestTYPE, and caste
 ```{r}
 
 # rename for analyses
@@ -233,7 +227,7 @@ nmdsData <- data.scores
 library(car)
 library(MASS)
 
-############ CAN'T FIGURE OUT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
+############ CAN'T FIGURE OUT CORRECT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
 # normal distribution
 qqp(nmdsData$NMDS1, "norm")
 
@@ -301,7 +295,7 @@ plot(rep2Exp, cex.main = 1)
 # division of labor index
 
 this yeilds a DOL index between 0 (no division) and 1 (complete division) for each bee
-issues = does not describe which behavior a bee is specializing on. specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
+issues = does not describe which behavior a bee is specializing on. eg specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
 
 https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
 
@@ -333,6 +327,9 @@ H <- diversity(alldol_M, index = "shannon")
 hist(H)
 # add shannon index into dataframe with bee info
 alldol <- cbind(alldol, H)
+
+################################# DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTRPY OF MATRIX #########################
+
 # # calculate mutal entropy for entire matrix
 # mutEntropy <- x
 # # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe
@@ -340,16 +337,16 @@ alldol <- cbind(alldol, H)
 alldol
 ```
 
-# glmm on H
+# glmm on H across time, nestTYPE, and caste
 ```{r}
-
-# add one to data so that all nonzero values
+# add a small value to data so that values > 0
 alldol$H1 <- alldol$H + 0.01
 
 library(car)
 library(MASS)
 
-############ CAN'T FIGURE OUT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
+######################### CAN'T FIGURE OUT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ########################
+
 # normal distribution
 qqp(alldol$H1, "norm")
 
