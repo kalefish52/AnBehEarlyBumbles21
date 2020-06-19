@@ -323,18 +323,23 @@ alldol$egglaying <- alldol$egglaying / totBehavs
 alldol_M <- as.matrix(alldol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
 
 # calculate shannon's index for distributions of individuals across tasks
-H <- diversity(alldol_M, index = "shannon")
-hist(H)
+shannon <- diversity(alldol_M, index = "shannon")
+hist(shannon)
 # add shannon index into dataframe with bee info
-alldol <- cbind(alldol, H)
+alldol <- cbind(alldol, shannon)
 
-################################# DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTRPY OF MATRIX #########################
+###################### DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTROPY OF MATRIX - THIS IS INCORRECT ######################
 
-# # calculate mutal entropy for entire matrix
-# mutEntropy <- x
-# # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe
-# alldol$dol <- mutEntropy / alldol$H
-alldol
+# calculate mutal entropy for entire matrix
+# this function returns an estimate of the Shannon entropy -- cannot find "mutual entropy"
+# https://cran.r-project.org/web/packages/entropy/entropy.pdf
+library(entropy)
+# using maximum likelihood method here, there are many other options
+mutEntropy <- entropy(alldol_M, method = "ML")
+mutEntropy
+# calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe -- should be an index between 0-1
+alldol$dol <- mutEntropy / alldol$shannon
+alldol 
 ```
 
 # glmm on H across time, nestTYPE, and caste
