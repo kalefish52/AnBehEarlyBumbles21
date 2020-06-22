@@ -1,6 +1,8 @@
 ---
 title: "correspondenceAnalysis"
 output: pdf_document
+fig.width: 6
+fig.height: 15
 ---
 
 ```{r setup, include=FALSE}
@@ -107,7 +109,7 @@ prop_data <- rbind(prop_data, count_data[(nrow(count_data)-2):nrow(count_data),]
 ```
 
 # NMDS on count data
-```{r}
+```{r fig.height=5, fig.width=5}
 # Convert dataframes into matrices - two sets: one with combined foraging and one with separated foraging 
 # Need to add a unique number to each worker in case there are repeats 
 
@@ -147,6 +149,7 @@ data.scores$caste <- nmds_data$caste
 data.scores$nestTYPE <-nmds_data$nestTYPE
 data.scores$timepoint <-nmds_data$timepoint
 data.scores$beeID <-nmds_data$beeID
+data.scores$nestID <- nmds_data$nestID
 data.scores
 
 # Gets NMDS info for each behavior
@@ -159,11 +162,58 @@ ggplot() +
   geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, colour=timepoint, shape=caste), size = 2, position = position_jitter(width=0.1, height=0.1)) + 
   scale_shape_manual(values = c(21, 16)) +
-  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0), 
-  #          arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
-  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+  geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0),
+           arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2))
 
 ggsave("../figures/nmds_all_count.pdf")
+
+# plot it split out nestID
+early.scores <- data.scores[data.scores$timepoint == "early", ]
+late.scores <- data.scores[data.scores$timepoint == "late", ]
+
+p <- ggplot() +
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2) +
+  geom_point(data=early.scores, aes(x=NMDS1, y=NMDS2), color = "red") + 
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+earlyPlots = early.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestID))
+earlyPlots$plots
+ggsave("../figures/nmds_early_SPLITbyNESTID.pdf")
+
+p <- ggplot() +
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2) +
+  geom_point(data=late.scores, aes(x=NMDS1, y=NMDS2), color = "red") + 
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+latePlots = early.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestID))
+latePlots$plots
+ggsave("../figures/nmds_late_SPLITbyNESTID.pdf")
+
+p <- ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, color=timepoint, shape=caste), position = position_jitter(width=0.05, height=0.05)) + 
+  scale_color_manual(values = c("red", "blue")) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15,
+  #          arrow = arrow(length=unit(0.15,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+plots = data.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestID))
+plots$plots
+ggsave("../figures/nmds_all_SPLITbyNESTID.pdf")
+
+# plot split out by nestTYPE
+p <- ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 3) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, color=timepoint, shape=caste), size = 2, position = position_jitter(width=0.05, height=0.05)) + 
+  scale_color_manual(values = c("red", "blue")) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15,
+  #          arrow = arrow(length=unit(0.15,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+plots = data.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestTYPE))
+plots$plots
+ggsave("../figures/nmds_all_SPLITbyNESTtype.pdf")
 ```
 
 # NMDS on proportion data
@@ -218,6 +268,62 @@ ggplot() +
 ggsave("../figures/nmds_all_prop.pdf")
 ```
 
+# find avg distance between early and late timepoints
+```{r}
+# calculate total distance between early and late for each bee
+
+#first add empty columns to input data into
+data.scores$totalDist <- NA
+data.scores$nmds1dist <- NA
+data.scores$nmds2dist <- NA
+
+# then calculate distances for each bee
+for (i in 1:nrow(data.scores)) {                                                                # for each row in the dataset
+  if(data.scores$timepoint[i] == "late") {                                                      # look at the the late bees only
+    for (j in 1:nrow(data.scores)) {                                                            # then iterate back through the dataset
+      if(data.scores$timepoint[j] == "early" & data.scores$beeID[j] == data.scores$beeID[i]) {  # and find the early entry with the same bee ID 
+        x1 <- data.scores$NMDS1[j]                                                              # define the nmds coordinates as x,y for early (j) and late (i)
+        y1 <- data.scores$NMDS2[j]
+        x2 <- data.scores$NMDS1[i]
+        y2 <- data.scores$NMDS2[i]
+        totalDistance <- sqrt( (x2 - x2)^2 + (y2 - y1)^2 )                                      # formula for distance between two points
+        data.scores$totalDist[i] <- totalDistance                                               # fill in the dataframe with distances between early and late
+        data.scores$nmds1dist[i] <- data.scores$NMDS1[i] - data.scores$NMDS1[j]
+        data.scores$nmds2dist[i] <- data.scores$NMDS2[i] - data.scores$NMDS2[j]
+        # print(paste("late data.scores$nmds1 from line", i, "=", data.scores$NMDS1[i],
+        #             " //  early data.scores$nmds1 from line", j, "=", data.scores$NMDS1[j], sep = " "))
+      }
+    }
+  }
+}
+
+data.scores
+
+# summarize change in total distance
+distTotal <- ddply(data.scores, c("nestTYPE", "caste"), 
+                summarise,
+                mean = mean(totalDist, na.rm = TRUE), 
+                sd = sd(totalDist, na.rm = TRUE),
+                sem = sd(totalDist, na.rm = TRUE)/sqrt(length(!is.na(totalDist))))
+distTotal
+
+# summarize change in NMDS1
+distNMDS1 <- ddply(data.scores, c("nestTYPE", "caste"), 
+                summarise,
+                mean = mean(NMDS1, na.rm = TRUE), 
+                sd = sd(NMDS1, na.rm = TRUE),
+                sem = sd(NMDS1, na.rm = TRUE)/sqrt(length(!is.na(NMDS1))))
+distNMDS1
+
+# summarize change in NMDS2
+distNMDS2 <- ddply(data.scores, c("nestTYPE", "caste"), 
+                summarise,
+                mean = mean(NMDS2, na.rm = TRUE), 
+                sd = sd(NMDS2, na.rm = TRUE),
+                sem = sd(NMDS2, na.rm = TRUE)/sqrt(length(!is.na(NMDS2))))
+distNMDS2
+```
+
 # glmm on NMDS coordinates across time, nestTYPE, and caste
 ```{r}
 
@@ -257,7 +363,7 @@ library(sjPlot)
 tab_model(nmds2)
 ```
 
-# repeatability analyses on NMDS coordinates
+# repeatability analyses on NMDS coordinates (same as ICC intra-class correlation)
 https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
 ```{r}
 library(rptR)
