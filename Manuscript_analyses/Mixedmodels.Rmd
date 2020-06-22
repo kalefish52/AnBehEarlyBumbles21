@@ -1,0 +1,30 @@
+---
+title: "DataIntegration"
+output: html_document
+---
+This script combines count data with nest development data, ovary data and body size data 
+
+
+#Load relevant packages 
+```{r}
+library(dplyr)
+library(ggplot)
+```
+
+#Import datafiles
+```{r}
+NestDevelopment<-read.csv("../SarroFisher/Data/NestDissections.csv")
+head(NestDevelopment)
+
+Ovary<-read.csv("../SarroFisher/Data/Ovarydata.csv") %>% rename(beeID=WorkerID) %>% rename(nestID=ColonyID)
+head(Ovary)
+Bodysize<-read.csv("../SarroFisher/Data/bodysizeworkers.csv") %>% rename(beeID=Worker.ID) %>% rename(nestID=Microcolony.ID)
+head(Bodysize)
+Counts<-read.csv("../SarroFisher/Data/countsanalysis.csv")
+head(Counts)
+
+#Combine nestID and beeID for ovary, bodysize and counts so they can be combined 
+
+
+
+```
