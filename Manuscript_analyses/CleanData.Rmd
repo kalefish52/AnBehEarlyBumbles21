@@ -264,9 +264,6 @@ obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
 
 ## make nestID character to enable startsWith (will remove nests from master_data first, then subset other dataframes)
 master_data$nestID <- as.character(master_data$nestID)
-## remove QA groups and bees
-master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
-## remove additional colonies we don't want to include
 ## remove colonies that were not frozen from master_data
 master_data <- master_data[!is.na(master_data$FreezeDate),]
 ## remove QF01 (it was frozen and males eclosed, but all adults died)
@@ -275,9 +272,19 @@ master_data <- master_data[!master_data$nestID == "QF01",]
 master_data <- master_data[!master_data$nestID == "QF08",]
 master_data <- master_data[!master_data$nestID == "NT07",]
 
+# write master_data with QA gropus for erica's analyses
+write.csv(master_data, "../Data/cleanMasterData.csv")
+
+## remove QA groups and bees
+master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
+# remove additional colonies we don't want to include
+
 ##subset observations and videos to remove nests we don't want to include
 obs_data <- subset(obs_data, nestID %in% master_data$nestID)
 videos_data <- subset(videos_data, nestID %in% master_data$nestID)
+
+
+
 
 
 clean_obs <- nrow(obs_data)
@@ -286,6 +293,8 @@ clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
+
+
 
 obs_data
 ```
