@@ -72,7 +72,7 @@ PstatsNest
 rmObs <- statsNest[statsNest$nObs < 3,]
 rmObs
 rmNests <- unique(rmObs$nestID)
-print(paste(length(rmNests), "nests need to be removed from the data because they have fewer than 3 instances of brood feeding or foraging recorded"))
+print(paste(length(rmNests), "nests need to be removed from the pooled time data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNests
 counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
 counts_filt
@@ -101,7 +101,7 @@ PstatsNestEarly
 rmObsEarly <- statsNestEarly[statsNestEarly$nObs < 3,]
 rmObsEarly
 rmNestsEarly <- unique(rmObsEarly$nestID)
-print(paste(length(rmNestsEarly), "nests need to be removed from the data because they have fewer than 3 instances of brood feeding or foraging recorded"))
+print(paste(length(rmNestsEarly), "nests need to be removed from the early timepoint data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNestsEarly
 goodNestsEarly <- counts_data %>% filter(!nestID %in% rmNestsEarly)
 unique(goodNestsEarly$nestID)
@@ -116,7 +116,7 @@ PstatsNestLate
 rmObsLate <- statsNestLate[statsNestLate$nObs < 3,]
 rmObsLate
 rmNestsLate <- unique(rmObsLate$nestID)
-print(paste(length(rmNestsLate), "nests need to be removed from the data because they have fewer than 3 instances of brood feeding or foraging recorded"))
+print(paste(length(rmNestsLate), "nests need to be removed from the late timepoint data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNestsLate
 goodNestsLate <- counts_data %>% filter(!nestID %in% rmNestsLate)
 goodNestsLate
