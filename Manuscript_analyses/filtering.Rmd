@@ -1,0 +1,96 @@
+---
+title: "filtering"
+author: "ES"
+date: "6/22/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(ggplot2)
+library(tidyr)
+```
+
+# load data
+```{r}
+counts_data <- read.csv("../Data/countsanalysis.csv")
+counts_data
+```
+
+# look at the number of events of each behavior per nest
+```{r}
+# first combine pollen and nectar foraging into a single value
+counts_data$allforaging <- counts_data$nectarforaging + counts_data$pollenforaging
+
+# gather all behaviors into a single column
+counts_gathered <- counts_data %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
+counts_gathered
+
+# sumNest <- counts_gathered %>% group_by(nestID, behav)
+# 
+# ggplot(sumNest, aes(x = nestID, y = count, fill = behav)) +
+#   geom_bar(stat ="identity") + 
+#   theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+
+# summarize the total behaviors observed across all individuals
+statsBehav <- ddply(counts_gathered, 
+                c("behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+statsBehav
+
+PstatsBehav <- ggplot(statsBehav, aes(x = behav, y = nObs, fill = behav)) + geom_bar(stat = "identity")
+PstatsBehav
+
+# summarize behaviors observed for each nest
+statsNest <- ddply(counts_gathered, 
+                c("nestID", "behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+statsNest
+PstatsNest <- ggplot(statsNest, aes(x = nestID, y = nObs, fill = behav)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+PstatsNest
+
+# remove nests with fewer than 5 observations each of foraging and brood feeding
+# count number of nests
+nInitNests <- length(unique(statsNest$nestID))
+counts_filt <- statsNest[statsNest$nObs >= 5,]
+nFiltNests <- length(unique(counts_filt$nestID))
+print(paste(nInitNests - nFiltNests, "nests were removed from the data because they fewer than 5 instances of brood feeding or foraging recorded"))
+# look at which nests were removed
+rmNests <- statsNest[statsNest$nObs < 5,]
+rmNests
+
+# summarize behaviors observed for each nest at early and late timepoints
+statsNestTime <- ddply(counts_gathered, 
+                c("nestID", "behav", "timepoint"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+
+statsNestEarly <- statsNestTime[statsNestTime$timepoint == "early",]
+PstatsNestEarly <- ggplot(statsNestEarly, aes(x = nestID, y = nObs, fill = behav)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+PstatsNestEarly
+
+statsNestLate <- statsNestTime[statsNestTime$timepoint == "late",]
+PstatsNestLate <- ggplot(statsNestLate, aes(x = nestID, y = nObs, fill = behav)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+PstatsNestLate
+```
