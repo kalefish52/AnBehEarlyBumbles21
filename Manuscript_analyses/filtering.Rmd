@@ -76,6 +76,7 @@ print(paste(length(rmNests), "nests need to be removed from the pooled time data
 rmNests
 counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
 counts_filt
+write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
 ```
 
 # do the same for early and late timepoints individually
@@ -126,4 +127,5 @@ unique(goodNestsLate$nestID)
 counts_time <- counts_data %>% filter(!nestID %in% rmNestsEarly) %>% filter(!nestID %in% rmNestsLate)
 counts_time
 unique(counts_time$nestID)
+write.csv(counts_time, "../Data/tempData/counts_time.csv")
 ```
