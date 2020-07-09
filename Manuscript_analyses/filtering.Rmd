@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
+library(plyr)
 ```
 
 # load data
@@ -72,14 +73,57 @@ PstatsNest
 rmObs <- statsNest[statsNest$nObs < 3,]
 rmObs
 rmNests <- unique(rmObs$nestID)
-print(paste(length(rmNests), "nests need to be removed from the pooled time data because they have fewer than 3 instances of brood feeding or foraging recorded"))
+print(paste(length(rmNests), "nests were filtered out of the data because they have fewer than 3 instances each of brood feeding or foraging recorded", sep = " "))
 rmNests
-counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
-counts_filt
-write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
+nestCounts_filt <- counts_data %>% filter(!nestID %in% rmNests)
+nestCounts_filt
+unique(counts_filt$nestID)
+write.csv(nestCounts_filt, "../Data/tempData/nestCounts_filt.csv")
+
+# # remove nests with fewer than 5 observations of foraging or brood feeding combined
+# combObs <- statsNest[, c("nestID", "behav", "nObs")]
+# combObs <- combObs %>%
+#   pivot_wider(id_cols = c("nestID"), 
+#               names_from = behav, 
+#               values_from = nObs)
+# combObs$totObs <- combObs$allforaging + combObs$feedsbrood
+# combObs
+# write.csv(combObs, "../Data/totalObs.csv")
+# 
+# # look at which nests need to be removed
+# rmObs <- combObs[combObs$totObs < 10,]
+# rmObs
+# print(paste("the following", length(rmObs), "nests need to be removed from the pooled time data because they have fewer than 5 instances of combined brood feeding and foraging recorded:", rmObs, sep = " "))
+
+# counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
+# counts_filt
+# write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
 ```
 
-# do the same for early and late timepoints individually
+# look at number of behaviors per bee
+# filter out bees with < 3 behaviors
+```{r}
+counts_data
+beeCounts_filt <- counts_data[counts_data$nBehavs >= 3,]
+beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
+beeCounts_filt
+write.csv(beeCounts_filt, "../Data/beeCounts_filt.csv")
+
+print(paste(nrow(beeCounts_filt), "out of", nrow(counts_data), "identified bees have at least 3 recorded observations.", sep = " "))
+print(paste(nrow(counts_data)-nrow(beeCounts_filt), "bees were filtered out of the data because they have fewer than 3 observations or are unidentified.", sep = " "))
+```
+
+# subset unknown workers from filtered nests
+```{r}
+obs_data <- read.csv("../Data/obs_data")
+cleaned_obs <- subset(obs_data, (nestID %in% nestCounts_filt$nestID))
+
+unknown_workers <- cleaned_obs[cleaned_obs$beeID == "unknown",]
+write.csv(unknown_workers, "../Data/unknownWorkers.csv")
+```
+
+
+# do the same filtering for early and late timepoints individually
 counts_time = count data with at least 3 observations of each behavior at both early and late timepoints
 *can be used in all analyses that compare across time
 ```{r}
@@ -105,6 +149,7 @@ rmNestsEarly <- unique(rmObsEarly$nestID)
 print(paste(length(rmNestsEarly), "nests need to be removed from the early timepoint data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNestsEarly
 goodNestsEarly <- counts_data %>% filter(!nestID %in% rmNestsEarly)
+write.csv(goodNestsEarly, "../Data/tempData/nestEarlyCounts_filt.csv")
 unique(goodNestsEarly$nestID)
 
 # summarize late timepoint
@@ -121,11 +166,12 @@ print(paste(length(rmNestsLate), "nests need to be removed from the late timepoi
 rmNestsLate
 goodNestsLate <- counts_data %>% filter(!nestID %in% rmNestsLate)
 goodNestsLate
+write.csv(goodNestsLate, "../Data/tempData/nestLateCounts_filt.csv")
 unique(goodNestsLate$nestID)
 
 # dataframe that can be used to compare across timepoints (at least 3 observations of each behavior in both early and late timepoints)
 counts_time <- counts_data %>% filter(!nestID %in% rmNestsEarly) %>% filter(!nestID %in% rmNestsLate)
 counts_time
 unique(counts_time$nestID)
-write.csv(counts_time, "../Data/tempData/counts_time.csv")
+write.csv(counts_time, "../Data/tempData/nestEarlyANDLateCounts_filt.csv")
 ```
