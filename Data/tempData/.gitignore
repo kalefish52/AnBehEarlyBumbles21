@@ -5,3 +5,10 @@ dur_data.csv
 beeCounts_filt.csv
 nestCounts_filt.csv
 unknownWorkers.csv
+beeCounts_pooled_filt.csv
+beeEarlyANDLateCounts_filt.csv
+earlyBeeCounts_filt.csv
+lateBeeCounts_filt.csv
+nestEarlyANDLateCounts_filt.csv
+nestEarlyCounts_filt.csv
+nestLateCounts_filt.csv
