@@ -14,18 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
+library(plyr)
 ```
 
 # load data
 ```{r}
 counts_data <- read.csv("../Data/countsanalysis.csv")
-counts_data
+counts_data$uqID <- paste0(counts_data$nestID, counts_data$beeID)
 ```
 
 # look at the number of events of each behavior per nest
-# filter out nests with < 3 observations each of brood feeding and foraging behaviors
-counts_filt = nests with at least 3 observations of each behavior
-*can be used in all analyses in which timepoints are pooled
+# filter out nests with < 3 observations each of brood feeding and foraging behaviors, includes unknown worker observations
+nestCounts_filt.csv
 ```{r}
 # first combine pollen and nectar foraging into a single value
 counts_data$allforaging <- counts_data$nectarforaging + counts_data$pollenforaging
@@ -72,16 +72,77 @@ PstatsNest
 rmObs <- statsNest[statsNest$nObs < 3,]
 rmObs
 rmNests <- unique(rmObs$nestID)
-print(paste(length(rmNests), "nests need to be removed from the pooled time data because they have fewer than 3 instances of brood feeding or foraging recorded"))
+print(paste(length(rmNests), "nests were filtered out of the data because they have fewer than 3 instances each of brood feeding or foraging recorded", sep = " "))
 rmNests
-counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
-counts_filt
-write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
+nestCounts_filt <- counts_data %>% filter(!nestID %in% rmNests)
+nestCounts_filt
+unique(counts_filt$nestID)
+write.csv(nestCounts_filt, "../Data/tempData/nestCounts_filt.csv")
+
+# # remove nests with fewer than 5 observations of foraging or brood feeding combined
+# combObs <- statsNest[, c("nestID", "behav", "nObs")]
+# combObs <- combObs %>%
+#   pivot_wider(id_cols = c("nestID"), 
+#               names_from = behav, 
+#               values_from = nObs)
+# combObs$totObs <- combObs$allforaging + combObs$feedsbrood
+# combObs
+# write.csv(combObs, "../Data/totalObs.csv")
+# 
+# # look at which nests need to be removed
+# rmObs <- combObs[combObs$totObs < 10,]
+# rmObs
+# print(paste("the following", length(rmObs), "nests need to be removed from the pooled time data because they have fewer than 5 instances of combined brood feeding and foraging recorded:", rmObs, sep = " "))
+
+# counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
+# counts_filt
+# write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
 ```
 
-# do the same for early and late timepoints individually
-counts_time = count data with at least 3 observations of each behavior at both early and late timepoints
-*can be used in all analyses that compare across time
+# look at number of behaviors per bee
+# filter out bees with < 3 total behaviors pooled across both timepoints, excludes unknown workers
+beeCounts_filt.csv
+```{r}
+counts_data
+
+# pool early and late timepoints back together
+counts_pooled <- ddply(counts_data, 
+                c("nestID", "nestTYPE", "beeID", "caste"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                nectarforaging = sum(nectarforaging),
+                pollenforaging = sum(pollenforaging),
+                egglaying = sum(egglaying),
+                nBehavs = sum(nBehavs),
+                allforaging = sum(allforaging))
+counts_pooled
+
+beeCounts_filt <- counts_pooled[counts_pooled$nBehavs >= 3,]
+beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
+beeCounts_filt
+write.csv(beeCounts_filt, "../Data/tempData/beeCounts_filt.csv")
+
+print(paste(nrow(beeCounts_filt), "out of", nrow(counts_pooled), "identified bees have at least 3 recorded observations total.", sep = " "))
+print(paste(nrow(counts_pooled)-nrow(beeCounts_filt), "bees were filtered out of the data because they have fewer than 3 observations or are unidentified.", sep = " "))
+```
+
+# subset unknown workers from filtered nests
+unknownWorkers.csv
+```{r}
+obs_data <- read.csv("../Data/obs_data")
+cleaned_obs <- subset(obs_data, (nestID %in% nestCounts_filt$nestID))
+
+unknown_workers <- cleaned_obs[cleaned_obs$beeID == "unknown",]
+write.csv(unknown_workers, "../Data/tempData/unknownWorkers.csv")
+```
+
+
+# do the same filtering for early and late timepoints individually
+
+# nests with >= 3 observations at early, late, and both
+nestsEarlyCounts_filt.csv
+nestsLateCounts_filt.csv
+nestEarlyANDLateCounts_filt.csv
 ```{r}
 # summarize behaviors observed for each nest at early and late timepoints
 statsNestTime <- ddply(counts_gathered, 
@@ -91,6 +152,7 @@ statsNestTime <- ddply(counts_gathered,
                 mean = mean(count), 
                 sd = sd(count),
                 sem = sd(count)/sqrt(length(count)))
+statsNestTime
 
 # summarize early timepoint
 statsNestEarly <- statsNestTime[statsNestTime$timepoint == "early",]
@@ -104,7 +166,8 @@ rmObsEarly
 rmNestsEarly <- unique(rmObsEarly$nestID)
 print(paste(length(rmNestsEarly), "nests need to be removed from the early timepoint data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNestsEarly
-goodNestsEarly <- counts_data %>% filter(!nestID %in% rmNestsEarly)
+goodNestsEarly <- counts_data %>% filter(timepoint == "early") %>% filter(!nestID %in% rmNestsEarly)
+write.csv(goodNestsEarly, "../Data/tempData/nestEarlyCounts_filt.csv")
 unique(goodNestsEarly$nestID)
 
 # summarize late timepoint
@@ -119,13 +182,53 @@ rmObsLate
 rmNestsLate <- unique(rmObsLate$nestID)
 print(paste(length(rmNestsLate), "nests need to be removed from the late timepoint data because they have fewer than 3 instances of brood feeding or foraging recorded"))
 rmNestsLate
-goodNestsLate <- counts_data %>% filter(!nestID %in% rmNestsLate)
+goodNestsLate <- counts_data %>% filter(timepoint == "late") %>% filter(!nestID %in% rmNestsLate)
 goodNestsLate
+write.csv(goodNestsLate, "../Data/tempData/nestLateCounts_filt.csv")
 unique(goodNestsLate$nestID)
 
 # dataframe that can be used to compare across timepoints (at least 3 observations of each behavior in both early and late timepoints)
 counts_time <- counts_data %>% filter(!nestID %in% rmNestsEarly) %>% filter(!nestID %in% rmNestsLate)
 counts_time
 unique(counts_time$nestID)
-write.csv(counts_time, "../Data/tempData/counts_time.csv")
+write.csv(counts_time, "../Data/tempData/nestEarlyANDLateCounts_filt.csv")
+```
+# bees with >= 3 observations at early, late, and both
+beeEarlyCounts_filt.csv
+beeLateCounts_filt.csv
+beeEarlyANDLateCounts_filt.csv
+```{r}
+# counts of each behavior for all bees
+counts_data
+
+# early timepoint only
+earlyCounts <- counts_data[counts_data$timepoint == "early",]
+earlyBeeCounts_filt <- earlyCounts[earlyCounts$nBehavs >= 3,]
+earlyBeeCounts_filt <- earlyBeeCounts_filt[earlyBeeCounts_filt$beeID != "unknown",]
+earlyBeeCounts_filt
+write.csv(earlyBeeCounts_filt, "../Data/tempData/beeEarlyCounts_filt.csv")
+
+print(paste(length(unique(earlyBeeCounts_filt$uqID)), "out of", length(unique(earlyCounts$uqID)), "identified bees have at least 3 recorded observations at the early timepoint.", sep = " "))
+print(paste(length(unique(earlyCounts$uqID))-length(unique(earlyBeeCounts_filt$uqID)), "bees were filtered out of the early data because they have fewer than 3 observations or are unidentified.", sep = " "))
+
+# subset late timepoint only
+lateCounts <- counts_data[counts_data$timepoint == "late",]
+lateBeeCounts_filt <- lateCounts[lateCounts$nBehavs >= 3,]
+lateBeeCounts_filt <- lateBeeCounts_filt[lateBeeCounts_filt$beeID != "unknown",]
+lateBeeCounts_filt
+write.csv(lateBeeCounts_filt, "../Data/tempData/beeLateCounts_filt.csv")
+
+print(paste(length(unique(lateBeeCounts_filt$uqID)), "out of", length(unique(lateCounts$uqID)), "identified bees have at least 3 recorded observations at the late timepoint.", sep = " "))
+print(paste(length(unique(lateCounts$uqID))-length(unique(lateBeeCounts_filt$uqID)), "bees were filtered out of the late data because they have fewer than 3 observations or are unidentified.", sep = " "))
+
+# both early and late timepoints
+beeEarlyANDLateCounts_filt <- counts_data %>% filter(uqID %in% earlyBeeCounts_filt$uqID)
+beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt %>% filter(uqID %in% lateBeeCounts_filt$uqID)
+beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt[beeEarlyANDLateCounts_filt$beeID != "unknown",]
+beeEarlyANDLateCounts_filt
+counts_data
+print(paste(length(unique(beeEarlyANDLateCounts_filt$uqID)), "out of", length(unique(counts_data$uqID)), "identified bees have at least 3 recorded observations at both the early and late timepoints.", sep = " "))
+print(paste(length(unique(counts_data$uqID)) - length(unique(beeEarlyANDLateCounts_filt$uqID)), "bees were filtered out of the early + late data because they have fewer than 3 observations at one or both timepoints or are unidentified.", sep = " "))
+
+write.csv(beeEarlyANDLateCounts_filt, "../Data/tempData/beeEarlyANDLateCounts_filt.csv")
 ```
