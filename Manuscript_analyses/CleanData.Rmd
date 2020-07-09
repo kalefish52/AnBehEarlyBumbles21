@@ -630,96 +630,96 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 
 ```
 
-### make duration df with duration of each behavior for each bee
-output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values.
-this data includes unidentified bees
-```{r}
-## rename for clarity
-dur_data <- obs_data
+<!-- ### make duration df with duration of each behavior for each bee -->
+<!-- output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values. -->
+<!-- this data includes unidentified bees -->
+<!-- ```{r} -->
+<!-- ## rename for clarity -->
+<!-- dur_data <- obs_data -->
 
-for (i in 1:nrow(dur_data)) {
-  if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") {
-    dur_data$dur[i] <- 1
-  }
-}
+<!-- for (i in 1:nrow(dur_data)) { -->
+<!--   if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") { -->
+<!--     dur_data$dur[i] <- 1 -->
+<!--   } -->
+<!-- } -->
 
-## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
-## values = duration of each behav
-dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav", "caste"), 
-              names_from = rand, 
-              values_from = dur, 
-              names_repair = "minimal")
+<!-- ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior.  -->
+<!-- ## values = duration of each behav -->
+<!-- dur_data <- dur_data %>% -->
+<!--   pivot_wider(id_cols = c("nestID", "beeID", "behav", "caste"),  -->
+<!--               names_from = rand,  -->
+<!--               values_from = dur,  -->
+<!--               names_repair = "minimal") -->
 
-## add column with the sum of durations for each behav
-dur_data$totDur <- rowSums(dur_data[5:ncol(dur_data)], na.rm = TRUE)
+<!-- ## add column with the sum of durations for each behav -->
+<!-- dur_data$totDur <- rowSums(dur_data[5:ncol(dur_data)], na.rm = TRUE) -->
 
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
-dur_data <- dur_data %>%
-  select(nestID, beeID, behav, caste, totDur)
+<!-- ## subset dataframe so that all is left is nestID, beeID, behav, and totDur -->
+<!-- dur_data <- dur_data %>% -->
+<!--   select(nestID, beeID, behav, caste, totDur) -->
 
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "caste"), 
-              names_from = behav, 
-              values_from = totDur)
+<!-- ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors -->
+<!-- dur_data <- dur_data %>% -->
+<!--   pivot_wider(id_cols = c("nestID", "beeID", "caste"),  -->
+<!--               names_from = behav,  -->
+<!--               values_from = totDur) -->
 
-## replace NA values with 0
-dur_data[is.na(dur_data)] <- 0
+<!-- ## replace NA values with 0 -->
+<!-- dur_data[is.na(dur_data)] <- 0 -->
 
-##save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(dur_data, "../Data/tempData/dur_data.csv")
+<!-- ##save dataframe as .csv so it can be used in other downstream analyses  -->
+<!-- write.csv(dur_data, "../Data/tempData/dur_data.csv") -->
 
-## count the number of bees with behaviors
-print(paste("There are", nrow(dur_data), "bees accounted for in the duration data."))
-if (nrow(dur_data)==nrow(recordedBees)) {
-  print("All bees with recorded behaviors are accounted for!")
-} else {
-  print(paste("There is a mismatch between identified bees and the number of bees in the duration dataframe. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "identified bees with recorded behaviors. Right now, duration df includes unidentified bees, which will make it larger than the identifed bees with recorded behaviors.", sep = " "))
-}
+<!-- ## count the number of bees with behaviors -->
+<!-- print(paste("There are", nrow(dur_data), "bees accounted for in the duration data.")) -->
+<!-- if (nrow(dur_data)==nrow(recordedBees)) { -->
+<!--   print("All bees with recorded behaviors are accounted for!") -->
+<!-- } else { -->
+<!--   print(paste("There is a mismatch between identified bees and the number of bees in the duration dataframe. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "identified bees with recorded behaviors. Right now, duration df includes unidentified bees, which will make it larger than the identifed bees with recorded behaviors.", sep = " ")) -->
+<!-- } -->
 
-dur_data
+<!-- dur_data -->
 
-##graph the number of behaviors we have per nest
-Queencharacter <- sapply(strsplit(count_data$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-                          
-dur_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+<!-- ##graph the number of behaviors we have per nest -->
+<!-- Queencharacter <- sapply(strsplit(count_data$nestID, ""),  -->
+<!--                           function(x){ -->
+<!--                             x[1] -->
+<!--                           }) -->
+<!-- Numbercharacter<-sapply(strsplit(count_data$nestID, ""), -->
+<!--                         function(x){ -->
+<!--                           x[2] -->
+<!--                         })     -->
 
-## remove data from nest types other than the ones we want (remove bad data)
-dur_data <- subset(dur_data, subset = (dur_data$nestTYPE == "NT" | dur_data$nestTYPE == "NF" | dur_data$nestTYPE == "QT" | dur_data$nestTYPE == "QF"))
+<!-- dur_data$nestTYPE<-paste0(Queencharacter, Numbercharacter) -->
 
-data_sum <- dur_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+<!-- ## remove data from nest types other than the ones we want (remove bad data) -->
+<!-- dur_data <- subset(dur_data, subset = (dur_data$nestTYPE == "NT" | dur_data$nestTYPE == "NF" | dur_data$nestTYPE == "QT" | dur_data$nestTYPE == "QF")) -->
 
-sumsTYPE<-data_sum %>% group_by(nestTYPE) 
+<!-- data_sum <- dur_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID) -->
 
-##look at data we have so far based on each colony 
+<!-- sumsTYPE<-data_sum %>% group_by(nestTYPE)  -->
 
-ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ##look at data we have so far based on each colony  -->
 
-ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-## look at data we have so far based on each type of colony 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ## look at data we have so far based on each type of colony  -->
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-```
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
+
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
+<!-- ``` -->
 
 ### duration of video watched for each colony
 output df with total duration of video watched per colony. columns = nestID and totalLen
