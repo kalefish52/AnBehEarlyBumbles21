@@ -206,7 +206,7 @@ earlyCounts <- counts_data[counts_data$timepoint == "early",]
 earlyBeeCounts_filt <- earlyCounts[earlyCounts$nBehavs >= 3,]
 earlyBeeCounts_filt <- earlyBeeCounts_filt[earlyBeeCounts_filt$beeID != "unknown",]
 earlyBeeCounts_filt
-write.csv(earlyBeeCounts_filt, "../Data/tempData/earlyBeeCounts_filt.csv")
+write.csv(earlyBeeCounts_filt, "../Data/tempData/beeEarlyCounts_filt.csv")
 
 print(paste(length(unique(earlyBeeCounts_filt$uqID)), "out of", length(unique(earlyCounts$uqID)), "identified bees have at least 3 recorded observations at the early timepoint.", sep = " "))
 print(paste(length(unique(earlyCounts$uqID))-length(unique(earlyBeeCounts_filt$uqID)), "bees were filtered out of the early data because they have fewer than 3 observations or are unidentified.", sep = " "))
@@ -216,7 +216,7 @@ lateCounts <- counts_data[counts_data$timepoint == "late",]
 lateBeeCounts_filt <- lateCounts[lateCounts$nBehavs >= 3,]
 lateBeeCounts_filt <- lateBeeCounts_filt[lateBeeCounts_filt$beeID != "unknown",]
 lateBeeCounts_filt
-write.csv(lateBeeCounts_filt, "../Data/tempData/lateBeeCounts_filt.csv")
+write.csv(lateBeeCounts_filt, "../Data/tempData/beeLateCounts_filt.csv")
 
 print(paste(length(unique(lateBeeCounts_filt$uqID)), "out of", length(unique(lateCounts$uqID)), "identified bees have at least 3 recorded observations at the late timepoint.", sep = " "))
 print(paste(length(unique(lateCounts$uqID))-length(unique(lateBeeCounts_filt$uqID)), "bees were filtered out of the late data because they have fewer than 3 observations or are unidentified.", sep = " "))
