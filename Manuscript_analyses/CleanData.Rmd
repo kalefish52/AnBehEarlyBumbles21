@@ -1121,7 +1121,7 @@ head(nestDEV)
 #Import egglaying data - find median timepoint, make early/late column and then merge to nestDEV
 head(nestDEV)
 egglaying<-read.csv("../Data/Egg_laying_Events.csv")
-head(egglaying)
+egglaying
 
 #Change date to same format as above
 egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%m/%d/%y")
