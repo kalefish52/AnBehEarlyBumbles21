@@ -222,12 +222,13 @@ print(paste(length(unique(lateBeeCounts_filt$uqID)), "out of", length(unique(lat
 print(paste(length(unique(lateCounts$uqID))-length(unique(lateBeeCounts_filt$uqID)), "bees were filtered out of the late data because they have fewer than 3 observations or are unidentified.", sep = " "))
 
 # both early and late timepoints
-beeEarlyANDLateCounts_filt <- counts_data[counts_data$nBehavs >= 3,]
+beeEarlyANDLateCounts_filt <- counts_data %>% filter(uqID %in% earlyBeeCounts_filt$uqID)
+beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt %>% filter(uqID %in% lateBeeCounts_filt$uqID)
 beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt[beeEarlyANDLateCounts_filt$beeID != "unknown",]
 beeEarlyANDLateCounts_filt
 counts_data
 print(paste(length(unique(beeEarlyANDLateCounts_filt$uqID)), "out of", length(unique(counts_data$uqID)), "identified bees have at least 3 recorded observations at both the early and late timepoints.", sep = " "))
 print(paste(length(unique(counts_data$uqID)) - length(unique(beeEarlyANDLateCounts_filt$uqID)), "bees were filtered out of the early + late data because they have fewer than 3 observations at one or both timepoints or are unidentified.", sep = " "))
 
-write.csv(beeEarlyANDLateCounts_filt.csv, "../Data/tempData/beeEarlyANDLateCounts_filt.csv")
+write.csv(beeEarlyANDLateCounts_filt, "../Data/tempData/beeEarlyANDLateCounts_filt.csv")
 ```
