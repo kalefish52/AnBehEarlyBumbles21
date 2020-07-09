@@ -107,7 +107,7 @@ counts_data
 beeCounts_filt <- counts_data[counts_data$nBehavs >= 3,]
 beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
 beeCounts_filt
-write.csv(beeCounts_filt, "../Data/beeCounts_filt.csv")
+write.csv(beeCounts_filt, "../Data/tempData/beeCounts_filt.csv")
 
 print(paste(nrow(beeCounts_filt), "out of", nrow(counts_data), "identified bees have at least 3 recorded observations.", sep = " "))
 print(paste(nrow(counts_data)-nrow(beeCounts_filt), "bees were filtered out of the data because they have fewer than 3 observations or are unidentified.", sep = " "))
@@ -119,7 +119,7 @@ obs_data <- read.csv("../Data/obs_data")
 cleaned_obs <- subset(obs_data, (nestID %in% nestCounts_filt$nestID))
 
 unknown_workers <- cleaned_obs[cleaned_obs$beeID == "unknown",]
-write.csv(unknown_workers, "../Data/unknownWorkers.csv")
+write.csv(unknown_workers, "../Data/tempData/unknownWorkers.csv")
 ```
 
 
