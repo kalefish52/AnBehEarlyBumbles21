@@ -76,7 +76,17 @@ print(paste(length(rmNests), "nests were filtered out of the data because they h
 rmNests
 nestCounts_filt <- counts_data %>% filter(!nestID %in% rmNests)
 nestCounts_filt
-unique(counts_filt$nestID)
+
+nestCounts_filt <- ddply(nestCounts_filt, 
+                c("nestID", "nestTYPE", "beeID", "caste"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                nectarforaging = sum(nectarforaging),
+                pollenforaging = sum(pollenforaging),
+                egglaying = sum(egglaying),
+                nBehavs = sum(nBehavs),
+                allforaging = sum(allforaging))
+
 write.csv(nestCounts_filt, "../Data/tempData/nestCounts_filt.csv")
 
 # # remove nests with fewer than 5 observations of foraging or brood feeding combined
