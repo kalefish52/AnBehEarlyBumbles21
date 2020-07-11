@@ -23,7 +23,7 @@ library(plotly)
 
 # load data
 ```{r}
-initial_data <- read.csv("../Data/countsanalysis.csv")
+initial_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
 initial_data
 ```
 
