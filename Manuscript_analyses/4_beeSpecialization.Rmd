@@ -82,7 +82,7 @@ behav.scores
 # Plot it using ggplot
 ggplot() + 
   geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
-  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape=caste), size = 2, position = position_jitter(width=0.08, height=0.08)) + 
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape=caste, color = nestTYPE), size = 2, position = position_jitter(width=0.08, height=0.08)) + 
   scale_shape_manual(values = c(21, 16)) +
   geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0),
            arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
