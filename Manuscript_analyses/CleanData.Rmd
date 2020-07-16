@@ -1296,12 +1296,20 @@ counts_final$nWork[counts_final$nestTYPE == "NT"] <- 3
 counts_final$nWork[counts_final$nestTYPE == "QF"] <- 5
 counts_final$nWork[counts_final$nestTYPE == "QT"] <- 3
 
+## add column for queen presence
+counts_final$queen <- NA
+counts_final$queen[counts_final$nestTYPE == "NF"] <- 0
+counts_final$queen[counts_final$nestTYPE == "NT"] <- 0
+counts_final$queen[counts_final$nestTYPE == "QF"] <- 1
+counts_final$queen[counts_final$nestTYPE == "QT"] <- 1
+counts_final$queen <- as.character(counts_final$queen)
+
 ## make NA values equal to 0
 counts_final[is.na(counts_final)] <- 0
 
 ## subset to remove the behaviors we're not interested in (remove behavs only used in erica's time budgeting)
 countsDATA <- counts_final %>%
-  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, timepoint, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
 
 write.csv(countsDATA, "../Data/countsanalysis.csv") 
 
