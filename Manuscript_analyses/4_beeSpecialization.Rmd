@@ -176,18 +176,9 @@ https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7
 # transform the data so that all values sum to 1
 
 # rename 
-alldol <- count_data 
+alldol <- bee_data
+alldol
 
-# CALCULATE FOR ALL DATA
-
-# remove bees without behaviors
-alldol <- alldol[alldol$nBehavs > 0, ]
-# reformat to sum to 1
-totBehavs <- alldol$nBehavs[nrow(alldol)]
-alldol$feedsbrood <- alldol$feedsbrood / totBehavs
-alldol$nectarforaging <- alldol$nectarforaging / totBehavs
-alldol$pollenforaging <- alldol$pollenforaging / totBehavs
-alldol$egglaying <- alldol$egglaying / totBehavs
 # reformat as matrix with only behavior info
 alldol_M <- as.matrix(alldol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
 
