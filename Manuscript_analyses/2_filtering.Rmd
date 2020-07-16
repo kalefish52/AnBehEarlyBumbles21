@@ -76,7 +76,17 @@ print(paste(length(rmNests), "nests were filtered out of the data because they h
 rmNests
 nestCounts_filt <- counts_data %>% filter(!nestID %in% rmNests)
 nestCounts_filt
-unique(counts_filt$nestID)
+
+nestCounts_filt <- ddply(nestCounts_filt, 
+                c("nestID", "nestTYPE", "beeID", "caste", "nBees", "nWork", "queen"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                nectarforaging = sum(nectarforaging),
+                pollenforaging = sum(pollenforaging),
+                egglaying = sum(egglaying),
+                nBehavs = sum(nBehavs),
+                allforaging = sum(allforaging))
+
 write.csv(nestCounts_filt, "../Data/tempData/nestCounts_filt.csv")
 
 # # remove nests with fewer than 5 observations of foraging or brood feeding combined
@@ -107,7 +117,7 @@ counts_data
 
 # pool early and late timepoints back together
 counts_pooled <- ddply(counts_data, 
-                c("nestID", "nestTYPE", "beeID", "caste"), 
+                c("nestID", "nestTYPE", "beeID", "caste", "nBees", "nWork", "queen"), 
                 summarise,
                 feedsbrood = sum(feedsbrood),
                 nectarforaging = sum(nectarforaging),
@@ -146,7 +156,7 @@ nestEarlyANDLateCounts_filt.csv
 ```{r}
 # summarize behaviors observed for each nest at early and late timepoints
 statsNestTime <- ddply(counts_gathered, 
-                c("nestID", "behav", "timepoint"), 
+                c("nestID", "behav", "timepoint", "nBees", "nWork", "queen"), 
                 summarise,
                 nObs = sum(count),
                 mean = mean(count), 
@@ -226,7 +236,7 @@ beeEarlyANDLateCounts_filt <- counts_data %>% filter(uqID %in% earlyBeeCounts_fi
 beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt %>% filter(uqID %in% lateBeeCounts_filt$uqID)
 beeEarlyANDLateCounts_filt <- beeEarlyANDLateCounts_filt[beeEarlyANDLateCounts_filt$beeID != "unknown",]
 beeEarlyANDLateCounts_filt
-counts_data
+counts_data 
 print(paste(length(unique(beeEarlyANDLateCounts_filt$uqID)), "out of", length(unique(counts_data$uqID)), "identified bees have at least 3 recorded observations at both the early and late timepoints.", sep = " "))
 print(paste(length(unique(counts_data$uqID)) - length(unique(beeEarlyANDLateCounts_filt$uqID)), "bees were filtered out of the early + late data because they have fewer than 3 observations at one or both timepoints or are unidentified.", sep = " "))
 
