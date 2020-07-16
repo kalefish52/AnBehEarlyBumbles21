@@ -78,7 +78,7 @@ nestCounts_filt <- counts_data %>% filter(!nestID %in% rmNests)
 nestCounts_filt
 
 nestCounts_filt <- ddply(nestCounts_filt, 
-                c("nestID", "nestTYPE", "beeID", "caste"), 
+                c("nestID", "nestTYPE", "beeID", "caste", "nBees", "nWork", "queen"), 
                 summarise,
                 feedsbrood = sum(feedsbrood),
                 nectarforaging = sum(nectarforaging),
@@ -117,7 +117,7 @@ counts_data
 
 # pool early and late timepoints back together
 counts_pooled <- ddply(counts_data, 
-                c("nestID", "nestTYPE", "beeID", "caste"), 
+                c("nestID", "nestTYPE", "beeID", "caste", "nBees", "nWork", "queen"), 
                 summarise,
                 feedsbrood = sum(feedsbrood),
                 nectarforaging = sum(nectarforaging),
@@ -156,7 +156,7 @@ nestEarlyANDLateCounts_filt.csv
 ```{r}
 # summarize behaviors observed for each nest at early and late timepoints
 statsNestTime <- ddply(counts_gathered, 
-                c("nestID", "behav", "timepoint"), 
+                c("nestID", "behav", "timepoint", "nBees", "nWork", "queen"), 
                 summarise,
                 nObs = sum(count),
                 mean = mean(count), 
