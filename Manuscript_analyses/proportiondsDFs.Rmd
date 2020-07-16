@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(plyr)
 library(ggplot2)
 library(cluster) # clustering algorithms
 library(factoextra)
@@ -23,17 +24,38 @@ library(plotly)
 
 # load data
 ```{r}
+# beeCounts
 beeCounts_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
 # select only relevant columns
 beeCounts_data <- beeCounts_data %>% 
-  dplyr::select(nestID, nestTYPE, beeID, caste, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, 
+                feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+beeCounts_data$queen <- as.factor(beeCounts_data$queen)
 beeCounts_data
 
+beeEarlyCounts_data <- read.csv("../Data/tempData/beeEarlyCounts_filt.csv")
+beeEarlyCounts_data <- beeEarlyCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, 
+                feedsbrood, nectarforaging, pollenforaging, nBehavs) # don't include egg laying in early vs. late
+beeEarlyCounts_data$queen <- as.factor(beeEarlyCounts_data$queen)
+beeEarlyCounts_data
+
+beeLateCounts_data <- read.csv("../Data/tempData/beeLateCounts_filt.csv")
+beeLateCounts_data <- beeLateCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, 
+                feedsbrood, nectarforaging, pollenforaging, nBehavs) # don't include egg laying in early vs. late
+beeLateCounts_data$queen <- as.factor(beeLateCounts_data$queen)
+beeLateCounts_data
+
+# nestCounts
 nestCounts_data <- read.csv("../Data/tempData/nestCounts_filt.csv")
 nestCounts_data <- nestCounts_data %>% 
-  dplyr::select(nestID, nestTYPE, beeID, caste, feedsbrood, allforaging, egglaying, nBehavs)
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, 
+                feedsbrood, allforaging, egglaying, nBehavs)
+nestCounts_data$queen <- as.factor(nestCounts_data$queen)
 nestCounts_data
 ```
+
 # 1. individual specialization
 of the behaviors carried out by each individual, proportion of observations of each task
 ```{r}
@@ -44,8 +66,24 @@ beeProp_data$nectarforaging <- beeProp_data$nectarforaging / beeProp_data$nBehav
 beeProp_data$pollenforaging <- beeProp_data$pollenforaging / beeProp_data$nBehavs
 beeProp_data$egglaying <- beeProp_data$egglaying / beeProp_data$nBehavs
 beeProp_data
-```
+write.csv(beeProp_data, "../Data/beeProp_data.csv")
 
+# EARLY and LATE comparisons
+beeEarlyProp_data <- beeEarlyCounts_data
+beeEarlyProp_data$feedsbrood <- beeEarlyProp_data$feedsbrood / beeEarlyProp_data$nBehavs
+beeEarlyProp_data$nectarforaging <- beeEarlyProp_data$nectarforaging / beeEarlyProp_data$nBehavs
+beeEarlyProp_data$pollenforaging <- beeEarlyProp_data$pollenforaging / beeEarlyProp_data$nBehavs
+beeEarlyProp_data
+write.csv(beeEarlyProp_data, "../Data/beeEarlyProp_data.csv")
+
+beeLateProp_data <- beeLateCounts_data
+beeLateProp_data$feedsbrood <- beeLateProp_data$feedsbrood / beeLateProp_data$nBehavs
+beeLateProp_data$nectarforaging <- beeLateProp_data$nectarforaging / beeLateProp_data$nBehavs
+beeLateProp_data$pollenforaging <- beeLateProp_data$pollenforaging / beeLateProp_data$nBehavs
+beeLateProp_data
+write.csv(beeLateProp_data, "../Data/beeLateProp_data.csv")
+
+```
 # NMDS on beeProp data -- individual specialization
 ```{r}
 # Convert dataframes into matrices - two sets: one with combined foraging and one with separated foraging 
@@ -58,7 +96,7 @@ nmds_data[is.na(nmds_data)] <- 0
 
 numBees <- nrow(nmds_data)
 # remove bees lacking any behaviors
-nmds_data <-nmds_data[rowSums(nmds_data[(7:(ncol(nmds_data) - 1))]) > 0, ]
+nmds_data <-nmds_data[rowSums(nmds_data[(8:(ncol(nmds_data) - 1))]) > 0, ]
 numDatapoints <- nrow(nmds_data)
 print(paste( (numBees - numDatapoints), "bees were removed from the nmds data because they had 0 recorded behaviors", sep = " "))
 
@@ -88,6 +126,9 @@ data.scores$nestTYPE <-nmds_data$nestTYPE
 data.scores$timepoint <-nmds_data$timepoint
 data.scores$beeID <-nmds_data$beeID
 data.scores$nestID <- nmds_data$nestID
+data.scores$nBees <- nmds_data$nBees
+data.scores$nWork <- nmds_data$nWork
+data.scores$queen <- nmds_data$queen
 data.scores
 
 # Gets NMDS info for each behavior
@@ -162,4 +203,5 @@ for (i in 1:nrow(nestCounts_data)) {         # for each bee
   }
 }
 nestProp_data
+write.csv(nestProp_data, "../Data/nestProp_data.csv")
 ```
