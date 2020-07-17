@@ -27,6 +27,7 @@ library(plotly)
 early_data <- read.csv("../Data/beeEarlyProp_data.csv")
 late_data <- read.csv("../Data/beeLateProp_data.csv")
 time_data <- rbind(early_data, late_data)
+time_data
 ```
 
 # NMDS on early and late beeProp data -- individual specialization over time, not including egg laying
@@ -178,45 +179,64 @@ distNMDS2 <- ddply(data.scores, c("nestTYPE", "caste"),
 distNMDS2
 ```
 
-# glmm on NMDS coordinates across time, nestTYPE, and caste
-could also do queen, nBees, nWork instead of or in addition to nestTYPE
-```{r}
+<!-- # glmm on NMDS coordinates across time, nestTYPE, and caste -->
+<!-- could also do queen, nBees, nWork instead of or in addition to nestTYPE -->
+<!-- ```{r} -->
 
-# rename for analyses
-nmdsData <- data.scores
+<!-- # rename for analyses -->
+<!-- nmdsData <- data.scores -->
 
-library(car)
-library(MASS)
+<!-- library(car) -->
+<!-- library(MASS) -->
 
-############ CAN'T FIGURE OUT CORRECT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############
-# normal distribution
-qqp(nmdsData$NMDS1, "norm")
+<!-- hist(nmdsData$NMDS1) -->
 
-# lnorm means lognormal
-qqp(nmdsData$NMDS1, "lnorm")
+<!-- ############ CAN'T FIGURE OUT CORRECT DISTRIBUTION. ANALYSES ARE INVALID UNTIL THIS IS RESOLVED ############ -->
+<!-- # normal distribution -->
+<!-- qqp(nmdsData$NMDS1, "norm") -->
 
-# gamma must be positive numbers
-# gamma <- fitdistr(nmdsData$NMDS1, "gamma")
-# qqp(nmdsData$NMDS1, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
+<!-- # lnorm means lognormal -->
+<!-- qqp(nmdsData$NMDS1, "lnorm") -->
 
-# run model on NMDS1: egg laying VS foraging (brood feeding in between)
-library(lme4)
-nmds1 <- glmer(NMDS1 ~ nestTYPE + caste + timepoint + (1|beeID) + (1|nestID),
-              data = nmdsData)
+<!-- fitBinom <- fitdistr(data=nmdsData$NMDS1, dist="binom") -->
+<!-- qqp(nmdsData$NMDS1, "binom", size=100, fitBinom$estimate) -->
 
-# p values
-library(sjPlot)
-tab_model(nmds1)
+<!-- # gamma must be positive numbers -->
+<!-- # gamma <- fitdistr(nmdsData$NMDS1, "gamma") -->
+<!-- # qqp(nmdsData$NMDS1, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]]) -->
 
-# run model on NMDS2: brood feeding VS egg laying + foraging
-library(lme4)
-nmds2 <- glmer(NMDS2 ~ nestTYPE + caste + timepoint + (1|beeID) + (1|nestID),
-              data = nmdsData)
+<!-- # run model on NMDS1: egg laying VS foraging (brood feeding in between) -->
+<!-- library(lme4) -->
+<!-- nmds1 <- glmer(NMDS1 ~ timepoint*nestTYPE + timepoint*caste + (1|beeID) + (1|nestID), -->
+<!--               data = nmdsData) -->
 
-# p values
-library(sjPlot)
-tab_model(nmds2)
-```
+<!-- modelResiduals <- resid(nmds1, type = "pearson") # Extract standardized residuals -->
+<!-- hist(modelResiduals) -->
+<!-- qqnorm(resid(nmds1)) -->
+<!-- plot(nmds1) -->
+
+<!-- # p values -->
+<!-- library(sjPlot) -->
+<!-- tab_model(nmds1) -->
+
+<!-- # run model on NMDS2: brood feeding VS egg laying + foraging -->
+<!-- library(lme4) -->
+<!-- nmdsData$NMDS2.s <- sqrt(nmdsData$NMDS2 + 2) -->
+<!-- hist(nmdsData$NMDS2) -->
+
+<!-- # poisson must be positive whole numbers -->
+<!-- poisson <- fitdistr(nmdsData$NMDS2, "Poisson") -->
+<!-- qqp(nmdsData$NMDS2, "pois", lambda = poisson$estimate) -->
+
+<!-- nmds2 <- glmer(NMDS2 ~ timepoint*nestTYPE + timepoint*caste + (1|beeID) + (1|nestID), -->
+<!--               data = nmdsData) -->
+<!-- qqnorm(resid(nmds2)) -->
+<!-- hist(resid(nmds2)) -->
+
+<!-- # p values -->
+<!-- library(sjPlot) -->
+<!-- tab_model(nmds2) -->
+<!-- ``` -->
 
 # repeatability analyses on NMDS coordinates (same as ICC intra-class correlation)
 https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
@@ -236,7 +256,7 @@ ggplot(countScores, aes(NMDS2, fill = timepoint)) + geom_density(alpha = 0.2)
 
 ############### DATA IS NOT GAUSSIAN -- NEED TO ADDRESS THIS ####################
 
-# NMDS1: low = egg laying, high = foraging, mid = brood feeding
+# NMDS1: low = brood feeding, high = foraging
 rep1 <- rpt(NMDS1 ~ (1|beeID),
             grname = "beeID", data = countScores, datatype = "Gaussian", nboot = 1000, npermut = 0)
 summary(rep1)
@@ -249,7 +269,7 @@ print(rep1Exp)
 summary(rep1Exp)
 plot(rep1Exp, cex.main = 1)
 
-# NMDS2: low = brood feeding, mid = egg laying + foraging
+# NMDS2: low = brood feeding + nectar foraging, high = pollen foraging
 rep2Exp <- rpt(NMDS2 ~ nestTYPE + caste + (1|beeID),
                grname = "beeID", data = countScores, datatype = "Gaussian", nboot = 1000, npermut = 0)
 print(rep2Exp)
