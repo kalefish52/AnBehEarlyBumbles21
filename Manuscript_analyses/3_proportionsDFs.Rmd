@@ -1,0 +1,207 @@
+---
+title: "proportionsDFs"
+author: "ES"
+date: "7/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+```
+
+# load data
+```{r}
+# beeCounts
+beeCounts_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
+# select only relevant columns
+beeCounts_data <- beeCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, 
+                feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+beeCounts_data$queen <- as.factor(beeCounts_data$queen)
+beeCounts_data
+
+beeEarlyCounts_data <- read.csv("../Data/tempData/beeEarlyCounts_filt.csv")
+beeEarlyCounts_data <- beeEarlyCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, 
+                feedsbrood, nectarforaging, pollenforaging, nBehavs) # don't include egg laying in early vs. late
+beeEarlyCounts_data$queen <- as.factor(beeEarlyCounts_data$queen)
+beeEarlyCounts_data
+
+beeLateCounts_data <- read.csv("../Data/tempData/beeLateCounts_filt.csv")
+beeLateCounts_data <- beeLateCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, 
+                feedsbrood, nectarforaging, pollenforaging, nBehavs) # don't include egg laying in early vs. late
+beeLateCounts_data$queen <- as.factor(beeLateCounts_data$queen)
+beeLateCounts_data
+
+# nestCounts
+nestCounts_data <- read.csv("../Data/tempData/nestCounts_filt.csv")
+nestCounts_data <- nestCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, 
+                feedsbrood, allforaging, egglaying, nBehavs)
+nestCounts_data$queen <- as.factor(nestCounts_data$queen)
+nestCounts_data
+```
+
+# 1. individual specialization
+of the behaviors carried out by each individual, proportion of observations of each task
+```{r}
+# convert counts to proportions out of total behaviors per individual
+beeProp_data <- beeCounts_data
+beeProp_data$feedsbrood <- beeProp_data$feedsbrood / beeProp_data$nBehavs
+beeProp_data$nectarforaging <- beeProp_data$nectarforaging / beeProp_data$nBehavs
+beeProp_data$pollenforaging <- beeProp_data$pollenforaging / beeProp_data$nBehavs
+beeProp_data$egglaying <- beeProp_data$egglaying / beeProp_data$nBehavs
+beeProp_data
+write.csv(beeProp_data, "../Data/beeProp_data.csv")
+
+# EARLY and LATE comparisons
+beeEarlyProp_data <- beeEarlyCounts_data
+beeEarlyProp_data$feedsbrood <- beeEarlyProp_data$feedsbrood / beeEarlyProp_data$nBehavs
+beeEarlyProp_data$nectarforaging <- beeEarlyProp_data$nectarforaging / beeEarlyProp_data$nBehavs
+beeEarlyProp_data$pollenforaging <- beeEarlyProp_data$pollenforaging / beeEarlyProp_data$nBehavs
+beeEarlyProp_data
+write.csv(beeEarlyProp_data, "../Data/beeEarlyProp_data.csv")
+
+beeLateProp_data <- beeLateCounts_data
+beeLateProp_data$feedsbrood <- beeLateProp_data$feedsbrood / beeLateProp_data$nBehavs
+beeLateProp_data$nectarforaging <- beeLateProp_data$nectarforaging / beeLateProp_data$nBehavs
+beeLateProp_data$pollenforaging <- beeLateProp_data$pollenforaging / beeLateProp_data$nBehavs
+beeLateProp_data
+write.csv(beeLateProp_data, "../Data/beeLateProp_data.csv")
+
+```
+# NMDS on beeProp data -- individual specialization
+```{r}
+# Convert dataframes into matrices - two sets: one with combined foraging and one with separated foraging 
+# Need to add a unique number to each worker in case there are repeats 
+
+# rename initial count data frame
+nmds_data <- beeProp_data
+# make NA values 0
+nmds_data[is.na(nmds_data)] <- 0
+
+numBees <- nrow(nmds_data)
+# remove bees lacking any behaviors
+nmds_data <-nmds_data[rowSums(nmds_data[(8:(ncol(nmds_data) - 1))]) > 0, ]
+numDatapoints <- nrow(nmds_data)
+print(paste( (numBees - numDatapoints), "bees were removed from the nmds data because they had 0 recorded behaviors", sep = " "))
+
+# # add dummy variable to include lazy workers
+# nmds_data$nothing <- 0.01
+
+# remove bees with NA beeID
+nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
+# remane beeID to combine nestID and beeID to account for duplicates
+nmds_data$beeID <- paste0(nmds_data$nestID, nmds_data$beeID)
+nmds_data
+
+# make matrix of only behavior counts for all timepoints
+nmds_all <- as.matrix(nmds_data[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+nmds_all
+
+# Run NMDS with euclidean distance
+nmds_all <- metaMDS(nmds_all)
+plot(nmds_all)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores <- as.data.frame(scores(nmds_all))
+data.scores$caste <- nmds_data$caste
+data.scores$nestTYPE <-nmds_data$nestTYPE
+data.scores$timepoint <-nmds_data$timepoint
+data.scores$beeID <-nmds_data$beeID
+data.scores$nestID <- nmds_data$nestID
+data.scores$nBees <- nmds_data$nBees
+data.scores$nWork <- nmds_data$nWork
+data.scores$queen <- nmds_data$queen
+data.scores
+
+# Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(nmds_all, "species"))
+behav.scores$behav<-rownames(behav.scores)
+behav.scores
+
+# Plot it using ggplot
+ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape=caste), size = 2, position = position_jitter(width=0.08, height=0.08)) + 
+  scale_shape_manual(values = c(21, 16)) +
+  geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15, position = position_jitter(width = 0, height = 0),
+           arrow = arrow(length=unit(0.25,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2))
+
+# plot it split out by nestID
+p <- ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape=caste), position = position_jitter(width=0.05, height=0.05)) + 
+  scale_color_manual(values = c("red", "blue")) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15,
+  #          arrow = arrow(length=unit(0.15,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+plots = data.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestID))
+plots$plots
+
+# plot split out by nestTYPE
+p <- ggplot() + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 3) +
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape=caste), size = 2, position = position_jitter(width=0.05, height=0.05)) + 
+  scale_color_manual(values = c("red", "blue")) +
+  # geom_line(data=data.scores, aes(x=NMDS1, NMDS2, fill = beeID), size = 0.15,
+  #          arrow = arrow(length=unit(0.15,"cm"), type = "open")) +
+  coord_cartesian(xlim=c(-2, 2), ylim=c(-2, 2))
+plots = data.scores %>%
+    do(plots = p %+% . + facet_wrap(~nestTYPE))
+plots$plots
+```
+
+# 2. task specialization
+of all the observations that occur in a given nest, what proportion of individuals carry out each task
+```{r}
+# first add row with column sums, total number of observations per behavior
+# also do this split out by nestID? proportion of bees who carried out each behavior? proportion of bee-observations
+# if 10 foraging obs in a nest: [2 by bee A, 1 by bee B, and 7 by bee C]:  A$for = .2, B$for = .1, C$for = .8 
+
+# sum columns for each behavior within each nest
+nestCounts_sums <- ddply(nestCounts_data, 
+                c("nestID"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                egglaying = sum(egglaying),
+                nBehavs = sum(nBehavs),
+                allforaging = sum(allforaging))
+nestCounts_sums
+
+# make df for proportions to be overwritten in loop:
+nestProp_data <- nestCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(nestCounts_data)) {         # for each bee
+  for (j in 1:nrow(nestCounts_sums)) {       # go through the nestCounts_sums df
+    if (nestCounts_data$nestID[i] == nestCounts_sums$nestID[j]) {   # until you find the matching nestID
+                                             # then divide the counts of each behavior by the total counts of that behavior in the nest
+      nestProp_data$feedsbrood[i] <- nestCounts_data$feedsbrood[i] / nestCounts_sums$feedsbrood[j]
+      nestProp_data$allforaging[i] <- nestCounts_data$allforaging[i] / nestCounts_sums$allforaging[j]
+      nestProp_data$egglaying[i] <- nestCounts_data$egglaying[i] / nestCounts_sums$egglaying[j]
+      nestProp_data$nBehavs[i] <- nestCounts_data$nBehavs[i] / nestCounts_sums$nBehavs[j]
+    }
+  }
+}
+nestProp_data
+write.csv(nestProp_data, "../Data/nestProp_data.csv")
+```

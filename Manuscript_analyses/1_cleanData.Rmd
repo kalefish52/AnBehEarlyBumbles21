@@ -272,6 +272,9 @@ master_data <- master_data[!master_data$nestID == "QF01",]
 master_data <- master_data[!master_data$nestID == "QF08",]
 master_data <- master_data[!master_data$nestID == "NT07",]
 
+## rename unknown workers
+obs_data[, "beeID"][is.na(obs_data[, "beeID"])] <- "unknown"
+
 # write master_data with QA gropus for erica's analyses
 write.csv(master_data, "../Data/cleanMasterData.csv")
 
@@ -351,7 +354,7 @@ for (i in 1:nrow(obs_data)) {
 
 head(obs_data)
 obs_data
-
+write.csv(obs_data, "../Data/obs_data")
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
 print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov - fiveMinRemov_obs, "were removed above.",  sep = " "))
@@ -377,10 +380,10 @@ obs_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 ## remove data from nest types other than the ones we want (remove bad data)
 obs_data <- subset(obs_data, subset = (obs_data$nestTYPE == "NT" | obs_data$nestTYPE == "NF" | obs_data$nestTYPE == "QT" | obs_data$nestTYPE == "QF"))
 
-data_sum<- obs_data %>% select(camID, nestID, nestTYPE) %>% arrange(nestID, camID)
+data_sum<- obs_data %>% dplyr::select(camID, nestID, nestTYPE) %>% dplyr::arrange(nestID, camID)
 
-sumsTOTAL<-data_sum %>% group_by(nestID, camID) %>% summarise(Observations=n())
-sumsTYPE<-data_sum %>% group_by(nestTYPE, camID) %>% summarise(Observations=n())
+sumsTOTAL<-data_sum %>% dplyr::group_by(nestID, camID) %>% dplyr::summarise(Observations=dplyr::n())
+sumsTYPE<-data_sum %>% dplyr::group_by(nestTYPE, camID) %>% dplyr::summarise(Observations=dplyr::n())
 
 ##look at number of observations we have so far based on each colony 
 ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
@@ -404,7 +407,7 @@ master_data <- subset(master_data, nestID %in% obs_data$nestID)
 master_data
 ## make a list of all the bees we do have records for
 ## select only relevant information
-recordedBees <- select(obs_data, nestID, beeID)
+recordedBees <- dplyr::select(obs_data, nestID, beeID)
 ## remove duplicates
 recordedBees <- unique(recordedBees[c("nestID", "beeID")])
 
@@ -435,7 +438,7 @@ masterBees$caste <- sapply(strsplit(masterBees$IDtype, ""),
                             x[1]
                           })
 
-## remove NA values **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
+## remove NA values  **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
 masterBees <- masterBees[!is.na(masterBees$IDnum),]
 
 # #So we can add caste information to the counts data 
@@ -443,7 +446,7 @@ masterBees <- masterBees[!is.na(masterBees$IDnum),]
 # CasteInfo
 
 ## select only relevant information
-masterBees <- select(masterBees, nestID, IDnum, caste)
+masterBees <- dplyr::select(masterBees, nestID, IDnum, caste)
 
 ## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
 masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
@@ -483,15 +486,15 @@ for (i in 1:(nrow(obs_data))) {
   obs_data$rand[i] <- runif(1)
 }
 
-## remove NA beeID values from obs_data ** THIS REMOVES ALL UNIDENTIFIED BEES FROM ALL FUTURE ANALYSES **
-obs_data <- obs_data[!is.na(obs_data$beeID),]
+# ## remove NA beeID values from obs_data ** THIS REMOVES ALL UNIDENTIFIED BEES FROM ALL FUTURE ANALYSES **
+# obs_data <- obs_data[!is.na(obs_data$beeID),]
 
 ## make NA values equal to 0
 obs_data[is.na(obs_data)] <- 0
 
 ## check how many bees we have in the new obs_data. this is copied and pasted from the methods above. should equal the number of bees in the master_data
 ## select only relevant information
-allBees <- select(obs_data, nestID, beeID, caste)
+allBees <- dplyr::select(obs_data, nestID, beeID, caste)
 ## remove duplicates
 allBees <- unique(allBees[c("nestID", "beeID")])
 
@@ -502,7 +505,6 @@ if (nrow(allBees)==nrow(masterBees)) {
 } else {
   print(paste("ERROR! There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
 }
-
 ```
 ### make count data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -528,7 +530,7 @@ count_data$totCount <- rowSums(count_data[5:ncol(count_data)], na.rm = TRUE)
 count_data
 ## subset dataframe so that all is left is nestID, beeID, behav, totCount, and caste
 count_data <- count_data %>%
-  select(nestID, beeID, behav, totCount, caste)
+  dplyr::select(nestID, beeID, behav, totCount, caste)
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 count_data <- count_data %>%
@@ -560,25 +562,10 @@ if (nrow(count_data)==nrow(masterBees)) {
 knownWorkers <- nrow(count_data)
 
 ## remove unknown worker data
-# count_data <- count_data[!count_data$beeType == "U", ]
-# count_data <- count_data[!count_data$beeType == "N", ]
-count_data <- count_data[!count_data$caste == "U", ]
-count_data <- count_data[!count_data$caste == "N", ]
+# count_data <- count_data[!count_data$caste == "U", ]
+# count_data <- count_data[!count_data$caste == "N", ]
 
-## make missingBees beeType NA
-# for (i in 1:nrow(count_data)) {
-#   if (count_data$beeType[i] == 1 || 
-#       count_data$beeType[i] == 2 || 
-#       count_data$beeType[i] == 3 ||
-#       count_data$beeType[i] == 4 ||
-#       count_data$beeType[i] == 5 ||
-#       count_data$beeType[i] == 6 ||
-#       count_data$beeType[i] == 7 ||
-#       count_data$beeType[i] == 8 ||
-#       count_data$beeType[i] == 9) {
-#     count_data$beeType[i] <- 0
-#   }
-# }
+## make missingBees caste NA
 for (i in 1:nrow(count_data)) {
   if (count_data$caste[i] == 1 || 
       count_data$caste[i] == 2 || 
@@ -615,7 +602,7 @@ count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 ## remove data from nest types other than the ones we want (remove bad data)
 count_data <- subset(count_data, subset = (count_data$nestTYPE == "NT" | count_data$nestTYPE == "NF" | count_data$nestTYPE == "QT" | count_data$nestTYPE == "QF"))
 
-data_sum <- count_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
 
 sumsTYPE<-data_sum %>% group_by(nestTYPE) 
 
@@ -643,96 +630,96 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 
 ```
 
-### make duration df with duration of each behavior for each bee
-output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values.
-this data includes unidentified bees
-```{r}
-## rename for clarity
-dur_data <- obs_data
+<!-- ### make duration df with duration of each behavior for each bee -->
+<!-- output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values. -->
+<!-- this data includes unidentified bees -->
+<!-- ```{r} -->
+<!-- ## rename for clarity -->
+<!-- dur_data <- obs_data -->
 
-for (i in 1:nrow(dur_data)) {
-  if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") {
-    dur_data$dur[i] <- 1
-  }
-}
+<!-- for (i in 1:nrow(dur_data)) { -->
+<!--   if (!is.na(dur_data$behav[i]) && dur_data$behav[i] == "feedsbrood") { -->
+<!--     dur_data$dur[i] <- 1 -->
+<!--   } -->
+<!-- } -->
 
-## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior. 
-## values = duration of each behav
-dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "behav", "caste"), 
-              names_from = rand, 
-              values_from = dur, 
-              names_repair = "minimal")
+<!-- ## collapse dataframe so that columns = nestID, beeID, behav, and stop times for each behavior.  -->
+<!-- ## values = duration of each behav -->
+<!-- dur_data <- dur_data %>% -->
+<!--   pivot_wider(id_cols = c("nestID", "beeID", "behav", "caste"),  -->
+<!--               names_from = rand,  -->
+<!--               values_from = dur,  -->
+<!--               names_repair = "minimal") -->
 
-## add column with the sum of durations for each behav
-dur_data$totDur <- rowSums(dur_data[5:ncol(dur_data)], na.rm = TRUE)
+<!-- ## add column with the sum of durations for each behav -->
+<!-- dur_data$totDur <- rowSums(dur_data[5:ncol(dur_data)], na.rm = TRUE) -->
 
-## subset dataframe so that all is left is nestID, beeID, behav, and totDur
-dur_data <- dur_data %>%
-  select(nestID, beeID, behav, caste, totDur)
+<!-- ## subset dataframe so that all is left is nestID, beeID, behav, and totDur -->
+<!-- dur_data <- dur_data %>% -->
+<!--   select(nestID, beeID, behav, caste, totDur) -->
 
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
-dur_data <- dur_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "caste"), 
-              names_from = behav, 
-              values_from = totDur)
+<!-- ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors -->
+<!-- dur_data <- dur_data %>% -->
+<!--   pivot_wider(id_cols = c("nestID", "beeID", "caste"),  -->
+<!--               names_from = behav,  -->
+<!--               values_from = totDur) -->
 
-## replace NA values with 0
-dur_data[is.na(dur_data)] <- 0
+<!-- ## replace NA values with 0 -->
+<!-- dur_data[is.na(dur_data)] <- 0 -->
 
-##save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(dur_data, "../Data/tempData/dur_data.csv")
+<!-- ##save dataframe as .csv so it can be used in other downstream analyses  -->
+<!-- write.csv(dur_data, "../Data/tempData/dur_data.csv") -->
 
-## count the number of bees with behaviors
-print(paste("There are", nrow(dur_data), "bees accounted for in the duration data."))
-if (nrow(dur_data)==nrow(recordedBees)) {
-  print("All bees with recorded behaviors are accounted for!")
-} else {
-  print(paste("There is a mismatch between identified bees and the number of bees in the duration dataframe. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "identified bees with recorded behaviors. Right now, duration df includes unidentified bees, which will make it larger than the identifed bees with recorded behaviors.", sep = " "))
-}
+<!-- ## count the number of bees with behaviors -->
+<!-- print(paste("There are", nrow(dur_data), "bees accounted for in the duration data.")) -->
+<!-- if (nrow(dur_data)==nrow(recordedBees)) { -->
+<!--   print("All bees with recorded behaviors are accounted for!") -->
+<!-- } else { -->
+<!--   print(paste("There is a mismatch between identified bees and the number of bees in the duration dataframe. There are", nrow(dur_data), "bees accounted for in the duration dataframe, but the boris data has", nrow(recordedBees), "identified bees with recorded behaviors. Right now, duration df includes unidentified bees, which will make it larger than the identifed bees with recorded behaviors.", sep = " ")) -->
+<!-- } -->
 
-dur_data
+<!-- dur_data -->
 
-##graph the number of behaviors we have per nest
-Queencharacter <- sapply(strsplit(count_data$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-                          
-dur_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+<!-- ##graph the number of behaviors we have per nest -->
+<!-- Queencharacter <- sapply(strsplit(count_data$nestID, ""),  -->
+<!--                           function(x){ -->
+<!--                             x[1] -->
+<!--                           }) -->
+<!-- Numbercharacter<-sapply(strsplit(count_data$nestID, ""), -->
+<!--                         function(x){ -->
+<!--                           x[2] -->
+<!--                         })     -->
 
-## remove data from nest types other than the ones we want (remove bad data)
-dur_data <- subset(dur_data, subset = (dur_data$nestTYPE == "NT" | dur_data$nestTYPE == "NF" | dur_data$nestTYPE == "QT" | dur_data$nestTYPE == "QF"))
+<!-- dur_data$nestTYPE<-paste0(Queencharacter, Numbercharacter) -->
 
-data_sum <- dur_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+<!-- ## remove data from nest types other than the ones we want (remove bad data) -->
+<!-- dur_data <- subset(dur_data, subset = (dur_data$nestTYPE == "NT" | dur_data$nestTYPE == "NF" | dur_data$nestTYPE == "QT" | dur_data$nestTYPE == "QF")) -->
 
-sumsTYPE<-data_sum %>% group_by(nestTYPE) 
+<!-- data_sum <- dur_data %>% select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID) -->
 
-##look at data we have so far based on each colony 
+<!-- sumsTYPE<-data_sum %>% group_by(nestTYPE)  -->
 
-ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ##look at data we have so far based on each colony  -->
 
-ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-## look at data we have so far based on each type of colony 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+<!-- ## look at data we have so far based on each type of colony  -->
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-```
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
+
+<!-- ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) + -->
+<!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
+<!-- ``` -->
 
 ### duration of video watched for each colony
 output df with total duration of video watched per colony. columns = nestID and totalLen
@@ -741,7 +728,7 @@ output df with total duration of video watched per colony. columns = nestID and 
 ## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
 nVids <- nrow(videos_data)
 totalLen_data <- videos_data %>%
-  select(obsID, nestID, totalLen) %>%
+  dplyr::select(obsID, nestID, totalLen) %>%
   unique()
 totalLen_data
 ## print how many videos were removed
@@ -767,7 +754,7 @@ totalLen_data$hourID <- sapply(strsplit(totalLen_data$obsID, "\t"),
 totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
 ## subset the df to remove the obs, hour, and date columns
 totalLen_data <- totalLen_data %>%
-  select(camID, timeID, nestID, totalLen)
+  dplyr::select(camID, timeID, nestID, totalLen)
 
 totalLen_data
 ## verify we have the correct number of colonies and videos
@@ -962,7 +949,7 @@ head(dates_data)
 
 # subset the df to remove the obs, hour, and date columns
 timepoint_data <- dates_data %>%
-  select(camID, nestID, totalLen)
+  dplyr::select(camID, nestID, totalLen)
 # create empty dataframe to put length into
 dateDur <- data.frame(nestID = NA,
                       early_forSum = NA,
@@ -1125,6 +1112,7 @@ nestDEVearly$timepoint <- "early"
 nestDEVlate$timepoint <- "late"
 nestDEV <- rbind(nestDEVearly, nestDEVlate)
 nestDEV
+write.csv(nestDEV, "../Data/nestDEV.csv")
 head(nestDEV)
 ```
 
@@ -1133,21 +1121,19 @@ head(nestDEV)
 #Import egglaying data - find median timepoint, make early/late column and then merge to nestDEV
 head(nestDEV)
 egglaying<-read.csv("../Data/Egg_laying_Events.csv")
-head(egglaying)
+egglaying
 
 #Change date to same format as above
 egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%m/%d/%y")
 
 #Rename date name and microcolony name in egglaying to match dateID in nestDEV 
-egglaying<-egglaying %>% rename(dateID=Date.Eggs.Laid)
-egglaying<-egglaying %>% rename(nestID=MicrocolonyID)
+egglaying<-egglaying %>% dplyr::rename(dateID=Date.Eggs.Laid)
+egglaying<-egglaying %>% dplyr::rename(nestID=MicrocolonyID)
 
 #Calculate median date between egg laying events for each nestID
-datesmedian<-egglaying %>% group_by(nestID) %>% summarize(median=(ceiling(max(dateID)-min(dateID))/2)+min(dateID))
-
+datesmedian<-egglaying %>% group_by(nestID) %>% dplyr::summarize(median=(ceiling(max(dateID)-min(dateID))/2)+min(dateID))
 #Combine median date information with egglaying dataframe
-egglayingmedian<-left_join(egglaying, datesmedian, by="nestID")
-
+egglayingmedian <- dplyr::left_join(egglaying, datesmedian, by= c("nestID" = "nestID"))
 #Now write a loop to go through each row and add it either to late or early 
 egglayingmedian$timepoint<-NA
 
@@ -1184,7 +1170,7 @@ eggslate<-eggslate %>% mutate(timepoint="late")
 eggstotal<-rbind(eggsearly, eggslate)
 #eggstotal has all the egglaying information (observer, notes, etc.), select only variables we need for analysis
 head(eggstotal)
-eggsmerge<-eggstotal %>% select(nestID, dateID, WorkerID, Caste, Time, timepoint)
+eggsmerge<-eggstotal %>% dplyr::select(nestID, dateID, WorkerID, Caste, Time, timepoint)
 head(eggsmerge)
 
 ```
@@ -1195,10 +1181,10 @@ head(eggsmerge)
 #make behav column with egglaying
 eggsmerge <- eggsmerge %>% mutate(behav="egglaying")
 #Make sure they have the same column headers so that we can do rbind
-eggsmergebind<-eggsmerge %>% rename(beeID=WorkerID) %>% rename(caste=Caste) %>% select(nestID, beeID, caste, timepoint, behav, dateID)
+eggsmergebind<-eggsmerge %>% dplyr::rename(beeID=WorkerID) %>% dplyr::rename(caste=Caste) %>% dplyr::select(nestID, beeID, caste, timepoint, behav, dateID)
 head(eggsmergebind)
-head(nestDEV)
-nestDEVbind<-nestDEV %>% select(nestID, dateID, timepoint, behav, beeID, caste) 
+nestDEV
+nestDEVbind<-nestDEV %>% dplyr::select(nestID, dateID, timepoint, behav, beeID, caste) 
 nestDEVbind
 
 # #Add caste information to nestDEVbind from CasteInfo
@@ -1233,20 +1219,23 @@ queens<-nestDEVbind %>% filter(caste=="Q") %>% mutate(caste="queen")
 #All worker colonies except QT02, and queen is 85 - no queen behavioral observations
 #so label all NAs as worker caste 
 nahs<-nestDEVbind %>% filter(!caste %in% c("W", "Q")) %>% mutate(caste="worker")
+print(paste(nrow(workers), "workers +", nrow(queens), "queens +", nrow(nahs), "nahs", sep = " " ))
 nahs
+queens
+workers
 nestDEVbind<-rbind(workers, queens, nahs)
-nestDEVbind<-nestDEVbind %>% select(nestID, dateID, timepoint, behav, beeID, caste)
+nestDEVbind
+nestDEVbind<-nestDEVbind %>% dplyr::select(nestID, dateID, timepoint, behav, beeID, caste)
+
+unique(nestDEVbind$caste)
+nestDEVbind[nestDEVbind$beeID == "unknown",]
 
 #Combine egglaying and worker behaviors
 mergedbehavs<-rbind(nestDEVbind, eggsmergebind)
 mergedbehavs
 eggsmergebind %>% filter(nestID=="QT12")
 
-
-
-
-
-
+###############################
 
 #Now turn mergedbehavs into count data so we can do stats :) 
 mergedbehavs$count<-1
@@ -1263,18 +1252,14 @@ counts_final <- mergedbehavs %>%
               names_from = rand, 
               values_from = count) 
 
-
-
-
-
-
+###############################
 
 ## add column to fill with sum of counts for each behav
 counts_final$totCount <- rowSums(counts_final[6:ncol(counts_final)], na.rm = TRUE)
 
 ## subset dataframe so that all is left is variables of interest
 counts_final <- counts_final %>%
-  select(nestID, beeID, caste, timepoint, behav, totCount)
+  dplyr::select(nestID, beeID, caste, timepoint, behav, totCount)
 
 ## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
 counts_final <- counts_final %>%
@@ -1296,18 +1281,39 @@ numberChar <- sapply(strsplit(counts_final$nestID, ""),
                         })    
 counts_final$nestTYPE <- paste0(queenlessChar, numberChar)
 
+## add column for number of bees in the nest
+counts_final$nBees <- NA
+counts_final
+counts_final$nBees[counts_final$nestTYPE == "NF"] <- 5
+counts_final$nBees[counts_final$nestTYPE == "NT"] <- 3
+counts_final$nBees[counts_final$nestTYPE == "QF"] <- 6
+counts_final$nBees[counts_final$nestTYPE == "QT"] <- 4
+
+## add column for number of workers in the nest
+counts_final$nWork <- NA
+counts_final$nWork[counts_final$nestTYPE == "NF"] <- 5
+counts_final$nWork[counts_final$nestTYPE == "NT"] <- 3
+counts_final$nWork[counts_final$nestTYPE == "QF"] <- 5
+counts_final$nWork[counts_final$nestTYPE == "QT"] <- 3
+
+## add column for queen presence
+counts_final$queen <- NA
+counts_final$queen[counts_final$nestTYPE == "NF"] <- 0
+counts_final$queen[counts_final$nestTYPE == "NT"] <- 0
+counts_final$queen[counts_final$nestTYPE == "QF"] <- 1
+counts_final$queen[counts_final$nestTYPE == "QT"] <- 1
+counts_final$queen <- as.character(counts_final$queen)
+
 ## make NA values equal to 0
 counts_final[is.na(counts_final)] <- 0
 
-## subset to remove the behaviors we're not interested in (behavs only used in erica's time budgeting)
+## subset to remove the behaviors we're not interested in (remove behavs only used in erica's time budgeting)
 countsDATA <- counts_final %>%
-  select(nestID, nestTYPE, beeID, caste, timepoint, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint, feedsbrood, nectarforaging, pollenforaging, egglaying, nBehavs)
 
 write.csv(countsDATA, "../Data/countsanalysis.csv") 
 
 countsDATA
-
-
 ```
 
 
