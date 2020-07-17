@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # load packages
-```{r}
+```{r, echo = FALSE}
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
