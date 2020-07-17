@@ -1,0 +1,28 @@
+---
+title: "taskSpecialization"
+author: "ES"
+date: "7/16/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+```
+
+# load data
+```{r}
+nest_data <- read.csv("../Data/nestProp_data.csv")
+nest_data
+```

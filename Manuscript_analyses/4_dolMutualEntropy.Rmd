@@ -1,0 +1,74 @@
+---
+title: "dol"
+author: "ES"
+date: "7/17/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r, echo = FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+```
+
+# load data
+```{r}
+# pooled data across timepoints, values are proportion of total observations in a given nest carried out by that bee/task combination
+# includes pooled foraging and nectar/pollen foraging separately -- only use one or the other in analyses, not both
+dol_data <- read.csv("../Data/dol_data.csv")
+dol_data
+```
+
+# division of labor index
+
+this yeilds a DOL index between 0 (no division) and 1 (complete division) for each bee
+issues = does not describe which behavior a bee is specializing on. eg specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
+
+https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
+
+https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAArAwggKsBgkqhkiG9w0BBwagggKdMIICmQIBADCCApIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM0mGmfTsnhsoK-Y_uAgEQgIICY-aMO-F9oEaBklacEnjaMSJCFsghtzm6jKWajfSFUi1WmnoBV8zpdiY0ztkvgG8k3Vi7Vaby0gWJGaGto13hllldFKZg-C-TNDdv7yJt81TrpV3M_ooNiYcjJq92Y6ObRoYrlxUJfi77RK3_cDBJ9Ag8JjhA03UWwerFU5FE71P3-7ptplP8rI8QYpXNZdtZbyoYrEN80JYxjgt1o2zAFGvRF3r-_1ExlhdpKr5k0OxGqlCa11kFUpBAjFpMun5qR6JL-8bkcbRIAmNnBBduCg1CSXoUBpx18ouZnNJu_v9OQodZ7hBYPfu62SRjQ9TNEZqadgMAt0mMreuH60st2TagmvXlqLPPyoIu7-0ZBvdD6nvcmJ-miBhUw7Z6vCia1KhrvpvKvhZem2N3zsGsNSp_UFSvVSwtNeHdguMtId5zSe70mWdbDBfTJAsag1sf5YAeCd0XwDSRsfarD2aAYlmQ0ARCd8qC8yxdUlKqohn3Xsh70IBQL1jc_l32k1Q7fiplJiD6hQ69Yge2M961fZML1G5vIQa5DxBgThNYg5GyQxXnyzCFHWJIDhqKwHtWgiWQgbA63qMK2IHNicOSw8JhrpaWlWgEUX8NiaiF7ICzNxFh2pcdL-hnazO1StB1anJtiTo-RHgeLji4E9qYFpT3DYcw6ptUAxjLUql3d1M0aByMRS0EhoZCoUfER_8iiUicTNGUi4w85O5mm55B4vRheg5XGSlby26I0_H9zOtK-eQ3PmKHB4DyPvd-Ch24hp4FBEFJM4pI_sCZJc8_p8JuYOonUk_M3aqNLQKGznrL_xu2
+```{r}
+# start with matrix where each row is an individual, and each column is a behavior
+# data is transformed such that all values for a given nest sum to 1
+dol <- dol_data
+dol_shannon <- as.data.frame(NA)
+colnames(dol_shannon) <- "shannon"
+dol_shannon
+for(i in 1:length(unique(dol_data$nestID))) {                   # for each unique nestID in the dataset
+  nest_df <- dol_data[dol_data$nestID == unique(dol_data$nestID)[i], ]  # subset to look only at that nestID
+  nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID
+  shannon <- diversity(nest_m, index = "shannon")
+  hist(shannon)
+  shannon <- as.data.frame(matrix(shannon, ncol = 1))
+  colnames(shannon) <- "shannon"
+  dol_shannon <- rbind(dol_shannon, shannon)
+}
+
+# remove first row (NA value) 
+dol_shannon <- dol_shannon[!is.na(dol_shannon)]
+dol <- cbind(dol, dol_shannon)
+dol
+
+###################### DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTROPY OF MATRIX - THIS IS INCORRECT ######################
+
+# # calculate mutal entropy for entire matrix
+# # this function returns an estimate of the Shannon entropy -- cannot find "mutual entropy"
+# # https://cran.r-project.org/web/packages/entropy/entropy.pdf
+# library(entropy)
+# # using maximum likelihood method here, there are many other options
+# mutEntropy <- entropy(dol_m, method = "ML")
+# mutEntropy
+# # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe -- should be an index between 0-1
+# dol$dol <- mutEntropy / dol$shannon
+# dol 
+```

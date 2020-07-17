@@ -132,6 +132,19 @@ beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
 beeCounts_filt
 write.csv(beeCounts_filt, "../Data/tempData/beeCounts_filt.csv")
 
+beeCounts_sums <- ddply(beeCounts_filt, 
+                c("nestID"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                egglaying = sum(egglaying),
+                pollenforaging = sum(pollenforaging),
+                nectarforaging = sum(nectarforaging),
+                allforaging = sum(allforaging),
+                nBehavs = sum(nBehavs))
+beeCounts_sums
+beecol_sums <- colSums(beeCounts_sums[2:ncol(beeCounts_sums)])
+beecol_sums
+
 print(paste(nrow(beeCounts_filt), "out of", nrow(counts_pooled), "identified bees have at least 3 recorded observations total.", sep = " "))
 print(paste(nrow(counts_pooled)-nrow(beeCounts_filt), "bees were filtered out of the data because they have fewer than 3 observations or are unidentified.", sep = " "))
 ```
