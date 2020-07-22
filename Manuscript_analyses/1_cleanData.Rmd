@@ -286,9 +286,8 @@ master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
 obs_data <- subset(obs_data, nestID %in% master_data$nestID)
 videos_data <- subset(videos_data, nestID %in% master_data$nestID)
 
-
-
-
+# remove behaviors we're not interested in
+obs_data <- obs_data[(obs_data$behav == "feedsbrood" | obs_data$behav == "nectarforaging" | obs_data$behav == "pollenforaging") ,]
 
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
@@ -296,8 +295,6 @@ clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
-
-
 
 obs_data
 ```
@@ -602,7 +599,7 @@ count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 ## remove data from nest types other than the ones we want (remove bad data)
 count_data <- subset(count_data, subset = (count_data$nestTYPE == "NT" | count_data$nestTYPE == "NF" | count_data$nestTYPE == "QT" | count_data$nestTYPE == "QF"))
 
-data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, fillshoneypot, laysegg) %>% arrange(nestID)
+data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood) %>% arrange(nestID)
 
 sumsTYPE<-data_sum %>% group_by(nestTYPE) 
 
@@ -1070,7 +1067,6 @@ nestDEVlate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
 ## make column names the same
 names(nestDEVlate) <- names(nestDEV)
 
-
 # make empty error df
 nestDEVerror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
 ## make column names the same
@@ -1083,18 +1079,20 @@ for(i in 1:length(unique(nestDEV$nestID))) {
   # add first row to early_data
   nestDEVearly <- rbind(nestDEVearly, NDnestid_data[1,])
   # for each dateID
-  for(j in 2:nrow(NDnestid_data)) {
-    # if dateID is less than or equal to previous dateID + 2
-    if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
-      #   move that row to early_data df
-      nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
-    }
-    # if dateID is more than or equal to previous dateID + 4
-    else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
-      #   move that row to late_data df
-      nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
-     else {
-      nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
+  if(nrow(NDnestid_data) > 1) {
+      for(j in 2:nrow(NDnestid_data)) {
+      # if dateID is less than or equal to previous dateID + 2
+        if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
+          # move that row to early_data df
+          nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
+        }
+        # if dateID is more than or equal to previous dateID + 4
+        else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+          # move that row to late_data df
+          nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
+        else {
+          nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
+       }
     }
   }
 }
