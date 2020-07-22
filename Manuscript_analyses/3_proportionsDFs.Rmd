@@ -149,7 +149,7 @@ for (i in 1:nrow(dol_data)) {                 # for each bee
       dol_data$nectarforaging[i] <- dol_data$nectarforaging[i] / nestCounts_behav$nBehavs[j]
       dol_data$pollenforaging[i] <- dol_data$pollenforaging[i] / nestCounts_behav$nBehavs[j]
       dol_data$allforaging[i] <- dol_data$allforaging[i] / nestCounts_behav$nBehavs[j]
-      dol_data$nBehavs[i] <- dol_data$nBehavs[i] / nestCounts_behav$nBehavs[j]
+      dol_data$pBehavs[i] <- dol_data$nBehavs[i] / nestCounts_behav$nBehavs[j]
     }
   }
 }
