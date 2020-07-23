@@ -96,6 +96,9 @@ for (i in 1:nrow(dolT)) {                                                   # fo
 ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 ggsave("../figures/shanDist.jpg")
+# look at how many bees it's actually plotting here
+dolT[!is.na(dolT$shanDist),]
+dol
 ```
 
 # division of labor indices
