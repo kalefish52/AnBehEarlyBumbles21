@@ -24,14 +24,14 @@ library(plotly)
 # load data
 ```{r}
 # pooled data across timepoints, values are proportion of total observations in a given nest carried out by that bee/task combination
+# sum of all values for a given nest = 1
 # includes pooled foraging and nectar/pollen foraging separately -- only use one or the other in analyses, not both
 dol_data <- read.csv("../Data/dol_data.csv")
 dol_data
 ```
 
 # division of labor index
-
-this yeilds a DOL index between 0 (no division) and 1 (complete division) for each bee
+this yeilds a DOL index between 0 (no division) and 1 (complete division) for each task, each bee, and both task & bee
 issues = does not describe which behavior a bee is specializing on. eg specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
 
 https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
@@ -41,34 +41,107 @@ https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7
 # start with matrix where each row is an individual, and each column is a behavior
 # data is transformed such that all values for a given nest sum to 1
 dol <- dol_data
+
+# make a new df with a single column (shannon) to place the shannon calculation for each nest into
 dol_shannon <- as.data.frame(NA)
 colnames(dol_shannon) <- "shannon"
 dol_shannon
-for(i in 1:length(unique(dol_data$nestID))) {                   # for each unique nestID in the dataset
+
+# for each nest, calculate the shannon index for each bee
+for(i in 1:length(unique(dol_data$nestID))) {                           # for each unique nestID in the dataset
   nest_df <- dol_data[dol_data$nestID == unique(dol_data$nestID)[i], ]  # subset to look only at that nestID
   nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID
-  shannon <- diversity(nest_m, index = "shannon")
-  hist(shannon)
-  shannon <- as.data.frame(matrix(shannon, ncol = 1))
-  colnames(shannon) <- "shannon"
-  dol_shannon <- rbind(dol_shannon, shannon)
+  shannon <- diversity(nest_m, index = "shannon")                       # calculate the shannon index for each bee in that nest
+  hist(shannon)                                                         # plot a histogram of the shannon values for that nest
+  shannon <- as.data.frame(matrix(shannon, ncol = 1))                   # put the shannon values into a df to be added to dol_shannon df
+  colnames(shannon) <- "shannon"                                        # name the column shannon to match dol_shannon df
+  dol_shannon <- rbind(dol_shannon, shannon)                            # rbind the values to the dol_shannon df
 }
 
-# remove first row (NA value) 
+# remove first row (NA value) and bind the shannon values to the dol df
 dol_shannon <- dol_shannon[!is.na(dol_shannon)]
 dol <- cbind(dol, dol_shannon)
 dol
+dol_shannon
+hist(dol$dol_shannon)
 
 ###################### DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTROPY OF MATRIX - THIS IS INCORRECT ######################
+# make df to put dol values into
+nestdol <- matrix(NA, nrow = length(unique(dol$nestID)), ncol = 7)
+colnames(nestdol) <- c("nestID", "HX","HY", "I", "indivSpec", "taskSpec", "symmDOL")
+nestdol <- as.data.frame(nestdol)
 
-# # calculate mutal entropy for entire matrix
-# # this function returns an estimate of the Shannon entropy -- cannot find "mutual entropy"
-# # https://cran.r-project.org/web/packages/entropy/entropy.pdf
-# library(entropy)
-# # using maximum likelihood method here, there are many other options
-# mutEntropy <- entropy(dol_m, method = "ML")
-# mutEntropy
-# # calcluate dol index (mutual entropy / H) for each bee and add it to the dataframe -- should be an index between 0-1
-# dol$dol <- mutEntropy / dol$shannon
-# dol 
+# for each nest, calculate mutal entropy for entire matrix (I)
+for(index in 1:length(unique(dol$nestID))) {                                                            # for each unique nestID in the dataset
+  nest_df <- dol[dol$nestID == unique(dol$nestID)[index], ]                                             # subset to look only at that nestID
+  nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID 
+  nestdol$nestID[index] <- unique(dol$nestID)[index]
+  
+  # make row and col sum vectors to use in future calculations
+  sumRow <- rowSums(nest_m)
+  sumCol <- colSums(nest_m)
+  
+  # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
+  # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HX <- 0
+  for(x in 1:nrow(nest_m)) {        # for each individual
+    pX <- sumRow[x]               # p is the proportion of all behaviors in the nest carried out by that individual
+    hX <- pX * log(pX)            # calculate the shannon's index for that individual
+    HX <- HX + hX                 # add it to nestH, to produce an overall H for the nest
+  }
+  HX <- HX * -1
+  nestdol$HX[index] <- HX
+  
+  # calculate nest-level task shannon diversity index via mutual entropy paper's definition
+  # HX = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HY <- 0
+  for(y in 1:ncol(nest_m)) {      # for each task
+    pY <- sumCol[y]               # p is the proportion of all behaviors in the nest carried out as that task
+    if(pY > 0) {
+      hY <- pY * log(pY)            # calculate the shannon's index for that task
+      HY <- HY + hY                 # add it to nestH, to produce an overall H for the nest
+    }
+  }
+  HY <- HY * -1
+  nestdol$HY[index] <- HY
+  
+  # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
+  # p(x,y) = nest_m[x,y]
+  # p(x) = sumRow[x]
+  # p(y) = sumCol[y]
+  
+  # calculate I for a given nest
+  I <- 0
+  # create variable I to add total entropy to
+  for(x in 1:nrow(nest_m)) {                # for each row in the nest
+    for(y in 1:ncol(nest_m)) {              # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
+      if(nest_m[x,y] != 0) {                # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
+        pxy <- nest_m[x,y]
+        px <- sumRow[x]
+        py <- sumCol[y]
+        i <- pxy * log(pxy / (px * py))   # calculate the mutual entropy for that item in the matrix
+        I <- I + i                        # add it to I, to produce an overall I for the matrix
+      } else {                            # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
+        #print(paste("matrix position", x, y, "is value 0" ))
+      }
+    }
+  }
+  nestdol$I[index] <- I
+  
+  # indivSpec = D Y|X = I / indivNestShannon
+  # taskSpec = D X|Y = I / taskNestShannon
+  # dolSymmetry = D X,Y = I / sqrt(indivShannon * taskShannon)
+  
+  # calculate individual specialization: division of individuals into tasks
+  indivSpec <- I / HX
+  nestdol$indivSpec[index] <- indivSpec
+  # calculate task specialization: division of tasks into inviduals
+  taskSpec <- I / HY
+  nestdol$taskSpec[index] <- taskSpec
+  # calculate symmetric division of labor
+  symmDOL <- I / (sqrt(HX*HY))
+  nestdol$symmDOL[index] <- symmDOL
+}
+
+nestdol
 ```
