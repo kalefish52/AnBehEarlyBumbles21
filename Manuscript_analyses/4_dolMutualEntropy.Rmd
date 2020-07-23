@@ -144,4 +144,10 @@ for(index in 1:length(unique(dol$nestID))) {                                    
 }
 
 nestdol
+nestdol_plot <- nestdol %>%
+  gather(indivSpec, taskSpec, symmDOL,
+         key = "dol", 
+         value = "value")
+ggplot(nestdol_plot, aes(value, fill = dol)) + geom_density(alpha = 0.3)
+ggsave("../figures/nestDOL.jpg")
 ```
