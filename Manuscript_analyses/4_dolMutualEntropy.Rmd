@@ -24,13 +24,81 @@ library(plotly)
 # load data
 ```{r}
 # pooled data across timepoints, values are proportion of total observations in a given nest carried out by that bee/task combination
+# nest with >3 observations, regardless of # observations per bee
 # sum of all values for a given nest = 1
 # includes pooled foraging and nectar/pollen foraging separately -- only use one or the other in analyses, not both
 dol_data <- read.csv("../Data/dol_data.csv")
 dol_data
+
+# pooled data across timepoints, bees with >3 observations, regardless of # observations per nest
+shanP_data <- read.csv("../Data/dolBee_data.csv")
+
+# split across timepoints, bees with >3 observations, regardless of # observations per nest
+shanEarly_data <- read.csv("../Data/dolBeeEarly_data.csv")
+shanLate_data <- read.csv("../Data/dolBeeLate_data.csv")
+
+# merge early and late shannon
+shanT_data <- rbind(shanEarly_data, shanLate_data)
+shanT_data
 ```
 
-# division of labor index
+# shannon index for each individual
+yields df: dol
+same as shanP_data df, but with shannon index as dol_shannon column
+```{r}
+# POOLED TIMEPOINTS
+
+# start with matrix where each row is an individual, and each column is a behavior
+# data is transformed such that all values for a given nest sum to 1
+dol <- shanP_data
+
+# convert to matrix of behaviors to be used in shannon
+dol_m <- as.matrix(dol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+# calculate shannon for each bee in the matrix
+dol$shannon <- diversity(dol_m, index = "shannon") 
+
+# plot shannon values by nest type
+ggplot(dol, aes(shannon, fill = nestTYPE)) + 
+  geom_density(alpha = 0.3)
+ggsave("../figures/shannonHist.jpg")
+
+#############################################################
+
+# COMPARE EARLY AND LATE, excluding egg laying
+
+dolT <- shanT_data
+# convert to matrix of behaviors to be used in shannon
+dolT_m <- as.matrix(dolT[,c("feedsbrood", "nectarforaging", "pollenforaging")])
+# calculate shannon for each bee in the matrix
+dolT$shannon <- diversity(dolT_m, index = "shannon") 
+# plot shannon values by nest type
+ggplot(dolT, aes(shannon, fill = timepoint)) + 
+  geom_density(alpha = 0.3)
+ggsave("../figures/shannonHistTime.jpg")
+
+# find change in shannon over time per bee
+
+# make beeID include nest for clarity
+dolT$beeID <- paste0(dolT$nestID, dolT$beeID)
+# add shanDist column to put distance into
+dolT$shanDist <- NA
+# calculate change and add to shanDist column
+for (i in 1:nrow(dolT)) {                                                   # for each row in the dataset
+  if(dolT$timepoint[i] == "late") {                                         # look at the the late bees only
+    for (j in 1:nrow(dolT)) {                                               # then iterate back through the dataset
+      if(dolT$timepoint[j] == "early" & dolT$beeID[j] == dolT$beeID[i]) {   # and find the early entry with the same bee ID
+        dolT$shanDist[i] <- dolT$shannon[i] - dolT$shannon[j]               # calculate the difference in shannon index across time
+      }
+    }
+  }
+}
+ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
+  geom_density(alpha = 0.3)
+ggsave("../figures/shanDist.jpg")
+```
+
+# division of labor indices
 this yeilds a DOL index between 0 (no division) and 1 (complete division) for each task, each bee, and both task & bee
 issues = does not describe which behavior a bee is specializing on. eg specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
 
@@ -38,34 +106,8 @@ https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
 
 https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAAArAwggKsBgkqhkiG9w0BBwagggKdMIICmQIBADCCApIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM0mGmfTsnhsoK-Y_uAgEQgIICY-aMO-F9oEaBklacEnjaMSJCFsghtzm6jKWajfSFUi1WmnoBV8zpdiY0ztkvgG8k3Vi7Vaby0gWJGaGto13hllldFKZg-C-TNDdv7yJt81TrpV3M_ooNiYcjJq92Y6ObRoYrlxUJfi77RK3_cDBJ9Ag8JjhA03UWwerFU5FE71P3-7ptplP8rI8QYpXNZdtZbyoYrEN80JYxjgt1o2zAFGvRF3r-_1ExlhdpKr5k0OxGqlCa11kFUpBAjFpMun5qR6JL-8bkcbRIAmNnBBduCg1CSXoUBpx18ouZnNJu_v9OQodZ7hBYPfu62SRjQ9TNEZqadgMAt0mMreuH60st2TagmvXlqLPPyoIu7-0ZBvdD6nvcmJ-miBhUw7Z6vCia1KhrvpvKvhZem2N3zsGsNSp_UFSvVSwtNeHdguMtId5zSe70mWdbDBfTJAsag1sf5YAeCd0XwDSRsfarD2aAYlmQ0ARCd8qC8yxdUlKqohn3Xsh70IBQL1jc_l32k1Q7fiplJiD6hQ69Yge2M961fZML1G5vIQa5DxBgThNYg5GyQxXnyzCFHWJIDhqKwHtWgiWQgbA63qMK2IHNicOSw8JhrpaWlWgEUX8NiaiF7ICzNxFh2pcdL-hnazO1StB1anJtiTo-RHgeLji4E9qYFpT3DYcw6ptUAxjLUql3d1M0aByMRS0EhoZCoUfER_8iiUicTNGUi4w85O5mm55B4vRheg5XGSlby26I0_H9zOtK-eQ3PmKHB4DyPvd-Ch24hp4FBEFJM4pI_sCZJc8_p8JuYOonUk_M3aqNLQKGznrL_xu2
 ```{r}
-# start with matrix where each row is an individual, and each column is a behavior
-# data is transformed such that all values for a given nest sum to 1
-dol <- dol_data
+# MUTUTAL ENTROPY CALCULATIONS
 
-# make a new df with a single column (shannon) to place the shannon calculation for each nest into
-dol_shannon <- as.data.frame(NA)
-colnames(dol_shannon) <- "shannon"
-dol_shannon
-
-# for each nest, calculate the shannon index for each bee
-for(i in 1:length(unique(dol_data$nestID))) {                           # for each unique nestID in the dataset
-  nest_df <- dol_data[dol_data$nestID == unique(dol_data$nestID)[i], ]  # subset to look only at that nestID
-  nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID
-  shannon <- diversity(nest_m, index = "shannon")                       # calculate the shannon index for each bee in that nest
-  hist(shannon)                                                         # plot a histogram of the shannon values for that nest
-  shannon <- as.data.frame(matrix(shannon, ncol = 1))                   # put the shannon values into a df to be added to dol_shannon df
-  colnames(shannon) <- "shannon"                                        # name the column shannon to match dol_shannon df
-  dol_shannon <- rbind(dol_shannon, shannon)                            # rbind the values to the dol_shannon df
-}
-
-# remove first row (NA value) and bind the shannon values to the dol df
-dol_shannon <- dol_shannon[!is.na(dol_shannon)]
-dol <- cbind(dol, dol_shannon)
-dol
-dol_shannon
-hist(dol$dol_shannon)
-
-###################### DON'T YET KNOW HOW TO CALCLUATE MUTUAL ENTROPY OF MATRIX - THIS IS INCORRECT ######################
 # make df to put dol values into
 nestdol <- matrix(NA, nrow = length(unique(dol$nestID)), ncol = 7)
 colnames(nestdol) <- c("nestID", "HX","HY", "I", "indivSpec", "taskSpec", "symmDOL")
@@ -128,9 +170,9 @@ for(index in 1:length(unique(dol$nestID))) {                                    
   }
   nestdol$I[index] <- I
   
-  # indivSpec = D Y|X = I / indivNestShannon
-  # taskSpec = D X|Y = I / taskNestShannon
-  # dolSymmetry = D X,Y = I / sqrt(indivShannon * taskShannon)
+  # indivSpec = D Y|X = I / HX
+  # taskSpec = D X|Y = I / HY
+  # dolSymmetry = D X,Y = I / sqrt(HX * HY)
   
   # calculate individual specialization: division of individuals into tasks
   indivSpec <- I / HX
@@ -144,10 +186,112 @@ for(index in 1:length(unique(dol$nestID))) {                                    
 }
 
 nestdol
+```
+
+# plots
+```{r}
+# add nestTYPE column
+nestdol$nestTYPE <- substr(nestdol$nestID, start = 1, stop = 2)
+# add group size column
+nestdol$nBees[nestdol$nestTYPE == "NT"] <- 3 
+nestdol$nBees[nestdol$nestTYPE == "NF"] <- 5
+nestdol$nBees[nestdol$nestTYPE == "QT"] <- 4 
+nestdol$nBees[nestdol$nestTYPE == "QF"] <- 6 
+
+# density graph of specialization stats
 nestdol_plot <- nestdol %>%
   gather(indivSpec, taskSpec, symmDOL,
          key = "dol", 
          value = "value")
-ggplot(nestdol_plot, aes(value, fill = dol)) + geom_density(alpha = 0.3)
+ggplot(nestdol_plot, aes(value, fill = dol)) + 
+  geom_density(alpha = 0.3)
 ggsave("../figures/nestDOL.jpg")
+
+# taskSpec vs. indivSpec scatterplot
+ggplot(nestdol, aes(taskSpec, indivSpec, color = nestTYPE)) +
+  geom_point(size = 3)
+ggsave("../figures/nestSpec.jpg")
+
+# group size vs. taskSpec
+ggplot(nestdol, aes(taskSpec, nBees, color = nestTYPE)) +
+  geom_point()
+
+# group size vs. indivSpec
+ggplot(nestdol, aes(indivSpec, nBees, color = nestTYPE)) +
+  geom_point()
+
+# group size vs. symmDOL
+ggplot(nestdol, aes(symmDOL, nBees, color = nestTYPE)) + 
+  geom_point()
+```
+
+# make sure i'm doing it right by testing an example in the text -- all good!
+```{r}
+b <- matrix(c(100, 0, 25, 25, 25, 25, 0, 100, 25, 25, 25, 25, 0, 0, 25, 25, 25, 25), nrow = 3, byrow = TRUE)
+sum(b)
+bb <- b/500
+bb
+sum(bb)
+
+  # make row and col sum vectors to use in future calculations
+  sumRow <- rowSums(bb)
+  sumCol <- colSums(bb)
+
+  # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
+  # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HX <- 0
+  for(x in 1:nrow(bb)) {        # for each individual
+    pX <- sumRow[x]               # p is the proportion of all behaviors in the nest carried out by that individual
+    hX <- pX * log(pX)            # calculate the shannon's index for that individual
+    HX <- HX + hX                 # add it to nestH, to produce an overall H for the nest
+  }
+  HX <- HX * -1
+
+  # calculate nest-level task shannon diversity index via mutual entropy paper's definition
+  # HX = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HY <- 0
+  for(y in 1:ncol(bb)) {      # for each task
+    pY <- sumCol[y]               # p is the proportion of all behaviors in the nest carried out as that task
+    if(pY > 0) {
+      hY <- pY * log(pY)            # calculate the shannon's index for that task
+      HY <- HY + hY                 # add it to nestH, to produce an overall H for the nest
+    }
+  }
+  HY <- HY * -1
+
+  # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
+  # p(x,y) = nest_m[x,y]
+  # p(x) = sumRow[x]
+  # p(y) = sumCol[y]
+
+  # calculate I for a given nest
+  I <- 0
+  # create variable I to add total entropy to
+  for(x in 1:nrow(bb)) {                # for each row in the nest
+    for(y in 1:ncol(bb)) {              # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
+      if(bb[x,y] != 0) {                # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
+        pxy <- bb[x,y]
+        px <- sumRow[x]
+        py <- sumCol[y]
+        i <- pxy * log(pxy / (px * py))   # calculate the mutual entropy for that item in the matrix
+        I <- I + i                        # add it to I, to produce an overall I for the matrix
+      } else {                            # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
+        #print(paste("matrix position", x, y, "is value 0" ))
+      }
+    }
+  }
+
+  # indivSpec = D Y|X = I / HX
+  # taskSpec = D X|Y = I / HY
+  # dolSymmetry = D X,Y = I / sqrt(HX * HY)
+
+  # calculate individual specialization: division of individuals into tasks
+  indivSpec <- I / HX
+  indivSpec
+  # calculate task specialization: division of tasks into inviduals
+  taskSpec <- I / HY
+  taskSpec
+  # calculate symmetric division of labor
+  symmDOL <- I / (sqrt(HX*HY))
+  symmDOL
 ```
