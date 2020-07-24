@@ -38,7 +38,7 @@ allBees
 lazyBees
 ```
 
-# format data
+# format and visualize data for number of lazy bees
 ```{r}
 # include all nestIDs so that nests with 0 lazy workers are also included
 allNests <- unique(allBees$nestID)
@@ -58,28 +58,54 @@ lazyBees <- rbind(nestsToAdd, lazyBees)
 noObsBees$nestTYPE <- substr(noObsBees$nestID, start = 1, stop = 2)
 lowCountsBees$nestTYPE <- substr(lowCountsBees$nestID, start = 1, stop = 2)
 lazyBees$nestTYPE <- substr(lazyBees$nestID, start = 1, stop = 2)
-```
 
-# visualize data
-```{r}
+# order the nestTYPEs so they appear in order of number of bees on graph
+noObsBees$nestTYPE <- ordered(noObsBees$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+lowCountsBees$nestTYPE <- ordered(lowCountsBees$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+lazyBees$nestTYPE <- ordered(lazyBees$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+########################### visualize
+
 # zero observations
 noObsPerNest <- noObsBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
 
-ggplot(noObsPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+ggplot(noObsPerNest, aes(nBees, nestTYPE, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "number of bees with 0 observations per nest")
 
 # 1-2 observations
 lowCountsPerNest <- lowCountsBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
 
-ggplot(lowCountsPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+ggplot(lowCountsPerNest, aes(nBees, nestTYPE, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "number of bees with 1-2 observations per nest")
 
 # 0-2 observations
 lazyPerNest <- lazyBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
 
-ggplot(lazyPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+ggplot(lazyPerNest, aes(nBees, nestTYPE, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "number of bees with 0-2 observations per nest")
+ggsave("../figures/lazyBees.jpg")
+```
+
+# format and visualize proportion of lazy bee data
+```{r}
+# 0-2 observations per bee
+
+# add column for the proportion of lazy bees per nest
+lazyPerNest$propBees[lazyPerNest$nestTYPE == "NT"] <- lazyPerNest$nBees[lazyPerNest$nestTYPE == "NT"] / 3
+lazyPerNest$propBees[lazyPerNest$nestTYPE == "QT"] <- lazyPerNest$nBees[lazyPerNest$nestTYPE == "QT"] / 4
+lazyPerNest$propBees[lazyPerNest$nestTYPE == "NF"] <- lazyPerNest$nBees[lazyPerNest$nestTYPE == "NF"] / 5
+lazyPerNest$propBees[lazyPerNest$nestTYPE == "QF"] <- lazyPerNest$nBees[lazyPerNest$nestTYPE == "QF"] / 6
+
+# plot it
+ggplot(lazyPerNest, aes(propBees, nestTYPE, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "proportion of bees with 0-2 observations per nest")
+ggsave("../figures/proportionLazyBees.jpg")
 ```
