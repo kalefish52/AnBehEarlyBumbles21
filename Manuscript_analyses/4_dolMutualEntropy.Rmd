@@ -70,8 +70,7 @@ ggplot(dol, aes(shannon, nBees, color = nestTYPE)) +
 
 # number of behaviors vs. shannon scatterplot
 ggplot(dol, aes(shannon, nBehavs, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.5)
 
 #############################################################
 
@@ -112,6 +111,14 @@ for (i in 1:nrow(dolT)) {                                                   # fo
 # plot the change in shannon from early to late
 ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
+
+avgShannDist <- dolT %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg)
+avgShannDist
+ggplot(dolT, aes(shanDist, nestTYPE, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.3) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) +
+  labs(x = "change in shannon index from early to late timepoint")
 ggsave("../figures/shanDist.jpg")
 
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
