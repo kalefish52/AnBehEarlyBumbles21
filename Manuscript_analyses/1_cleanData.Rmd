@@ -117,7 +117,7 @@ print(paste("There are", init_videos, "videos in the initial videos_data datafra
 
 ```
 
-import the master datasheets and combine them into a single df called master_dat. this contains beeIDs and natal colony for each nest. this will enable us to include the bees that we did not have observed behaviors for in our analyses
+import the master datasheets and combine them into a single df called master_data. this contains beeIDs and natal colony for each nest. this will enable us to include the bees that we did not have observed behaviors for in our analyses
 ```{r}
 ## do the same for the master datasheets that contain bee ID numbers
 getMasterfilenames <- function(gitfilepath) {
@@ -502,6 +502,11 @@ if (nrow(allBees)==nrow(masterBees)) {
 } else {
   print(paste("ERROR! There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
 }
+
+# make new dataframe listing the bees without any recorded behaviors
+noObsBees <- obs_data[obs_data$obsID == "0", c("nestID", "beeID")]
+noObsBees
+write.csv(noObsBees, "noObsBees.csv")
 ```
 ### make count data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
