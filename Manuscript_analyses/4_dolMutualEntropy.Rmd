@@ -65,11 +65,13 @@ dol$nBees[dol$nestTYPE == "QF"] <- 6
 
 # group size vs. shannon scatterplot
 ggplot(dol, aes(shannon, nBees, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.8)
+  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
 
 # number of behaviors vs. shannon scatterplot
 ggplot(dol, aes(shannon, nBehavs, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8)
+  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
 
 #############################################################
 
@@ -85,7 +87,7 @@ dolT$shannon <- diversity(dolT_m, index = "shannon")
 
 # plot shannon values by timepoint
 ggplot(dolT, aes(shannon, fill = timepoint)) + 
-  geom_density(alpha = 0.3)
+  geom_density(alpha = 0.5) 
 ggsave("../figures/shannonHistTime.jpg")
 
 # find change in shannon over time per bee
@@ -217,20 +219,24 @@ ggsave("../figures/nestDOL.jpg")
 
 # taskSpec vs. indivSpec scatterplot
 ggplot(nestdol, aes(taskSpec, indivSpec, color = nestTYPE)) +
-  geom_point(size = 3)
+  geom_point(size = 3) +
+  stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/nestSpec.jpg")
 
 # group size vs. taskSpec scatterplot
 ggplot(nestdol, aes(taskSpec, nBees, color = nestTYPE)) +
-  geom_point()
+  geom_point() +
+  stat_summary(fun = mean, geom = "point", size = 5)
 
 # group size vs. indivSpec scatterplot
 ggplot(nestdol, aes(indivSpec, nBees, color = nestTYPE)) +
-  geom_point()
+  geom_point() +
+  stat_summary(fun = mean, geom = "point", size = 5)
 
 # group size vs. symmDOL scatterplot
 ggplot(nestdol, aes(symmDOL, nBees, color = nestTYPE)) + 
-  geom_point()
+  geom_point() +
+  stat_summary(fun = mean, geom = "point", size = 5)
 ```
 
 <!-- <!-- # make sure i'm doing it right by testing an example in the text -- all good! -->
