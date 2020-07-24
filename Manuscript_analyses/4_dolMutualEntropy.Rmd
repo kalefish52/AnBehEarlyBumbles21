@@ -11,14 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # load packages
 ```{r, echo = FALSE}
-library(tidyverse)
-library(dplyr)
-library(ggplot2)
-library(cluster) # clustering algorithms
-library(factoextra)
-library(vegan) 
-library(lme4)
-library(plotly)
+library(vegan)    # shannon diversity function
+library(ggplot2)  # plots
 ```
 
 # load data
@@ -46,7 +40,7 @@ shanT_data
 yields df: dol
 same as shanP_data df, but with shannon index as dol_shannon column
 ```{r}
-# POOLED TIMEPOINTS
+# POOLED TIMEPOINTS, including egg laying
 
 # start with matrix where each row is an individual, and each column is a behavior
 # data is transformed such that all values for a given nest sum to 1
@@ -68,11 +62,14 @@ ggsave("../figures/shannonHist.jpg")
 # COMPARE EARLY AND LATE, excluding egg laying
 
 dolT <- shanT_data
+
 # convert to matrix of behaviors to be used in shannon
 dolT_m <- as.matrix(dolT[,c("feedsbrood", "nectarforaging", "pollenforaging")])
+
 # calculate shannon for each bee in the matrix
 dolT$shannon <- diversity(dolT_m, index = "shannon") 
-# plot shannon values by nest type
+
+# plot shannon values by timepoint
 ggplot(dolT, aes(shannon, fill = timepoint)) + 
   geom_density(alpha = 0.3)
 ggsave("../figures/shannonHistTime.jpg")
@@ -81,8 +78,10 @@ ggsave("../figures/shannonHistTime.jpg")
 
 # make beeID include nest for clarity
 dolT$beeID <- paste0(dolT$nestID, dolT$beeID)
+
 # add shanDist column to put distance into
 dolT$shanDist <- NA
+
 # calculate change and add to shanDist column
 for (i in 1:nrow(dolT)) {                                                   # for each row in the dataset
   if(dolT$timepoint[i] == "late") {                                         # look at the the late bees only
@@ -93,16 +92,19 @@ for (i in 1:nrow(dolT)) {                                                   # fo
     }
   }
 }
+
+# plot the change in shannon from early to late
 ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 ggsave("../figures/shanDist.jpg")
-# look at how many bees it's actually plotting here
+
+# look at how many bees it's actually plotting here -- ~10 per nestTYPE
 dolT[!is.na(dolT$shanDist),]
 dol
 ```
 
 # division of labor indices
-this yeilds a DOL index between 0 (no division) and 1 (complete division) for each task, each bee, and both task & bee
+this yeilds a DOL index between 0 (no division) and 1 (complete division) for nest-level tasks, bees, and both task & bee
 issues = does not describe which behavior a bee is specializing on. eg specializing entirely on nectar foraging and specializing entirely on egg laying both yield same number
 
 https://www.journals.uchicago.edu/doi/pdfplus/10.1086/424968
@@ -111,81 +113,70 @@ https://watermark.silverchair.com/arn018.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7
 ```{r}
 # MUTUTAL ENTROPY CALCULATIONS
 
-# make df to put dol values into
-nestdol <- matrix(NA, nrow = length(unique(dol$nestID)), ncol = 7)
+# make df to put entropy values into
+nestdol <- matrix(NA, nrow = length(unique(dol_data$nestID)), ncol = 7)
 colnames(nestdol) <- c("nestID", "HX","HY", "I", "indivSpec", "taskSpec", "symmDOL")
 nestdol <- as.data.frame(nestdol)
 
 # for each nest, calculate mutal entropy for entire matrix (I)
-for(index in 1:length(unique(dol$nestID))) {                                                            # for each unique nestID in the dataset
-  nest_df <- dol[dol$nestID == unique(dol$nestID)[index], ]                                             # subset to look only at that nestID
+for(index in 1:length(unique(dol_data$nestID))) {                   # for each unique nestID in the dataset
+  nest_df <- dol_data[dol_data$nestID == unique(dol_data$nestID)[index], ]                          # subset to look only at that nestID
   nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID 
-  nestdol$nestID[index] <- unique(dol$nestID)[index]
-  
-  # make row and col sum vectors to use in future calculations
+  nestdol$nestID[index] <- unique(dol_data$nestID)[index]           # copy nestID into the nestdol df
+                                                                    # make row and col sum vectors to use in future calculations
   sumRow <- rowSums(nest_m)
   sumCol <- colSums(nest_m)
-  
-  # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
-  # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HX <- 0
-  for(x in 1:nrow(nest_m)) {        # for each individual
-    pX <- sumRow[x]               # p is the proportion of all behaviors in the nest carried out by that individual
-    hX <- pX * log(pX)            # calculate the shannon's index for that individual
-    HX <- HX + hX                 # add it to nestH, to produce an overall H for the nest
+            # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
+            # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HX <- 0                                                           # reset HX to start at 0 for each nest
+  for(x in 1:nrow(nest_m)) {                                        # for each individual
+    pX <- sumRow[x]                                                 # p is the proportion of all behaviors in the nest carried out by that individual
+    hX <- pX * log(pX)                                              # calculate the shannon's index for that individual
+    HX <- HX + hX                                                   # add it to nestH, to produce an overall H for the nest
   }
-  HX <- HX * -1
-  nestdol$HX[index] <- HX
-  
-  # calculate nest-level task shannon diversity index via mutual entropy paper's definition
-  # HX = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HY <- 0
-  for(y in 1:ncol(nest_m)) {      # for each task
-    pY <- sumCol[y]               # p is the proportion of all behaviors in the nest carried out as that task
+  HX <- HX * -1                                                     # multiply HX by -1 b/c negative summation
+  nestdol$HX[index] <- HX                                           # copy HX value into the nestdol df
+            # calculate nest-level task shannon diversity index via mutual entropy paper's definition
+            # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
+  HY <- 0                                                           # reset HY to start at 0 for each nest
+  for(y in 1:ncol(nest_m)) {                                        # for each task
+    pY <- sumCol[y]                                                 # p is the proportion of all behaviors in the nest carried out as that task
     if(pY > 0) {
-      hY <- pY * log(pY)            # calculate the shannon's index for that task
-      HY <- HY + hY                 # add it to nestH, to produce an overall H for the nest
+      hY <- pY * log(pY)                                            # calculate the shannon's index for that task
+      HY <- HY + hY                                                 # add it to nestH, to produce an overall H for the nest
     }
   }
-  HY <- HY * -1
-  nestdol$HY[index] <- HY
-  
-  # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
-  # p(x,y) = nest_m[x,y]
-  # p(x) = sumRow[x]
-  # p(y) = sumCol[y]
-  
-  # calculate I for a given nest
-  I <- 0
-  # create variable I to add total entropy to
-  for(x in 1:nrow(nest_m)) {                # for each row in the nest
-    for(y in 1:ncol(nest_m)) {              # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
-      if(nest_m[x,y] != 0) {                # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
-        pxy <- nest_m[x,y]
-        px <- sumRow[x]
-        py <- sumCol[y]
-        i <- pxy * log(pxy / (px * py))   # calculate the mutual entropy for that item in the matrix
-        I <- I + i                        # add it to I, to produce an overall I for the matrix
-      } else {                            # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
+  HY <- HY * -1                                                     # multiply HY by -1 b/c negative summation
+  nestdol$HY[index] <- HY                                           # copy HY into the nestdol df
+            # calculate I for a given nest
+            # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
+            # p(x,y) = nest_m[x,y]
+            # p(x) = sumRow[x]
+            # p(y) = sumCol[y]
+  I <- 0                                                            # reset I to start at 0 for each nest
+  for(x in 1:nrow(nest_m)) {                                        # for each row in the nest
+    for(y in 1:ncol(nest_m)) {                                      # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
+      if(nest_m[x,y] != 0) {                                        # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
+        pxy <- nest_m[x,y]                                          # assign pxy to the individual matrix cell value (probability of that individual-task combo)
+        px <- sumRow[x]                                             # assign px to the sum of the matrix row (probability of that individual carrying out a behavior)
+        py <- sumCol[y]                                             # assign py to the sum of the matrix column (probability of that task occuring)
+        i <- pxy * log(pxy / (px * py))                             # calculate the mutual entropy for that item in the matrix
+        I <- I + i                                                  # add it to I, to produce an overall I for the matrix
+      } else {                                                      # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
         #print(paste("matrix position", x, y, "is value 0" ))
       }
     }
   }
-  nestdol$I[index] <- I
-  
-  # indivSpec = D Y|X = I / HX
-  # taskSpec = D X|Y = I / HY
-  # dolSymmetry = D X,Y = I / sqrt(HX * HY)
-  
-  # calculate individual specialization: division of individuals into tasks
-  indivSpec <- I / HX
-  nestdol$indivSpec[index] <- indivSpec
-  # calculate task specialization: division of tasks into inviduals
-  taskSpec <- I / HY
-  nestdol$taskSpec[index] <- taskSpec
-  # calculate symmetric division of labor
-  symmDOL <- I / (sqrt(HX*HY))
-  nestdol$symmDOL[index] <- symmDOL
+  nestdol$I[index] <- I                                             # copy I into the nestdol df
+            # indivSpec = D Y|X = I / HX
+            # taskSpec = D X|Y = I / HY
+            # dolSymmetry = D X,Y = I / sqrt(HX * HY)
+  indivSpec <- I / HX                                               # calculate individual specialization: division of individuals into tasks
+  nestdol$indivSpec[index] <- indivSpec                             # copy into nestdol df
+  taskSpec <- I / HY                                                # calculate task specialization: division of tasks into inviduals
+  nestdol$taskSpec[index] <- taskSpec                               # copy into nestdol df
+  symmDOL <- I / (sqrt(HX*HY))                                      # calculate symmetric division of labor
+  nestdol$symmDOL[index] <- symmDOL                                 # copy into nestdol df
 }
 
 nestdol
@@ -201,7 +192,7 @@ nestdol$nBees[nestdol$nestTYPE == "NF"] <- 5
 nestdol$nBees[nestdol$nestTYPE == "QT"] <- 4 
 nestdol$nBees[nestdol$nestTYPE == "QF"] <- 6 
 
-# density graph of specialization stats
+# density graph of specialization values
 nestdol_plot <- nestdol %>%
   gather(indivSpec, taskSpec, symmDOL,
          key = "dol", 
@@ -215,86 +206,87 @@ ggplot(nestdol, aes(taskSpec, indivSpec, color = nestTYPE)) +
   geom_point(size = 3)
 ggsave("../figures/nestSpec.jpg")
 
-# group size vs. taskSpec
+# group size vs. taskSpec scatterplot
 ggplot(nestdol, aes(taskSpec, nBees, color = nestTYPE)) +
   geom_point()
 
-# group size vs. indivSpec
+# group size vs. indivSpec scatterplot
 ggplot(nestdol, aes(indivSpec, nBees, color = nestTYPE)) +
   geom_point()
 
-# group size vs. symmDOL
+# group size vs. symmDOL scatterplot
 ggplot(nestdol, aes(symmDOL, nBees, color = nestTYPE)) + 
   geom_point()
 ```
 
-# make sure i'm doing it right by testing an example in the text -- all good!
-```{r}
-b <- matrix(c(100, 0, 25, 25, 25, 25, 0, 100, 25, 25, 25, 25, 0, 0, 25, 25, 25, 25), nrow = 3, byrow = TRUE)
-sum(b)
-bb <- b/500
-bb
-sum(bb)
+<!-- <!-- # make sure i'm doing it right by testing an example in the text -- all good! -->
+# WHICH ONE IS INDIVIDUAL DOL VS TASK DOL?? OPPOSITE IN TEXT AND FIGURES IN THE PAPER??
+<!-- ```{r} -->
+<!-- b <- matrix(c(100, 0, 25, 25, 25, 25, 0, 100, 25, 25, 25, 25, 0, 0, 25, 25, 25, 25), nrow = 3, byrow = TRUE) -->
+<!-- sum(b) -->
+<!-- bb <- b/500 -->
+<!-- bb -->
+<!-- sum(bb) -->
 
-  # make row and col sum vectors to use in future calculations
-  sumRow <- rowSums(bb)
-  sumCol <- colSums(bb)
+<!--   # make row and col sum vectors to use in future calculations -->
+<!--   sumRow <- rowSums(bb) -->
+<!--   sumCol <- colSums(bb) -->
 
-  # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
-  # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HX <- 0
-  for(x in 1:nrow(bb)) {        # for each individual
-    pX <- sumRow[x]               # p is the proportion of all behaviors in the nest carried out by that individual
-    hX <- pX * log(pX)            # calculate the shannon's index for that individual
-    HX <- HX + hX                 # add it to nestH, to produce an overall H for the nest
-  }
-  HX <- HX * -1
+<!--   # calculate nest-level individual shannon diversity index via mutual entropy paper's definition -->
+<!--   # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ] -->
+<!--   HX <- 0 -->
+<!--   for(x in 1:nrow(bb)) {        # for each individual -->
+<!--     pX <- sumRow[x]               # p is the proportion of all behaviors in the nest carried out by that individual -->
+<!--     hX <- pX * log(pX)            # calculate the shannon's index for that individual -->
+<!--     HX <- HX + hX                 # add it to nestH, to produce an overall H for the nest -->
+<!--   } -->
+<!--   HX <- HX * -1 -->
 
-  # calculate nest-level task shannon diversity index via mutual entropy paper's definition
-  # HX = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HY <- 0
-  for(y in 1:ncol(bb)) {      # for each task
-    pY <- sumCol[y]               # p is the proportion of all behaviors in the nest carried out as that task
-    if(pY > 0) {
-      hY <- pY * log(pY)            # calculate the shannon's index for that task
-      HY <- HY + hY                 # add it to nestH, to produce an overall H for the nest
-    }
-  }
-  HY <- HY * -1
+<!--   # calculate nest-level task shannon diversity index via mutual entropy paper's definition -->
+<!--   # HX = -SUMMATIONz [ p(Z) * log (p(Z)) ] -->
+<!--   HY <- 0 -->
+<!--   for(y in 1:ncol(bb)) {      # for each task -->
+<!--     pY <- sumCol[y]               # p is the proportion of all behaviors in the nest carried out as that task -->
+<!--     if(pY > 0) { -->
+<!--       hY <- pY * log(pY)            # calculate the shannon's index for that task -->
+<!--       HY <- HY + hY                 # add it to nestH, to produce an overall H for the nest -->
+<!--     } -->
+<!--   } -->
+<!--   HY <- HY * -1 -->
 
-  # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
-  # p(x,y) = nest_m[x,y]
-  # p(x) = sumRow[x]
-  # p(y) = sumCol[y]
+<!--   # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ] -->
+<!--   # p(x,y) = nest_m[x,y] -->
+<!--   # p(x) = sumRow[x] -->
+<!--   # p(y) = sumCol[y] -->
 
-  # calculate I for a given nest
-  I <- 0
-  # create variable I to add total entropy to
-  for(x in 1:nrow(bb)) {                # for each row in the nest
-    for(y in 1:ncol(bb)) {              # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
-      if(bb[x,y] != 0) {                # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
-        pxy <- bb[x,y]
-        px <- sumRow[x]
-        py <- sumCol[y]
-        i <- pxy * log(pxy / (px * py))   # calculate the mutual entropy for that item in the matrix
-        I <- I + i                        # add it to I, to produce an overall I for the matrix
-      } else {                            # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
-        #print(paste("matrix position", x, y, "is value 0" ))
-      }
-    }
-  }
+<!--   # calculate I for a given nest -->
+<!--   I <- 0 -->
+<!--   # create variable I to add total entropy to -->
+<!--   for(x in 1:nrow(bb)) {                # for each row in the nest -->
+<!--     for(y in 1:ncol(bb)) {              # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix) -->
+<!--       if(bb[x,y] != 0) {                # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0) -->
+<!--         pxy <- bb[x,y] -->
+<!--         px <- sumRow[x] -->
+<!--         py <- sumCol[y] -->
+<!--         i <- pxy * log(pxy / (px * py))   # calculate the mutual entropy for that item in the matrix -->
+<!--         I <- I + i                        # add it to I, to produce an overall I for the matrix -->
+<!--       } else {                            # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it -->
+<!--         #print(paste("matrix position", x, y, "is value 0" )) -->
+<!--       } -->
+<!--     } -->
+<!--   } -->
 
-  # indivSpec = D Y|X = I / HX
-  # taskSpec = D X|Y = I / HY
-  # dolSymmetry = D X,Y = I / sqrt(HX * HY)
+<!--   # indivSpec = D Y|X = I / HX -->
+<!--   # taskSpec = D X|Y = I / HY -->
+<!--   # dolSymmetry = D X,Y = I / sqrt(HX * HY) -->
 
-  # calculate individual specialization: division of individuals into tasks
-  indivSpec <- I / HX
-  indivSpec
-  # calculate task specialization: division of tasks into inviduals
-  taskSpec <- I / HY
-  taskSpec
-  # calculate symmetric division of labor
-  symmDOL <- I / (sqrt(HX*HY))
-  symmDOL
-```
+<!--   # calculate individual specialization: division of individuals into tasks -->
+<!--   indivSpec <- I / HX -->
+<!--   indivSpec -->
+<!--   # calculate task specialization: division of tasks into inviduals -->
+<!--   taskSpec <- I / HY -->
+<!--   taskSpec -->
+<!--   # calculate symmetric division of labor -->
+<!--   symmDOL <- I / (sqrt(HX*HY)) -->
+<!--   symmDOL -->
+<!-- ``` -->
