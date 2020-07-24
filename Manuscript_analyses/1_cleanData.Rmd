@@ -351,7 +351,7 @@ for (i in 1:nrow(obs_data)) {
 
 head(obs_data)
 obs_data
-write.csv(obs_data, "../Data/obs_data")
+write.csv(obs_data, "../Data/obs_data.csv")
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
 print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov - fiveMinRemov_obs, "were removed above.",  sep = " "))
@@ -506,7 +506,8 @@ if (nrow(allBees)==nrow(masterBees)) {
 # make new dataframe listing the bees without any recorded behaviors
 noObsBees <- obs_data[obs_data$obsID == "0", c("nestID", "beeID")]
 noObsBees
-write.csv(noObsBees, "noObsBees.csv")
+write.csv(noObsBees, "../Data/noObsBees.csv")
+write.csv(allBees, "../Data/allBees.csv")
 ```
 ### make count data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
