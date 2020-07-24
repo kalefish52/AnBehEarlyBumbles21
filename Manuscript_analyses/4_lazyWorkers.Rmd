@@ -1,0 +1,85 @@
+---
+title: "lazyWorkers"
+author: "ES"
+date: "7/24/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(ggplot2)   # plots
+library(tidyverse) # piping
+library(dplyr)     # summarise
+```
+
+# load data
+```{r}
+# load bees with 0 observations
+noObsBees <- read.csv("../Data/noObsBees.csv")
+noObsBees <- noObsBees[, c("nestID", "beeID")]
+
+# load bees with 1-2 observations
+lowCountsBees <- read.csv("../Data/tempData/lowCountsBees.csv")
+lowCountsBees <- lowCountsBees[, c("nestID", "beeID")]
+
+# merge together for single df with all bees not included in nmds/dol analyses
+lazyBees <- rbind(noObsBees, lowCountsBees)
+
+# load obs_data to get a list of all the nestIDs
+allBees <- read.csv("../Data/allBees.csv")
+allBees <- allBees[, c("nestID", "beeID")]
+
+
+allBees
+lazyBees
+```
+
+# format data
+```{r}
+# include all nestIDs so that nests with 0 lazy workers are also included
+allNests <- unique(allBees$nestID)
+allNests
+
+# add all nests to all dfs
+nestsToAdd <- matrix(nrow = length(allNests), ncol = 2)
+nestsToAdd <- as.data.frame(nestsToAdd)
+colnames(nestsToAdd) <- colnames(noObsBees)
+nestsToAdd$nestID <- allNests
+
+noObsBees <- rbind(nestsToAdd, noObsBees)
+lowCountsBees <- rbind(nestsToAdd, lowCountsBees)
+lazyBees <- rbind(nestsToAdd, lazyBees)
+
+# add nestTYPE column for all dfs
+noObsBees$nestTYPE <- substr(noObsBees$nestID, start = 1, stop = 2)
+lowCountsBees$nestTYPE <- substr(lowCountsBees$nestID, start = 1, stop = 2)
+lazyBees$nestTYPE <- substr(lazyBees$nestID, start = 1, stop = 2)
+```
+
+# visualize data
+```{r}
+# zero observations
+noObsPerNest <- noObsBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
+
+ggplot(noObsPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
+# 1-2 observations
+lowCountsPerNest <- lowCountsBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
+
+ggplot(lowCountsPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
+# 0-2 observations
+lazyPerNest <- lazyBees %>% dplyr::group_by(nestID, nestTYPE) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
+
+ggplot(lazyPerNest, aes(nestTYPE, nBees, color = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.2, height=0.1), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+```
