@@ -226,23 +226,22 @@ ggsave("../figures/nestDOL.jpg")
 
 # taskSpec vs. indivSpec scatterplot
 ggplot(nestdol, aes(taskSpec, indivSpec, color = nestTYPE)) +
-  geom_point(size = 3) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  geom_point(size = 3, alpha = 0.8) +
 ggsave("../figures/nestSpec.jpg")
 
 # group size vs. taskSpec scatterplot
 ggplot(nestdol, aes(taskSpec, nBees, color = nestTYPE)) +
-  geom_point() +
+  geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 
 # group size vs. indivSpec scatterplot
 ggplot(nestdol, aes(indivSpec, nBees, color = nestTYPE)) +
-  geom_point() +
+  geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 
 # group size vs. symmDOL scatterplot
 ggplot(nestdol, aes(symmDOL, nBees, color = nestTYPE)) + 
-  geom_point() +
+  geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ```
 
