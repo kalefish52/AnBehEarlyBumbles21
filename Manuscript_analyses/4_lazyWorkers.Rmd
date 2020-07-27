@@ -104,7 +104,7 @@ lazyPerNest$propBees[lazyPerNest$nestTYPE == "QF"] <- lazyPerNest$nBees[lazyPerN
 
 # plot it
 ggplot(lazyPerNest, aes(propBees, nestTYPE, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.4) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   labs(x = "proportion of bees with 0-2 observations per nest")
 ggsave("../figures/proportionLazyBees.jpg")
