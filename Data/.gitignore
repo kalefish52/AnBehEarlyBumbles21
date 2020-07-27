@@ -9,3 +9,12 @@ beeLateProp_data.csv
 beeProp_data.csv
 nestProp_data.csv
 dol_data.csv
+dolBeeEarly_data.csv
+dolBeeLate_data.csv
+dolBee_data.csv
+dolEarly_data.csv
+dolLate_data.csv
+nestEarlyProp_data.csv
+nestLateProp_data.csv
+noObsBees.csv
+allBees.csv

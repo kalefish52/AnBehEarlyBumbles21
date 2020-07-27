@@ -54,6 +54,20 @@ nestCounts_data <- nestCounts_data %>%
                 feedsbrood, pollenforaging, nectarforaging, allforaging, egglaying, nBehavs)
 nestCounts_data$queen <- as.factor(nestCounts_data$queen)
 nestCounts_data
+
+nestEarlyCounts_data <- read.csv("../Data/tempData/nestEarlyCounts_filt.csv")
+nestEarlyCounts_data <- nestEarlyCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint,
+                feedsbrood, pollenforaging, nectarforaging, allforaging, egglaying, nBehavs)
+nestEarlyCounts_data$queen <- as.factor(nestEarlyCounts_data$queen)
+nestEarlyCounts_data
+
+nestLateCounts_data <- read.csv("../Data/tempData/nestLateCounts_filt.csv")
+nestLateCounts_data <- nestLateCounts_data %>% 
+  dplyr::select(nestID, nestTYPE, beeID, caste, nBees, nWork, queen, timepoint,
+                feedsbrood, pollenforaging, nectarforaging, allforaging, egglaying, nBehavs)
+nestLateCounts_data$queen <- as.factor(nestLateCounts_data$queen)
+nestLateCounts_data
 ```
 
 # 1. individual specialization
@@ -122,9 +136,79 @@ for (i in 1:nrow(nestCounts_data)) {         # for each bee
 }
 nestProp_data
 write.csv(nestProp_data, "../Data/nestProp_data.csv")
+
+# EARLY AND LATE COMPARISONS
+
+# EARLY
+
+# sum columns for each behavior within each nest
+nestEarlyCounts_sums <- ddply(nestEarlyCounts_data, 
+                c("nestID"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                egglaying = sum(egglaying),
+                pollenforaging = sum(pollenforaging),
+                nectarforaging = sum(nectarforaging),
+                allforaging = sum(allforaging),
+                nBehavs = sum(nBehavs))
+nestEarlyCounts_sums
+
+# make df for proportions to be overwritten in loop:
+nestEarlyProp_data <- nestEarlyCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(nestEarlyCounts_data)) {         # for each bee
+  for (j in 1:nrow(nestEarlyCounts_sums)) {       # go through the nestEarlyCounts_sums df
+    if (nestEarlyCounts_data$nestID[i] == nestEarlyCounts_sums$nestID[j]) {   # until you find the matching nestID
+                                             # then divide the counts of each behavior by the total counts of that behavior in the nest
+      nestEarlyProp_data$feedsbrood[i] <- nestEarlyCounts_data$feedsbrood[i] / nestEarlyCounts_sums$feedsbrood[j]
+      nestEarlyProp_data$egglaying[i] <- nestEarlyCounts_data$egglaying[i] / nestEarlyCounts_sums$egglaying[j]
+      nestEarlyProp_data$nectarforaging[i] <- nestEarlyCounts_data$nectarforaging[i] / nestEarlyCounts_sums$nectarforaging[j]
+      nestEarlyProp_data$pollenforaging[i] <- nestEarlyCounts_data$pollenforaging[i] / nestEarlyCounts_sums$pollenforaging[j]
+      nestEarlyProp_data$allforaging[i] <- nestEarlyCounts_data$allforaging[i] / nestEarlyCounts_sums$allforaging[j]
+      nestEarlyProp_data$nBehavs[i] <- nestEarlyCounts_data$nBehavs[i] / nestEarlyCounts_sums$nBehavs[j]
+    }
+  }
+}
+nestEarlyProp_data
+write.csv(nestEarlyProp_data, "../Data/nestEarlyProp_data.csv")
+
+# LATE
+
+# sum columns for each behavior within each nest
+nestLateCounts_sums <- ddply(nestLateCounts_data, 
+                c("nestID"), 
+                summarise,
+                feedsbrood = sum(feedsbrood),
+                egglaying = sum(egglaying),
+                pollenforaging = sum(pollenforaging),
+                nectarforaging = sum(nectarforaging),
+                allforaging = sum(allforaging),
+                nBehavs = sum(nBehavs))
+nestLateCounts_sums
+
+# make df for proportions to be overwritten in loop:
+nestLateProp_data <- nestLateCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(nestLateCounts_data)) {         # for each bee
+  for (j in 1:nrow(nestLateCounts_sums)) {       # go through the nestLateCounts_sums df
+    if (nestLateCounts_data$nestID[i] == nestLateCounts_sums$nestID[j]) {   # until you find the matching nestID
+                                             # then divide the counts of each behavior by the total counts of that behavior in the nest
+      nestLateProp_data$feedsbrood[i] <- nestLateCounts_data$feedsbrood[i] / nestLateCounts_sums$feedsbrood[j]
+      nestLateProp_data$egglaying[i] <- nestLateCounts_data$egglaying[i] / nestLateCounts_sums$egglaying[j]
+      nestLateProp_data$nectarforaging[i] <- nestLateCounts_data$nectarforaging[i] / nestLateCounts_sums$nectarforaging[j]
+      nestLateProp_data$pollenforaging[i] <- nestLateCounts_data$pollenforaging[i] / nestLateCounts_sums$pollenforaging[j]
+      nestLateProp_data$allforaging[i] <- nestLateCounts_data$allforaging[i] / nestLateCounts_sums$allforaging[j]
+      nestLateProp_data$nBehavs[i] <- nestLateCounts_data$nBehavs[i] / nestLateCounts_sums$nBehavs[j]
+    }
+  }
+}
+nestLateProp_data
+write.csv(nestProp_data, "../Data/nestLateProp_data.csv")
 ```
 
-# 3. dol
+# 3. dol by nest
 normalized mutual entropy matrix
 ```{r}
 # first add row with column sums, total number of observations per nest
@@ -149,10 +233,163 @@ for (i in 1:nrow(dol_data)) {                 # for each bee
       dol_data$nectarforaging[i] <- dol_data$nectarforaging[i] / nestCounts_behav$nBehavs[j]
       dol_data$pollenforaging[i] <- dol_data$pollenforaging[i] / nestCounts_behav$nBehavs[j]
       dol_data$allforaging[i] <- dol_data$allforaging[i] / nestCounts_behav$nBehavs[j]
-      dol_data$nBehavs[i] <- dol_data$nBehavs[i] / nestCounts_behav$nBehavs[j]
+      dol_data$pBehavs[i] <- dol_data$nBehavs[i] / nestCounts_behav$nBehavs[j]
     }
   }
 }
 dol_data
 write.csv(dol_data, "../Data/dol_data.csv")
+
+# EARLY AND LATE COMPARISONS
+
+# EARLY
+
+# sum nBehavs for each behavior within each nest
+nestEarlyCounts_behav <- ddply(nestEarlyCounts_data, 
+                c("nestID"), 
+                summarise,
+                nBehavs = sum(nBehavs))
+nestEarlyCounts_behav
+
+# make df for proportions to be overwritten in loop:
+dolEarly_data <- nestEarlyCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(dolEarly_data)) {                 # for each bee
+  for (j in 1:nrow(nestEarlyCounts_behav)) {       # go through the nestEarlyCounts_behav df
+    if (dolEarly_data$nestID[i] == nestEarlyCounts_behav$nestID[j]) {   # until you find the matching nestID
+                                              # then divide the counts of each behavior by the total counts of all behaviors in the nest
+      dolEarly_data$feedsbrood[i] <- dolEarly_data$feedsbrood[i] / nestEarlyCounts_behav$nBehavs[j]
+      dolEarly_data$egglaying[i] <- dolEarly_data$egglaying[i] / nestEarlyCounts_behav$nBehavs[j]
+      dolEarly_data$nectarforaging[i] <- dolEarly_data$nectarforaging[i] / nestEarlyCounts_behav$nBehavs[j]
+      dolEarly_data$pollenforaging[i] <- dolEarly_data$pollenforaging[i] / nestEarlyCounts_behav$nBehavs[j]
+      dolEarly_data$allforaging[i] <- dolEarly_data$allforaging[i] / nestEarlyCounts_behav$nBehavs[j]
+      dolEarly_data$pBehavs[i] <- dolEarly_data$nBehavs[i] / nestEarlyCounts_behav$nBehavs[j]
+    }
+  }
+}
+dolEarly_data
+write.csv(dolEarly_data, "../Data/dolEarly_data.csv")
+
+# LATE
+
+# sum nBehavs for each behavior within each nest
+nestLateCounts_behav <- ddply(nestLateCounts_data, 
+                c("nestID"), 
+                summarise,
+                nBehavs = sum(nBehavs))
+nestLateCounts_behav
+
+# make df for proportions to be overwritten in loop:
+dolLate_data <- nestLateCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(dolLate_data)) {                 # for each bee
+  for (j in 1:nrow(nestLateCounts_behav)) {       # go through the nestLateCounts_behav df
+    if (dolLate_data$nestID[i] == nestLateCounts_behav$nestID[j]) {   # until you find the matching nestID
+                                              # then divide the counts of each behavior by the total counts of all behaviors in the nest
+      dolLate_data$feedsbrood[i] <- dolLate_data$feedsbrood[i] / nestLateCounts_behav$nBehavs[j]
+      dolLate_data$egglaying[i] <- dolLate_data$egglaying[i] / nestLateCounts_behav$nBehavs[j]
+      dolLate_data$nectarforaging[i] <- dolLate_data$nectarforaging[i] / nestLateCounts_behav$nBehavs[j]
+      dolLate_data$pollenforaging[i] <- dolLate_data$pollenforaging[i] / nestLateCounts_behav$nBehavs[j]
+      dolLate_data$allforaging[i] <- dolLate_data$allforaging[i] / nestLateCounts_behav$nBehavs[j]
+      dolLate_data$pBehavs[i] <- dolLate_data$nBehavs[i] / nestLateCounts_behav$nBehavs[j]
+    }
+  }
+}
+dolLate_data
+write.csv(dolLate_data, "../Data/dolLate_data.csv")
+```
+
+# 3. dol by individual
+normalized mutual entropy matrix
+```{r}
+# first add row with column sums, total number of observations per nest
+
+# sum nBehavs for each behavior within each nest
+beeCounts_behav <- ddply(beeCounts_data, 
+                c("nestID"), 
+                summarise,
+                nBehavs = sum(nBehavs))
+beeCounts_behav
+
+# make df for proportions to be overwritten in loop:
+dolBee_data <- beeCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(dolBee_data)) {                 # for each bee
+  for (j in 1:nrow(beeCounts_behav)) {       # go through the beeCounts_behav df
+    if (dolBee_data$nestID[i] == beeCounts_behav$nestID[j]) {   # until you find the matching nestID
+                                              # then divide the counts of each behavior by the total counts of all behaviors in the nest
+      dolBee_data$feedsbrood[i] <- dolBee_data$feedsbrood[i] / beeCounts_behav$nBehavs[j]
+      dolBee_data$egglaying[i] <- dolBee_data$egglaying[i] / beeCounts_behav$nBehavs[j]
+      dolBee_data$nectarforaging[i] <- dolBee_data$nectarforaging[i] / beeCounts_behav$nBehavs[j]
+      dolBee_data$pollenforaging[i] <- dolBee_data$pollenforaging[i] / beeCounts_behav$nBehavs[j]
+      dolBee_data$allforaging[i] <- dolBee_data$allforaging[i] / beeCounts_behav$nBehavs[j]
+      dolBee_data$pBehavs[i] <- dolBee_data$nBehavs[i] / beeCounts_behav$nBehavs[j]
+    }
+  }
+}
+dolBee_data
+write.csv(dolBee_data, "../Data/dolBee_data.csv")
+
+# EARLY AND LATE COMPARISONS
+
+# EARLY
+
+# sum nBehavs for each behavior within each nest
+beeEarlyCounts_behav <- ddply(beeEarlyCounts_data, 
+                c("nestID"), 
+                summarise,
+                nBehavs = sum(nBehavs))
+beeEarlyCounts_behav
+
+# make df for proportions to be overwritten in loop:
+dolBeeEarly_data <- beeEarlyCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(dolBeeEarly_data)) {                 # for each bee
+  for (j in 1:nrow(beeEarlyCounts_behav)) {       # go through the beeEarlyCounts_behav df
+    if (dolBeeEarly_data$nestID[i] == beeEarlyCounts_behav$nestID[j]) {   # until you find the matching nestID
+                                              # then divide the counts of each behavior by the total counts of all behaviors in the nest
+      dolBeeEarly_data$feedsbrood[i] <- dolBeeEarly_data$feedsbrood[i] / beeEarlyCounts_behav$nBehavs[j]
+      dolBeeEarly_data$egglaying[i] <- dolBeeEarly_data$egglaying[i] / beeEarlyCounts_behav$nBehavs[j]
+      dolBeeEarly_data$nectarforaging[i] <- dolBeeEarly_data$nectarforaging[i] / beeEarlyCounts_behav$nBehavs[j]
+      dolBeeEarly_data$pollenforaging[i] <- dolBeeEarly_data$pollenforaging[i] / beeEarlyCounts_behav$nBehavs[j]
+      dolBeeEarly_data$allforaging[i] <- dolBeeEarly_data$allforaging[i] / beeEarlyCounts_behav$nBehavs[j]
+      dolBeeEarly_data$pBehavs[i] <- dolBeeEarly_data$nBehavs[i] / beeEarlyCounts_behav$nBehavs[j]
+    }
+  }
+}
+dolBeeEarly_data
+write.csv(dolBeeEarly_data, "../Data/dolBeeEarly_data.csv")
+
+# LATE
+
+# sum nBehavs for each behavior within each nest
+beeLateCounts_behav <- ddply(beeLateCounts_data, 
+                c("nestID"), 
+                summarise,
+                nBehavs = sum(nBehavs))
+beeLateCounts_behav
+
+# make df for proportions to be overwritten in loop:
+dolBeeLate_data <- beeLateCounts_data
+
+# for each bee, convert the count of behaviors to the proportion of observations of that behavior for that nest
+for (i in 1:nrow(dolBeeLate_data)) {                 # for each bee
+  for (j in 1:nrow(beeLateCounts_behav)) {       # go through the beeLateCounts_behav df
+    if (dolBeeLate_data$nestID[i] == beeLateCounts_behav$nestID[j]) {   # until you find the matching nestID
+                                              # then divide the counts of each behavior by the total counts of all behaviors in the nest
+      dolBeeLate_data$feedsbrood[i] <- dolBeeLate_data$feedsbrood[i] / beeLateCounts_behav$nBehavs[j]
+      dolBeeLate_data$egglaying[i] <- dolBeeLate_data$egglaying[i] / beeLateCounts_behav$nBehavs[j]
+      dolBeeLate_data$nectarforaging[i] <- dolBeeLate_data$nectarforaging[i] / beeLateCounts_behav$nBehavs[j]
+      dolBeeLate_data$pollenforaging[i] <- dolBeeLate_data$pollenforaging[i] / beeLateCounts_behav$nBehavs[j]
+      dolBeeLate_data$allforaging[i] <- dolBeeLate_data$allforaging[i] / beeLateCounts_behav$nBehavs[j]
+      dolBeeLate_data$pBehavs[i] <- dolBeeLate_data$nBehavs[i] / beeLateCounts_behav$nBehavs[j]
+    }
+  }
+}
+dolBeeLate_data
+write.csv(dolBeeLate_data, "../Data/dolBeeLate_data.csv")
 ```

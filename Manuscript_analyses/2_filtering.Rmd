@@ -88,25 +88,6 @@ nestCounts_filt <- ddply(nestCounts_filt,
                 allforaging = sum(allforaging))
 
 write.csv(nestCounts_filt, "../Data/tempData/nestCounts_filt.csv")
-
-# # remove nests with fewer than 5 observations of foraging or brood feeding combined
-# combObs <- statsNest[, c("nestID", "behav", "nObs")]
-# combObs <- combObs %>%
-#   pivot_wider(id_cols = c("nestID"), 
-#               names_from = behav, 
-#               values_from = nObs)
-# combObs$totObs <- combObs$allforaging + combObs$feedsbrood
-# combObs
-# write.csv(combObs, "../Data/totalObs.csv")
-# 
-# # look at which nests need to be removed
-# rmObs <- combObs[combObs$totObs < 10,]
-# rmObs
-# print(paste("the following", length(rmObs), "nests need to be removed from the pooled time data because they have fewer than 5 instances of combined brood feeding and foraging recorded:", rmObs, sep = " "))
-
-# counts_filt <- counts_data %>% filter(!nestID %in% rmNests)
-# counts_filt
-# write.csv(counts_filt, "../Data/tempData/counts_filt.csv")
 ```
 
 # look at number of behaviors per bee
@@ -130,8 +111,9 @@ counts_pooled
 beeCounts_filt <- counts_pooled[counts_pooled$nBehavs >= 3,]
 beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
 beeCounts_filt
+lowCountsBees <- counts_pooled[counts_pooled$nBehavs < 3, c("nestID", "beeID")]
 write.csv(beeCounts_filt, "../Data/tempData/beeCounts_filt.csv")
-
+write.csv(lowCountsBees, "../Data/tempData/lowCountsBees.csv")
 beeCounts_sums <- ddply(beeCounts_filt, 
                 c("nestID"), 
                 summarise,

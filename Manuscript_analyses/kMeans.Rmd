@@ -35,7 +35,7 @@ set.seed(123)
 k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
 count_data$totalForaging <- count_data$pollenforaging + count_data$nectarforaging
-data <- count_data %>% select(egglaying, feedsbrood, nectarforaging, pollenforaging)
+data <- count_data[, c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging")]
 
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})

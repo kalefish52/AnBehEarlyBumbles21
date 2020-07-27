@@ -14,3 +14,5 @@ nestEarlyCounts_filt.csv
 nestLateCounts_filt.csv
 beeEarlyCounts_filt.csv
 beeLateCounts_filt.csv
+noCountsBees.csv
+lowCountsBees.csv
