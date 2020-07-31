@@ -21,19 +21,22 @@ library(multcomp) # tukey tests
 
 # load data
 ```{r}
-# pooled data across timepoints, values are proportion of total observations in a given nest carried out by that bee/task combination
+# pooled data across timepoints, values are counts of total observations in a given nest carried out by that bee/task combination
 # nests with >3 observations, regardless of # observations per bee
 shanP_data <- read.csv("../Data/tempData/nestCounts_filt.csv")
 shanP_data
 shanP_data$nestTYPE <- ordered(shanP_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
 # split across timepoints, nests with >3 observations, regardless of # observations per bee
-shanEarly_data <- read.csv("../Data/nestEarlyProp_data.csv")
-shanLate_data <- read.csv("../Data/nestLateProp_data.csv")
+shanEarly_data <- read.csv("../Data/tempData/nestEarlyCounts_filt.csv")
+shanLate_data <- read.csv("../Data/tempData/nestLateCounts_filt.csv")
 
 # merge early and late shannon
 shanT_data <- rbind(shanEarly_data, shanLate_data)
-shanT_data$nestTYPE <- ordered(shanT_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+# remove egg laying from total counts of behavior
+shanT_data$nBehavs <- shanT_data$nBehavs - shanT_data$egglaying
+# remove egg laying from df
+shanT_data <- within(shanT_data, rm(egglaying))
 shanT_data
 ```
 
@@ -49,22 +52,26 @@ taskP
 # taskS <- matrix(NA, nrow = length(unique(taskP$nestID)), ncol = 2)
 # colnames(taskS) <- c("nestID", "shannon")
 # taskS <- as.data.frame(taskS)
-taskS <- matrix(NA, ncol = 3)
-colnames(taskS) <- c("nestID", "behav", "shannon")
+taskS <- matrix(NA, ncol = 4)
+colnames(taskS) <- c("nestID", "behav", "shannon", "nBehav")
   
 # for each nest, calculate mutal entropy for entire matrix (I)
 for(index in 1:length(unique(taskP$nestID))) {                      # for each unique nestID in the dataset
   nest_df <- taskP[taskP$nestID == unique(taskP$nestID)[index], ]   # subset to look only at that nestID
   nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])   # convert to matrix of behaviors for that nest ID
+  if (nrow(nest_df) < 2) {
+    nest_m <- rbind(nest_m, c(0, 0, 0, 0))
+  }
   nest_m <- t(nest_m)                                               # transpose the matrix so that behaviors are now rows and individuals are columns
-  nest_m <- nest_m[rowSums(nest_m) > 0,]                            # remove behaviors without any observations
+  nest_m <- nest_m[rowSums(nest_m) > 0,, drop = FALSE]              # remove behaviors without any observations
   # make a matrix to put shannon values into
-  nestS <- matrix(NA, ncol = 3, nrow = nrow(nest_m))                # make a nest-specific matrix to put shannon values into
+  nestS <- matrix(NA, ncol = 4, nrow = nrow(nest_m))                # make a nest-specific matrix to put shannon values into
   nestS <- as.data.frame(nestS)                                     # turn it into a df
-  colnames(nestS) <- c("nestID", "behav", "shannon")    # name columns same as the taskP df
+  colnames(nestS) <- c("nestID", "behav", "shannon", "nBehav")    # name columns same as the taskP df
   shannon <- diversity(nest_m, index = "shannon")                   # calculate shannon for each behavior in the nest
-  nestS$behav <- names(shannon)                                     # add the name of each behavior to the nestS df
+  nestS$behav <- rownames(nest_m)                                     # add the name of each behavior to the nestS df
   nestS$shannon <- shannon                                          # add the corresponding shannon score for each behavior
+  nestS$nBehav <- rowSums(nest_m)
   nestS$nestID <- unique(taskP$nestID)[index]                       # copy nestID into the nestS df
   taskS <- rbind(taskS, nestS)                                      # add the nest-specific df to the overall task df
 }
@@ -74,309 +81,165 @@ taskS
 # add nestTYPE column
 taskS$nestTYPE <- substr(taskS$nestID, start = 1, stop = 2)
 
+# remove na row
+taskS <- taskS[!is.na(taskS$shannon),]
+
+taskS$nestTYPE <- ordered(taskS$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
 # plot it
-ggplot(taskS, aes(shannon, behav, color = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
+ggplot(taskS, aes(shannon, behav)) +
+  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/taskShann.jpg")
+
+# plot degree of specialization against number of observations
+ggplot(taskS, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=1), alpha = 0.9, size = 1.8) +
+  scale_shape_manual(values = c(16, 15, 21, 22))
+ggsave("../figures/pooledTaskShannonVSnBehavs.jpg")
 ```
-
-
-
-  
-                                                # make row and col sum vectors to use in future calculations
-  sumRow <- rowSums(nest_m)
-  sumCol <- colSums(nest_m)
-            # calculate nest-level individual shannon diversity index via mutual entropy paper's definition
-            # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HX <- 0                                                           # reset HX to start at 0 for each nest
-  for(x in 1:nrow(nest_m)) {                                        # for each individual
-    pX <- sumRow[x]                                                 # p is the proportion of all behaviors in the nest carried out by that individual
-    hX <- pX * log(pX)                                              # calculate the shannon's index for that individual
-    HX <- HX + hX                                                   # add it to nestH, to produce an overall H for the nest
-  }
-  HX <- HX * -1                                                     # multiply HX by -1 b/c negative summation
-  nestdol$HX[index] <- HX                                           # copy HX value into the nestdol df
-            # calculate nest-level task shannon diversity index via mutual entropy paper's definition
-            # HZ = -SUMMATIONz [ p(Z) * log (p(Z)) ]
-  HY <- 0                                                           # reset HY to start at 0 for each nest
-  for(y in 1:ncol(nest_m)) {                                        # for each task
-    pY <- sumCol[y]                                                 # p is the proportion of all behaviors in the nest carried out as that task
-    if(pY > 0) {
-      hY <- pY * log(pY)                                            # calculate the shannon's index for that task
-      HY <- HY + hY                                                 # add it to nestH, to produce an overall H for the nest
-    }
-  }
-  HY <- HY * -1                                                     # multiply HY by -1 b/c negative summation
-  nestdol$HY[index] <- HY                                           # copy HY into the nestdol df
-            # calculate I for a given nest
-            # I = mutual entropy = SUMMATIONxy [ p(x,y) * log( p(x,y) / p(x) * p(y) ) ]
-            # p(x,y) = nest_m[x,y]
-            # p(x) = sumRow[x]
-            # p(y) = sumCol[y]
-  I <- 0                                                            # reset I to start at 0 for each nest
-  for(x in 1:nrow(nest_m)) {                                        # for each row in the nest
-    for(y in 1:ncol(nest_m)) {                                      # iterate through each column (i.e. iterate through each column/row combo -- each entry in matrix)
-      if(nest_m[x,y] != 0) {                                        # if the matrix value does not equal 0 (which will produce a -inf value of i b/c divided by 0)
-        pxy <- nest_m[x,y]                                          # assign pxy to the individual matrix cell value (probability of that individual-task combo)
-        px <- sumRow[x]                                             # assign px to the sum of the matrix row (probability of that individual carrying out a behavior)
-        py <- sumCol[y]                                             # assign py to the sum of the matrix column (probability of that task occuring)
-        i <- pxy * log(pxy / (px * py))                             # calculate the mutual entropy for that item in the matrix
-        I <- I + i                                                  # add it to I, to produce an overall I for the matrix
-      } else {                                                      # if the matrix value = 0, print that the value equals 0 and don't do any calculations on it
-        #print(paste("matrix position", x, y, "is value 0" ))
-      }
-    }
-  }
-  nestdol$I[index] <- I                                             # copy I into the nestdol df
-            # indivSpec = D Y|X = I / HX
-            # taskSpec = D X|Y = I / HY
-            # dolSymmetry = D X,Y = I / sqrt(HX * HY)
-  indivSpec <- I / HX                                               # calculate individual specialization: division of individuals into tasks
-  nestdol$indivSpec[index] <- indivSpec                             # copy into nestdol df
-  taskSpec <- I / HY                                                # calculate task specialization: division of tasks into inviduals
-  nestdol$taskSpec[index] <- taskSpec                               # copy into nestdol df
-  symmDOL <- I / (sqrt(HX*HY))                                      # calculate symmetric division of labor
-  nestdol$symmDOL[index] <- symmDOL                                 # copy into nestdol df
-}
-
-
-
-# data is transformed such that all values for a given nest sum to 1
-dol <- shanP_data
-
-# convert to matrix of behaviors to be used in shannon
-dol_m <- as.matrix(dol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
-
-# calculate shannon for each bee in the matrix
-dol$shannon <- diversity(dol_m, index = "shannon") 
-
-# plot shannon values by nest type
-ggplot(dol, aes(shannon, fill = nestTYPE)) + 
-  geom_density(alpha = 0.3)
-ggsave("../figures/shannonHist.jpg")
-
-# add group size column
-dol$nBees[dol$nestTYPE == "NT"] <- 3 
-dol$nBees[dol$nestTYPE == "NF"] <- 5
-dol$nBees[dol$nestTYPE == "QT"] <- 4 
-dol$nBees[dol$nestTYPE == "QF"] <- 6 
-
-# group size vs. shannon scatterplot
-ggplot(dol, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
-  scale_shape_manual(values = c(21, 16)) +
-  stat_summary(fun = mean, geom = "point", size = 5)
-
-# number of behaviors vs. shannon scatterplot
-ggplot(dol, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8) +
-  scale_shape_manual(values = c(21, 16))
-```
-
-# POOLED TIMEPOINTS, including egg laying, combined foraging -- looks very similar to split foraging
-<!-- yields df: dol -->
-<!-- same as shanP_data df, but with shannon index as dol_shannon column -->
-<!-- ```{r} -->
-<!-- # start with matrix where each row is an individual, and each column is a behavior -->
-<!-- # data is transformed such that all values for a given nest sum to 1 -->
-<!-- dol <- shanP_data -->
-<!-- dol$allforaging <- dol$nectarforaging + dol$pollenforaging -->
-
-<!-- # convert to matrix of behaviors to be used in shannon -->
-<!-- dol_m <- as.matrix(dol[,c("feedsbrood", "allforaging", "egglaying")]) -->
-
-<!-- # calculate shannon for each bee in the matrix -->
-<!-- dol$shannon <- diversity(dol_m, index = "shannon")  -->
-
-<!-- # plot shannon values by nest type -->
-<!-- ggplot(dol, aes(shannon, fill = nestTYPE)) +  -->
-<!--   geom_density(alpha = 0.3) -->
-<!-- ggsave("../figures/shannonHist.jpg") -->
-
-<!-- # add group size column -->
-<!-- dol$nBees[dol$nestTYPE == "NT"] <- 3  -->
-<!-- dol$nBees[dol$nestTYPE == "NF"] <- 5 -->
-<!-- dol$nBees[dol$nestTYPE == "QT"] <- 4  -->
-<!-- dol$nBees[dol$nestTYPE == "QF"] <- 6  -->
-
-<!-- # group size vs. shannon scatterplot -->
-<!-- ggplot(dol, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) + -->
-<!--   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) + -->
-<!--   scale_shape_manual(values = c(21, 16)) + -->
-<!--   stat_summary(fun = mean, geom = "point", size = 5) -->
-
-<!-- # number of behaviors vs. shannon scatterplot -->
-<!-- ggplot(dol, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) + -->
-<!--   geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8) + -->
-<!--   scale_shape_manual(values = c(21, 16)) -->
-<!-- ``` -->
 
 # COMPARE EARLY VS LATE TIMEPOINTS, excluding egg laying, separate nectar & pollen foraging
+THIS HAS ISSUES AND NEEDS WORK -- ITS VERY COMPLICATED
 ```{r}
-dolT <- shanT_data
+taskT <- shanT_data
+taskT
+# copied from above, but using new df with timepoints
 
-# convert to matrix of behaviors to be used in shannon
-dolT_m <- as.matrix(dolT[,c("feedsbrood", "nectarforaging", "pollenforaging")])
 
-# calculate shannon for each bee in the matrix
-dolT$shannon <- diversity(dolT_m, index = "shannon") 
+taskTimeShan <- matrix(NA, ncol = 5)
+colnames(taskTimeShan) <- c("nestID", "behav", "shannon", "nBehav", "timepoint")
+  
+# for each nest, calculate shannon for each behavior at each timepoint
+for(index in 1:length(unique(taskT$nestID))) {                      
+  # subset to look only at that nestID
+  nest_df <- taskT[taskT$nestID == unique(taskT$nestID)[index], ]   
+  
+  # subset to look only at early timepoint and only at behaviors for that nest-timepoint
+  nestE <- nest_df[nest_df$timepoint == "early", c("feedsbrood", "nectarforaging", "pollenforaging")]
+  # if early timepoint has only 1 observation, add a row of 0s to make it compatible with transpose
+  if (nrow(nestE) == 1) {
+    nestE <- rbind(nestE, c(0,0,0))
+  }
+  # if early timepoint does exist, do stuff
+  if (nrow(nestE) > 1) {
+    # transpose it so that behaviors are now rows and individuals are columns
+    nestE <- t(nestE)
+    # remove behaviors with 0 observations, and keep row names for behaviors with >0 observations
+    nestE <- nestE[rowSums(nestE) > 0,, drop = FALSE]
+    # make a matrix to put shannon values into
+    nestEshan <- matrix(NA, ncol = 5, nrow = nrow(nestE))
+    # convert it to a df
+    nestEshan <- as.data.frame(nestEshan)
+    # make column names match taskTimeShan df
+    colnames(nestEshan) <- c("nestID", "behav", "shannon", "nBehav", "timepoint")
+    # calculate shannon for each behavior in the nest
+    shannon <- diversity(nestE, index = "shannon")
+    # add the name of each behavior, corresponding shannon, timepoint, nBehav, and nestID to the nestEshan df
+    nestEshan$behav <- rownames(nestE)                                     # add the name of each behavior to the nestS df
+    nestEshan$shannon <- shannon 
+    nestEshan$timepoint <- "early"
+    nestEshan$nBehav <- rowSums(nestE)
+    nestEshan$nestID <- unique(taskT$nestID)[index] 
+    # bind the rows to the overal taskTimeShan df
+    taskTimeShan <- rbind(taskTimeShan, nestEshan)
+    } 
+  # if early timepoint doesn't exist, print that there are 0 early observations in that nest 
+  if (nrow(nestE == 0)) {
+      print(paste("there are 0 early observations for nest", unique(taskT$nestID)[index]))
+    }
 
-# plot shannon values by timepoint
-ggplot(dolT, aes(shannon, fill = timepoint)) + 
-  geom_density(alpha = 0.5) 
-ggsave("../figures/shannonHistTime.jpg")
+  # do the same for late
+  nestL <- nest_df[nest_df$timepoint == "late", c("feedsbrood", "nectarforaging", "pollenforaging")]
+    # if late timepoint has only 1 observation, add a row of 0s to make it compatible with transpose
+  if (nrow(nestL) == 1) {
+    nestL <- rbind(nestL, c(0,0,0))
+  }
+  # if late timepoint doesn't exist, print that there are 0 late observations in that nest
+  if (nrow(nestL == 0)) {
+    print(paste("there are 0 late observations for nest", unique(taskT$nestID)[index]))
+  } 
+  # if late timepoint does exist, do stuff
+  if (nrow(nestL) > 1) {
+      # transpose it so that behaviors are now rows and individuals are columns
+      nestL <- t(nestL)
+      # remove behaviors with 0 observations, and keep row names for behaviors with >0 observations
+      nestL <- nestL[rowSums(nestL) > 0,, drop = FALSE]
+      # make a matrix to put shannon values into
+      nestLshan <- matrix(NA, ncol = 5, nrow = nrow(nestL))
+      # convert it to a df
+      nestLshan <- as.data.frame(nestLshan)
+      # make column names match taskTimeShan df
+      colnames(nestLshan) <- c("nestID", "behav", "shannon", "nBehav", "timepoint")
+      # calculate shannon for each behavior in the nest
+      shannon <- diversity(nestL, index = "shannon")
+      # add the name of each behavior, corresponding shannon, timepoint, nBehav, and nestID to the nestEshan df
+      nestLshan$behav <- rownames(nestL)                                     # add the name of each behavior to the nestS df
+      nestLshan$shannon <- shannon 
+      nestLshan$timepoint <- "late"
+      nestLshan$nBehav <- rowSums(nestL)
+      nestLshan$nestID <- unique(taskT$nestID)[index] 
+      # bind the rows to the overal taskTimeShan df
+      taskTimeShan <- rbind(taskTimeShan, nestLshan)
+  }
+}
 
-# find change in shannon over time per bee
+# add nestTYPE column
+taskTimeShan$nestTYPE <- substr(taskTimeShan$nestID, start = 1, stop = 2)
 
-# make beeID include nest for clarity
-dolT$beeID <- paste0(dolT$nestID, dolT$beeID)
+# remove na row
+taskTimeShan <- taskTimeShan[!is.na(taskTimeShan$shannon),]
 
-# add shanDist column to put distance into
-dolT$shanDist <- NA
+# order nestTYPEs
+taskTimeShan$nestTYPE <- ordered(taskTimeShan$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
-# calculate change and add to shanDist column
-for (i in 1:nrow(dolT)) {                                                   # for each row in the dataset
-  if(dolT$timepoint[i] == "late") {                                         # look at the the late bees only
-    for (j in 1:nrow(dolT)) {                                               # then iterate back through the dataset
-      if(dolT$timepoint[j] == "early" & dolT$beeID[j] == dolT$beeID[i]) {   # and find the early entry with the same bee ID
-        dolT$shanDist[i] <- dolT$shannon[i] - dolT$shannon[j]               # calculate the difference in shannon index across time
+# plot it
+ggplot(taskTimeShan, aes(shannon, behav, shape = timepoint)) +
+  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_shape_manual(values = c(17, 25))
+ggsave("../figures/taskShannTIME.jpg")
+
+###########################################
+
+# add column for shanDist
+taskTimeShan$shanDist <- NA
+# calculate change in shannon over time and add to shanDist column
+for (i in 1:nrow(taskTimeShan)) {                                                   # for each row in the dataset
+  if(taskTimeShan$timepoint[i] == "late") {                                         # look at the the late bees only
+    for (j in 1:nrow(taskTimeShan)) {                                               # then iterate back through the dataset
+      if(taskTimeShan$timepoint[j] == "early" & taskTimeShan$behav[j] == taskTimeShan$behav[i]) {   # and find the early entry with the same behav
+        taskTimeShan$shanDist[i] <- taskTimeShan$shannon[i] - taskTimeShan$shannon[j]               # calculate the difference in shannon index across time
       }
     }
   }
 }
 
 # plot the change in shannon from early to late
-ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
-  geom_density(alpha = 0.3)
+avgShannDist <- taskTimeShan %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg)
 
-avgShannDist <- dolT %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg)
-avgShannDist
-ggplot(dolT, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.5) +
-  scale_shape_manual(values = c(21, 16)) +
+ggplot(taskTimeShan, aes(shanDist, behav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) +
   labs(x = "change in shannon index from early to late timepoint")
-ggsave("../figures/shanDist.jpg")
-
-# look at how many bees it's actually plotting here -- ~10 per nestTYPE
-dolT[!is.na(dolT$shanDist),]
-dolT
+ggsave("../figures/shanDistBehav.jpg")
 ```
-
-# COMPARE EARLY VS LATE TIMEPOINTS, excluding egg laying, combined all foraging -- looks very similar to split foraging
-<!-- ```{r} -->
-<!-- dolT <- shanT_data -->
-<!-- dolT$allforaging <- dolT$nectarforaging + dolT$pollenforaging -->
-
-<!-- # convert to matrix of behaviors to be used in shannon -->
-<!-- dolT_m <- as.matrix(dolT[,c("feedsbrood", "allforaging")]) -->
-
-<!-- # calculate shannon for each bee in the matrix -->
-<!-- dolT$shannon <- diversity(dolT_m, index = "shannon")  -->
-
-<!-- # plot shannon values by timepoint -->
-<!-- ggplot(dolT, aes(shannon, fill = timepoint)) +  -->
-<!--   geom_density(alpha = 0.5)  -->
-<!-- ggsave("../figures/shannonHistTime.jpg") -->
-
-<!-- # find change in shannon over time per bee -->
-
-<!-- # make beeID include nest for clarity -->
-<!-- dolT$beeID <- paste0(dolT$nestID, dolT$beeID) -->
-
-<!-- # add shanDist column to put distance into -->
-<!-- dolT$shanDist <- NA -->
-
-<!-- # calculate change and add to shanDist column -->
-<!-- for (i in 1:nrow(dolT)) {                                                   # for each row in the dataset -->
-<!--   if(dolT$timepoint[i] == "late") {                                         # look at the the late bees only -->
-<!--     for (j in 1:nrow(dolT)) {                                               # then iterate back through the dataset -->
-<!--       if(dolT$timepoint[j] == "early" & dolT$beeID[j] == dolT$beeID[i]) {   # and find the early entry with the same bee ID -->
-<!--         dolT$shanDist[i] <- dolT$shannon[i] - dolT$shannon[j]               # calculate the difference in shannon index across time -->
-<!--       } -->
-<!--     } -->
-<!--   } -->
-<!-- } -->
-
-<!-- # plot the change in shannon from early to late -->
-<!-- ggplot(dolT, aes(shanDist, fill = nestTYPE)) +  -->
-<!--   geom_density(alpha = 0.3) -->
-
-<!-- avgShannDist <- dolT %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg) -->
-<!-- avgShannDist -->
-<!-- ggplot(dolT, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) + -->
-<!--   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.5) + -->
-<!--   scale_shape_manual(values = c(21, 16)) + -->
-<!--   stat_summary(fun = mean, geom = "point", size = 5) + -->
-<!--   geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) + -->
-<!--   labs(x = "change in shannon index from early to late timepoint") -->
-<!-- ggsave("../figures/shanDist.jpg") -->
-
-<!-- # look at how many bees it's actually plotting here -- ~10 per nestTYPE -->
-<!-- dolT[!is.na(dolT$shanDist),] -->
-<!-- dol -->
-<!-- ``` -->
 
 # glmms on pooled shannon across nestTYPEs
 ```{r}
-# it's not really normal... not sure what distribution to use
-ggdensity(dol$shannon)
-qqp(dol$shannon, "norm")
-dol
 
-# need to add natal colony as random effect
-ps <- glmer(shannon ~ nestTYPE + caste + (1|nestID),
-              data = dol)
-mymodel <- ps
-summary(mymodel)
-tab_model(mymodel)
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 # glmms on early vs. late shannons
 ```{r}
-# it's not really normal... not sure what distribution to use
-ggdensity(dolT$shannon)
-qqp(dolT$shannon, "norm")
 
-# need to add natal colony as random effect
-ts <- glmer(shannon ~ timepoint + nestTYPE + caste + (1|nestID),
-              data = dolT)
-mymodel <- ts
-summary(mymodel)
-tab_model(mymodel)
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 # glmms on change in shannon across timepoints
 ```{r}
-# pretty normal
-ggdensity(dolT$shanDist)
-qqp(dolT$shanDist, "norm")
 
-# need to add natal colony as random effect
-cs <- glmer(shanDist ~ nestTYPE + caste + (1|nestID),
-              data = dolT)
-mymodel <- cs
-summary(mymodel)
-tab_model(mymodel)
-posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
-summary(posthoc1)
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 
