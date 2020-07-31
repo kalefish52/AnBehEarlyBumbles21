@@ -16,3 +16,6 @@ beeEarlyCounts_filt.csv
 beeLateCounts_filt.csv
 noCountsBees.csv
 lowCountsBees.csv
+beeCounts_filtSpecTIME.csv
+beeCounts_filtSpecPOOLED.csv
+beeCounts_filtSpec.csv
