@@ -32,6 +32,13 @@ nmds_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
 # add specialist information from shannonBees.Rmd file
 spec <- read.csv("../Data/tempData/beeCounts_filtSpecPOOLED.csv")
 
+# add ovary and body size information to analyze specialists 
+ovary <- read.csv("../Data/Ovarydata.csv", col.names = c("nestID", "beeID", "fb", "ov", "l1", "s1", "l2", "s2", "notes", "x", "xx"))
+size <- read.csv("../Data/bodysizeworkers.csv", col.names = c("beeID", "nestID", "date", "wing1", "wing2", "size"), na.strings = "cell missing")
+# make beeID unique
+ovary$beeID <- paste0(ovary$nestID, ovary$beeID)
+size$beeID <- paste0(size$nestID, size$beeID)
+ovary
 ```
 
 # NMDS on all pooled data -- individual specialization over time
@@ -108,7 +115,7 @@ for (i in 1:nrow(data.scores)) {
   }
 }
 data.scores
-spec
+data.scores[data.scores$specBehav == "nectarforaging", ]
 
 data.scores$specBehav <- ordered(data.scores$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
 behav.scores$behav <- ordered(behav.scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
@@ -123,6 +130,75 @@ ggplot() +
   labs(color = "specialist")
 ggsave("../figures/nmdsSpec.jpg")
 ```
+
+# does body size correspond to behavioral specialization?
+```{r}
+size
+data.scores
+
+# add body size to data.scores df
+for (i in 1:nrow(data.scores)) {
+  for (j in 1:nrow(size)) {
+    if (data.scores$beeID[i] == size$beeID[j]) {
+      data.scores$size[i] <- size$size[j]
+    }
+  }
+}
+
+# add workers without behaviors
+# subset size to look only at bees missing from data.scores (these are bees with <3 obs)
+lazy <-  subset(size, !(beeID %in% data.scores$beeID))
+# add that number of rows to data.scores
+addLazy <- matrix(NA, nrow = nrow(lazy), ncol = ncol(data.scores))
+addLazy <- as.data.frame(addLazy)
+colnames(addLazy) <- colnames(data.scores)
+# add beeID, nestID and size of lazy bees to addLazy
+addLazy$beeID <- lazy$beeID
+addLazy$nestID <- lazy$nestID
+addLazy$size <- lazy$size
+addLazy$specBehav <- "lazy"
+# bind to data.scores
+data.scores <- rbind(data.scores, addLazy)
+
+addLazy
+lazy
+data.scores
+ggplot(data = data.scores, aes(size, specBehav, color = specBehav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "body size", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/bodySize.jpg")
+```
+
+# does ovary development correspond to behavioral specialization?
+```{r}
+ovary
+data.scores
+
+# calculate average ovary length
+ovary$length <- rowMeans(ovary[,c("l1", "l2")], na.rm = TRUE)
+
+# add ovary data to data.scores df
+for (i in 1:nrow(data.scores)) {
+  for (j in 1:nrow(ovary)) {
+    if (data.scores$beeID[i] == ovary$beeID[j]) {
+      data.scores$length[i] <- ovary$length[j]
+    }
+  }
+}
+
+data.scores
+
+ggplot(data = data.scores, aes(length, specBehav, color = specBehav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(x = "ovary length", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/ovaryLength.jpg")
+```
+
+
+
+
 
 
 
