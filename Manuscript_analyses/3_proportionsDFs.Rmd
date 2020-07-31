@@ -205,7 +205,7 @@ for (i in 1:nrow(nestLateCounts_data)) {         # for each bee
   }
 }
 nestLateProp_data
-write.csv(nestProp_data, "../Data/nestLateProp_data.csv")
+write.csv(nestLateProp_data, "../Data/nestLateProp_data.csv")
 ```
 
 # 3. dol by nest

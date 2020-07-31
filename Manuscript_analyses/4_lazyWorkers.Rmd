@@ -21,21 +21,30 @@ library(dplyr)     # summarise
 # load bees with 0 observations
 noObsBees <- read.csv("../Data/noObsBees.csv")
 noObsBees <- noObsBees[, c("nestID", "beeID")]
+noObsBees$uqID <- paste0(noObsBees$nestID, noObsBees$beeID)
 
 # load bees with 1-2 observations
 lowCountsBees <- read.csv("../Data/tempData/lowCountsBees.csv")
 lowCountsBees <- lowCountsBees[, c("nestID", "beeID")]
+lowCountsBees$uqID <- paste0(lowCountsBees$nestID, lowCountsBees$beeID)
+
 
 # merge together for single df with all bees not included in nmds/dol analyses
 lazyBees <- rbind(noObsBees, lowCountsBees)
+lazyBees <- lazyBees[!lazyBees$beeID == "unknown",]
 
 # load obs_data to get a list of all the nestIDs
 allBees <- read.csv("../Data/allBees.csv")
 allBees <- allBees[, c("nestID", "beeID")]
+allBees$uqID <- paste0(allBees$nestID, allBees$beeID)
+allBees <- allBees[!allBees$beeID == "unknown",]
 
-
-allBees
-lazyBees
+# to split out by timepoint
+obsBeesTime <- read.csv("../Data/countsanalysis.csv")
+obsBeesTime <- obsBeesTime[, c("nestID", "beeID", "nBehavs", "timepoint")]
+obsBeesTime <- obsBeesTime[!obsBeesTime$beeID == "unknown",]
+obsBeesTime$uqID <- paste0(obsBeesTime$nestID, obsBeesTime$beeID)
+obsBeesTime$uqID
 ```
 
 # format and visualize data for number of lazy bees
@@ -108,4 +117,91 @@ ggplot(lazyPerNest, aes(propBees, nestTYPE, color = nestTYPE)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   labs(x = "proportion of bees with 0-2 observations per nest")
 ggsave("../figures/proportionLazyBees.jpg")
+```
+
+# look at lazy bees based on timepoint
+```{r}
+# obsBeesTime are bees with >0 observations overall
+# lazyBees are bees with 0 observations ever
+# allBees are all of the bees including 0 and >0 observations
+
+# subset bees with high counts at a given timepoint
+HIobsBeesTIME <- obsBeesTime[obsBeesTime$nBehavs >= 3, ]
+HIobsBeesEARLY <- HIobsBeesTIME[HIobsBeesTIME$timepoint == "early",]
+HIobsBeesLATE <- HIobsBeesTIME[HIobsBeesTIME$timepoint == "late",]
+
+# duplicate allBees to include early and late timepoint for each bee
+allBeesEARLY <- allBees
+allBeesEARLY$timepoint <- "early"
+allBeesLATE <- allBees
+allBeesLATE$timepoint <- "late"
+allBeesTIME <- rbind(allBeesEARLY, allBeesLATE)
+
+# subset allBeesTIME so include only bees that do not have HIobs (i.e., lazy bees with <3 obs at a given timepoint)
+lazyBeesEARLY <- subset(allBeesEARLY, !(uqID %in% HIobsBeesEARLY$uqID))
+lazyBeesLATE <- subset(allBeesLATE, !(uqID %in% HIobsBeesLATE$uqID))
+lazyBeesTIME <- rbind(lazyBeesEARLY, lazyBeesLATE)
+
+# include all nestIDs so that nests with 0 lazy workers are also included
+# for both early
+allNestsEARLY <- matrix(ncol = 2, nrow = length(unique(allBees$nestID)))
+colnames(allNestsEARLY) <- c("nestID", "timepoint")
+allNestsEARLY <- as.data.frame(allNestsEARLY)
+allNestsEARLY$nestID <- unique(allBees$nestID)
+allNestsEARLY$timepoint <- "early"
+allNestsEARLY
+# and late
+allNestsLATE <- matrix(ncol = 2, nrow = length(unique(allBees$nestID)))
+colnames(allNestsLATE) <- c("nestID", "timepoint")
+allNestsLATE <- as.data.frame(allNestsLATE)
+allNestsLATE$nestID <- unique(allBees$nestID)
+allNestsLATE$timepoint <- "late"
+# then merge early and late together
+allNestsTIME <- rbind(allNestsEARLY, allNestsLATE)
+allNestsTIME
+
+# merge allNestsTIME and lazyBeesTIME to get df with all lazy bees + one row per nest per timepoint to make sure all nest-timepoints are included 
+allNestsTIME$beeID <- NA
+allNestsTIME$uqID <- NA
+NESTlazyBeesTIME <- rbind(allNestsTIME, lazyBeesTIME)
+
+# add nestTYPE column for all dfs
+NESTlazyBeesTIME$nestTYPE <- substr(NESTlazyBeesTIME$nestID, start = 1, stop = 2)
+
+# order the nestTYPEs so they appear in order of number of bees on graph
+NESTlazyBeesTIME$nestTYPE <- ordered(NESTlazyBeesTIME$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+########################### visualize
+
+# 0-2 observations
+lazyPerNestTIME <- NESTlazyBeesTIME %>% dplyr::group_by(nestID, nestTYPE, timepoint) %>% dplyr::summarise(nBees = dplyr::n() - 1) # subtract 1 b/c all nests have been added with 0 value
+
+ggplot(lazyPerNestTIME, aes(nBees, nestTYPE, color = nestTYPE, shape = timepoint)) +
+  geom_point(position = position_jitter(width=0.2, height=0.2), alpha = 0.6) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_shape_manual(values = c(17, 25)) +
+  labs(x = "number of bees with 0-2 observations per nest")
+ggsave("../figures/lazyBeesTIME.jpg")
+```
+
+# glmms on number of lazy workers across nestTYPEs
+```{r}
+# it's not normal - lnorm probs
+ggdensity(lazyPerNest$nBees)
+qqp(lazyPerNest$nBees, "lnorm")
+lazyPerNest
+
+# need to add natal colony as random effect
+ps <- glm(nBees ~ nestTYPE,
+          data = lazyPerNest)
+mymodel <- ps
+summary(mymodel)
+tab_model(mymodel)
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
