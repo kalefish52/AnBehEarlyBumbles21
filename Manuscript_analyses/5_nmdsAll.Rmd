@@ -1,0 +1,133 @@
+---
+title: "nmdsAll"
+author: "ES"
+date: "7/30/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(cluster) # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+```
+
+* you must run the 4_shannonBees.Rmd file before running this. 
+
+# load data
+```{r}
+# use bee counts filt (bees with >=3 obs each pooled across time)
+nmds_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
+
+# add specialist information from shannonBees.Rmd file
+spec <- read.csv("../Data/tempData/beeCounts_filtSpecPOOLED.csv")
+
+```
+
+# NMDS on all pooled data -- individual specialization over time
+```{r}
+# make NA values 0
+nmds_data[is.na(nmds_data)] <- 0
+nmds_data
+numBees <- nrow(nmds_data)
+# remove bees lacking any behaviors
+nmds_data <-nmds_data[rowSums(nmds_data[(10:(ncol(nmds_data) - 1))]) > 0, ]
+numDatapoints <- nrow(nmds_data)
+print(paste( (numBees - numDatapoints), "bees were removed from the nmds data because they had 0 recorded behaviors", sep = " "))
+
+# # add dummy variable to include lazy workers
+# nmds_data$nothing <- 0.01
+
+# remove bees with NA beeID
+nmds_data <- nmds_data[!is.na(nmds_data$beeID),]
+
+# make matrix of only behavior counts for all timepoints
+nmds_all <- as.matrix(nmds_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+nmds_all
+
+# Run NMDS with euclidean distance
+nmds_all <- metaMDS(nmds_all)
+plot(nmds_all)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores <- as.data.frame(scores(nmds_all))
+data.scores$caste <- nmds_data$caste
+data.scores$nestTYPE <-nmds_data$nestTYPE
+data.scores$beeID <-nmds_data$beeID
+data.scores$nestID <- nmds_data$nestID
+data.scores$nBees <- nmds_data$nBees
+data.scores$nWork <- nmds_data$nWork
+data.scores$queen <- nmds_data$queen
+data.scores
+
+# Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(nmds_all, "species"))
+behav.scores$behav<-rownames(behav.scores)
+behav.scores
+
+data.scores$nestTYPE <- ordered(data.scores$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+# Plot it using ggplot
+ggplot() + 
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape = caste, color = nestTYPE), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_shape_manual(values = c(21, 16)) +
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsAll.jpg")
+```
+
+# add specialists onto nmds plot
+***NEED TO RUN SHANNONBEES RMD FILE FIRST TO ACQUIRE BEECOUNTS_FILTSPECPOOLED.CSV
+```{r}
+# make beeID include nestID so we can identify individually
+spec$beeID <- paste0(spec$nestID, spec$beeID)
+data.scores$beeID <- paste0(data.scores$nestID, data.scores$beeID)
+
+# make NA specialists named "none"
+spec[is.na(spec$specBehav), "specBehav"] <- "none"
+
+# make new column for specBehav in data.scores
+data.scores$specBehav <- NA
+# go through each bee we have an nmds score for and add specialist category if applicable
+for (i in 1:nrow(data.scores)) {
+  for (j in 1:nrow(spec)) {
+    if (data.scores$beeID[i] == spec$beeID[j]) {
+      data.scores$specBehav[i] <- spec$specBehav[j]
+    }
+  }
+}
+data.scores
+spec
+
+data.scores$specBehav <- ordered(data.scores$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
+behav.scores$behav <- ordered(behav.scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
+
+# Plot it using ggplot
+ggplot() + 
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape = caste, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  scale_shape_manual(values = c(21, 16)) +
+  scale_color_manual(values = c("#C77CFF", "#00BFC4", "#F8766D", "grey")) +
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2)) +
+  labs(color = "specialist")
+ggsave("../figures/nmdsSpec.jpg")
+```
+
+
+
+
+
+
+
+
