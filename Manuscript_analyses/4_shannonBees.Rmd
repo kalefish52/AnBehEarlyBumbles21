@@ -270,7 +270,7 @@ nSpecT$nestTYPE <- substr(nSpecT$nestID, start = 1, stop = 2)
 nSpecT$nestTYPE <- ordered(nSpecT$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
 ggplot(nSpecT, aes(nBeesPerNest, specBehav, shape = timepoint)) +
-  geom_point(position = position_jitter(width=0.18, height=0.2), alpha = 0.7, aes(color = nestTYPE, fill = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.18, height=0.2), alpha = 0.7, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) 
 ggsave("../figures/nSpecialistsTIME.jpg")
