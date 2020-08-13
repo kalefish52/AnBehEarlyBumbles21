@@ -54,7 +54,7 @@ allNests <- unique(allBees$nestID)
 allNests
 
 # add all nests to all dfs
-nestsToAdd <- matrix(nrow = length(allNests), ncol = 2)
+nestsToAdd <- matrix(nrow = length(allNests), ncol = 3)
 nestsToAdd <- as.data.frame(nestsToAdd)
 colnames(nestsToAdd) <- colnames(noObsBees)
 nestsToAdd$nestID <- allNests
@@ -191,8 +191,14 @@ ggdensity(lazyPerNest$nBees)
 qqp(lazyPerNest$nBees, "lnorm")
 lazyPerNest
 
+lazyPerNest$totalBees <- NA
+lazyPerNest$totalBees[lazyPerNest$nestTYPE == "QF"] <- 6
+lazyPerNest$totalBees[lazyPerNest$nestTYPE == "NF"] <- 5
+lazyPerNest$totalBees[lazyPerNest$nestTYPE == "QT"] <- 4
+lazyPerNest$totalBees[lazyPerNest$nestTYPE == "NT"] <- 3
+
 # need to add natal colony as random effect
-ps <- glm(nBees ~ nestTYPE,
+ps <- glm(nBees ~ totalBees, 
           data = lazyPerNest)
 mymodel <- ps
 summary(mymodel)
