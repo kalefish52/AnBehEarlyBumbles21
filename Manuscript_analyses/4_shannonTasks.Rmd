@@ -17,6 +17,7 @@ library(ggpubr)   # ggdensity plots
 library(lme4)     # glmms
 library(sjPlot)   # model summary
 library(multcomp) # tukey tests
+library(lsmeans)  # ls means posthoc tests
 ```
 
 # load data
@@ -229,17 +230,72 @@ ggsave("../figures/shanDistBehav.jpg")
 
 # glmms on pooled shannon across nestTYPEs
 ```{r}
+# it's not really normal... not sure what distribution to use
+ggdensity(taskS$shannon)
+qqp(taskS$shannon, "norm")
+taskS
 
+# need to add natal colony as random effect
+ps <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID),
+              data = taskS)
+mymodel <- ps
+summary(mymodel)
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 # glmms on early vs. late shannons
 ```{r}
+# it's not really normal... not sure what distribution to use
+ggdensity(taskTimeShan$shannon)
+qqp(taskTimeShan$shannon, "norm")
 
+# need to add natal colony as random effect
+ts <- glmer(shannon ~ timepoint*behav + nBehav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+mymodel <- ts
+summary(mymodel)
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 # glmms on change in shannon across timepoints
 ```{r}
+# pretty normal
+ggdensity(taskTimeShan$shanDist)
+qqp(taskTimeShan$shanDist, "norm")
+taskTimeShan
+# need to add natal colony as random effect
+cs <- glmer(shanDist ~ nestTYPE*behav + (1|nestID),
+              data = taskTimeShan)
+mymodel <- cs
+summary(mymodel)
+tab_model(mymodel)
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
+posthoc2 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc2)
+posthoc6 <- lsmeans(mymodel, pairwise ~ behav|nestTYPE, adjust = "tukey")
+summary(posthoc6)
 
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 
