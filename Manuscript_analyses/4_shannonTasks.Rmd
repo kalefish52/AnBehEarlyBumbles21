@@ -217,7 +217,7 @@ for (i in 1:nrow(taskTimeShan)) {                                               
 }
 
 # plot the change in shannon from early to late
-avgShannDist <- taskTimeShan %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg)
+avgShannDist <- taskTimeShan %>% dplyr::summarize(avg = mean(shanDist, na.rm = T)) %>% dplyr::pull(avg)
 
 ggplot(taskTimeShan, aes(shanDist, behav)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, aes(color = nestTYPE)) +
@@ -230,16 +230,31 @@ ggsave("../figures/shanDistBehav.jpg")
 
 # glmms on pooled shannon across nestTYPEs
 ```{r}
-# it's not really normal... not sure what distribution to use
+# much closer to normal than bee shannons, maybe okay to do a single model rather than two-part?
 ggdensity(taskS$shannon)
 qqp(taskS$shannon, "norm")
 taskS
 
 # need to add natal colony as random effect
-ps <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID),
+ps0 <- glmer(shannon ~1 + (1|nestID),
               data = taskS)
-mymodel <- ps
-summary(mymodel)
+ps1 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID),
+              data = taskS)
+ps2 <- glmer(shannon ~ behav + nestTYPE + (1|nestID),
+              data = taskS)
+ps3 <- glmer(shannon ~ behav + nBehav + (1|nestID),
+              data = taskS)
+ps4 <- glmer(shannon ~ nestTYPE + nBehav + (1|nestID),
+              data = taskS)
+ps5 <- glmer(shannon ~ behav + (1|nestID),
+              data = taskS)
+ps6 <- glmer(shannon ~ nestTYPE + (1|nestID),
+              data = taskS)
+ps7 <- glmer(shannon ~ nBehav + (1|nestID),
+              data = taskS)
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
+
+mymodel <- ps3
 tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
@@ -258,10 +273,41 @@ ggdensity(taskTimeShan$shannon)
 qqp(taskTimeShan$shannon, "norm")
 
 # need to add natal colony as random effect
-ts <- glmer(shannon ~ timepoint*behav + nBehav + nestTYPE + (1|nestID),
+ts0 <- glmer(shannon ~ 1 + (1|nestID),
               data = taskTimeShan)
-mymodel <- ts
-summary(mymodel)
+ts1 <- glmer(shannon ~ timepoint*behav + nBehav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts2 <- glmer(shannon ~ timepoint*behav + nBehav + (1|nestID),
+              data = taskTimeShan)
+ts3 <- glmer(shannon ~ timepoint*behav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts4 <- glmer(shannon ~ timepoint + nBehav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts5 <- glmer(shannon ~ behav + nBehav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts6 <- glmer(shannon ~ timepoint*behav + (1|nestID),
+              data = taskTimeShan)
+ts7 <- glmer(shannon ~ timepoint + nBehav + (1|nestID),
+              data = taskTimeShan)
+ts8 <- glmer(shannon ~ behav + nBehav + (1|nestID),
+              data = taskTimeShan)
+ts9 <- glmer(shannon ~ timepoint + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts10 <- glmer(shannon ~ behav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts11 <- glmer(shannon ~ nBehav + nestTYPE + (1|nestID),
+              data = taskTimeShan)
+ts12 <- glmer(shannon ~ timepoint + (1|nestID),
+              data = taskTimeShan)
+ts13 <- glmer(shannon ~ behav + (1|nestID),
+              data = taskTimeShan)
+ts14 <- glmer(shannon ~ nBehav + (1|nestID),
+              data = taskTimeShan)
+ts15 <- glmer(shannon ~ nestTYPE + (1|nestID),
+              data = taskTimeShan)
+model.sel(ts1, ts2, ts3, ts4, ts5, ts6, ts7, ts8, ts9, ts10, ts11, ts12, ts13, ts14, ts15)
+
+mymodel <- ts8
 tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
@@ -280,17 +326,21 @@ ggdensity(taskTimeShan$shanDist)
 qqp(taskTimeShan$shanDist, "norm")
 taskTimeShan
 # need to add natal colony as random effect
-cs <- glmer(shanDist ~ nestTYPE*behav + (1|nestID),
+cs0 <- glmer(shanDist ~ 1 + (1|nestID),
               data = taskTimeShan)
-mymodel <- cs
-summary(mymodel)
+cs1 <- glmer(shanDist ~ nestTYPE + behav + (1|nestID),
+              data = taskTimeShan)
+cs2 <- glmer(shanDist ~ nestTYPE + (1|nestID),
+              data = taskTimeShan)
+cs3 <- glmer(shanDist ~ behav + (1|nestID),
+              data = taskTimeShan)
+model.sel(cs0, cs1, cs2, cs3)
+mymodel <- cs3
+
 tab_model(mymodel)
-posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
-summary(posthoc1)
+
 posthoc2 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
 summary(posthoc2)
-posthoc6 <- lsmeans(mymodel, pairwise ~ behav|nestTYPE, adjust = "tukey")
-summary(posthoc6)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")

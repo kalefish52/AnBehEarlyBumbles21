@@ -184,12 +184,45 @@ ggplot(lazyPerNestTIME, aes(nBees, nestTYPE, color = nestTYPE, shape = timepoint
 ggsave("../figures/lazyBeesTIME.jpg")
 ```
 
+# add natal colony to lazyPerNest and lazyPerNestTIME dfs
+```{r}
+master <- read.csv("../Data/master_data.csv")
+master
+
+# make a new column in lazyPerNest for natal colony
+lazyPerNest$natal <- NA
+# for each bee in the lazyPerNest df
+for (i in 1:nrow(lazyPerNest)) {
+  # go through master until you find the matching nestID
+  for (j in 1:nrow(master)) {
+    # if the nest ID matches
+    if (lazyPerNest$nestID[i] == master$nestID[j]) {
+        lazyPerNest$natal[i] <- master$Wnatal[j]
+      }
+    }
+}
+
+
+# make a new column in lazyPerNestTIME for natal colony
+lazyPerNestTIME$natal <- NA
+# for each bee in the lazyPerNestTIME df
+for (i in 1:nrow(lazyPerNestTIME)) {
+  # go through master until you find the matching nestID
+  for (j in 1:nrow(master)) {
+    # if the nest ID matches
+    if (lazyPerNestTIME$nestID[i] == master$nestID[j]) {
+        lazyPerNestTIME$natal[i] <- master$Wnatal[j]
+      }
+    }
+  }
+```
+
 # glmms on number of lazy workers across nestTYPEs
 ```{r}
 # it's not normal - lnorm probs
 ggdensity(lazyPerNest$nBees)
-qqp(lazyPerNest$nBees, "lnorm")
-lazyPerNest
+qqp(lazyPerNest$nBees, "norm")
+lazyPerNest$natal
 
 lazyPerNest$totalBees <- NA
 lazyPerNest$totalBees[lazyPerNest$nestTYPE == "QF"] <- 6
@@ -199,9 +232,41 @@ lazyPerNest$totalBees[lazyPerNest$nestTYPE == "NT"] <- 3
 
 # need to add natal colony as random effect
 ps <- glm(nBees ~ totalBees, 
-          data = lazyPerNest)
+          data = lazyPerNest, family = poisson(link = "log"))
 mymodel <- ps
-summary(mymodel)
+tab_model(mymodel)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+# glmms on number of lazy workers across timepoints
+```{r}
+# it's not normal - lnorm probs
+ggdensity(lazyPerNestTIME$nBees)
+qqp(lazyPerNestTIME$nBees, "norm")
+lazyPerNestTIME$natal
+
+lazyPerNestTIME$totalBees <- NA
+lazyPerNestTIME$totalBees[lazyPerNestTIME$nestTYPE == "QF"] <- 6
+lazyPerNestTIME$totalBees[lazyPerNestTIME$nestTYPE == "NF"] <- 5
+lazyPerNestTIME$totalBees[lazyPerNestTIME$nestTYPE == "QT"] <- 4
+lazyPerNestTIME$totalBees[lazyPerNestTIME$nestTYPE == "NT"] <- 3
+
+# need to add natal colony as random effect
+ps0 <- glm(nBees ~ 1, 
+          data = lazyPerNestTIME, family = poisson(link = "log"))
+ps1 <- glm(nBees ~ totalBees + timepoint, 
+          data = lazyPerNestTIME, family = poisson(link = "log"))
+ps2 <- glm(nBees ~ totalBees, 
+          data = lazyPerNestTIME, family = poisson(link = "log"))
+ps3 <- glm(nBees ~ timepoint, 
+          data = lazyPerNestTIME, family = poisson(link = "log"))
+model.sel(ps0, ps1, ps2, ps3)
+
+mymodel <- ps2
 tab_model(mymodel)
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)

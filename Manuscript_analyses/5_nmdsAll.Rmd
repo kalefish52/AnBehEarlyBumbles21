@@ -670,6 +670,8 @@ plot(allEffects(mymodel))
 
 ```{r}
 # MODEL SIZE 
+hist(Scores$size)
+
 s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID),
               data = Scores)
 s1 <- glmer(size ~ specBehav + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
@@ -708,6 +710,12 @@ summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
 
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+# plot all
 ggplot(data = Scores, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
@@ -717,6 +725,8 @@ ggsave("../figures/ovaryResVsize.jpg")
 
 ```{r}
 # MODEL OVARY STAGE
+hist(Scores$avgStage)
+
 s0 <- glmer(avgStage ~ 1 + (1|natal) + (1|nestID),
               data = Scores)
 s1 <- glmer(avgStage ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
@@ -756,6 +766,13 @@ plot(allEffects(mymodel))
 posthoc1 <- glht(mymodel, linfct = mcp(specBehav = "Tukey"))
 summary(posthoc1)
 
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+
+
 ggplot(data = Scores, aes(avgStage, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.15, height = 0), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
@@ -765,6 +782,8 @@ ggsave("../figures/ovaryVsize.jpg")
 
 ```{r}
 # MODEL OVARY RESORPTION
+hist(Scores$avgRes)
+
 s0 <- glmer(avgRes ~ 1 + (1|natal) + (1|nestID),
               data = Scores)
 s1 <- glmer(avgRes ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
