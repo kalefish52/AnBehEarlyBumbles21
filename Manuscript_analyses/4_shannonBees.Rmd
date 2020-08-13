@@ -38,6 +38,55 @@ shanT_data$nestTYPE <- ordered(shanT_data$nestTYPE, levels = c("NT", "QT", "NF",
 shanT_data
 ```
 
+# add natal colony to both dfs
+```{r}
+master <- read.csv("../Data/master_data.csv")
+master
+
+# make a new column in shanP_data for natal colony
+shanP_data$natal <- NA
+shanT_data$natal <- NA
+
+# for each bee in the shanP_data df
+for (i in 1:nrow(shanP_data)) {
+  # go through master until you find the matching nestID
+  for (j in 1:nrow(master)) {
+    # if the nest ID matches
+    if (shanP_data$nestID[i] == master$nestID[j]) {
+      # if shanP_data bee is a queen
+      if(shanP_data$caste[i] == "queen") {
+        # add queen natal colony to shanP_data
+        shanP_data$natal[i] <- master$Qnatal[j]
+      }
+      # if shanP_data bee is a worker
+      if (shanP_data$caste[i] == "worker") {
+        # add worker natal colony to shanP_data
+        shanP_data$natal[i] <- master$Wnatal[j]
+      }
+    }
+  }
+}
+# for each bee in the shanT df
+for (i in 1:nrow(shanT_data)) {
+  # go through master until you find the matching nestID
+  for (j in 1:nrow(master)) {
+    # if the nest ID matches
+    if (shanT_data$nestID[i] == master$nestID[j]) {
+      # if shanT_data bee is a queen
+      if(shanT_data$caste[i] == "queen") {
+        # add queen natal colony to shanT_data
+        shanT_data$natal[i] <- master$Qnatal[j]
+      }
+      # if shanT_data bee is a worker
+      if (shanT_data$caste[i] == "worker") {
+        # add worker natal colony to shanT_data
+        shanT_data$natal[i] <- master$Wnatal[j]
+      }
+    }
+  }
+}
+```
+
 # shannon index for each individual
 
 # POOLED TIMEPOINTS, including egg laying, separate foraging
@@ -291,23 +340,23 @@ dol$shan0[dol$shannon > 0] <- 0
 
 # model 0 vs. >0 shannon values
 # need to add natal colony as random effect
-ps0 <- glmer(shan0 ~ 1 + (1|nestID),
+ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps1 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID),
+ps1 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps2 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID),
+ps2 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps3 <- glmer(shan0 ~ nestTYPE + caste + (1|nestID),
+ps3 <- glmer(shan0 ~ nestTYPE + caste + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps4 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID),
+ps4 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps5 <- glmer(shan0 ~ nBehavs + caste + (1|nestID),
+ps5 <- glmer(shan0 ~ nBehavs + caste + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps6 <- glmer(shan0 ~ nestTYPE + (1|nestID),
+ps6 <- glmer(shan0 ~ nestTYPE + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps7 <- glmer(shan0 ~ nBehavs + (1|nestID),
+ps7 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
-ps8 <- glmer(shan0 ~ caste + (1|nestID),
+ps8 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
               data = dol, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8)
 
@@ -321,29 +370,30 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ################
 
 # make a new column that contains only shannon for bees with shannon > 0
+dol$shan1 <- NA
 dol$shan1[dol$shannon > 0] <- dol$shannon[dol$shannon > 0]
 # it's mostly normal
 qqp(dol$shan1, "norm")
 
 # model 0 vs. >0 shannon values
 # need to add natal colony as random effect
-ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|caste),
+ps0 <- glmer(shan1 ~ 1 + (1|nestID)  + (1|natal),
               data = dol)
-ps1 <- glmer(shan1 ~ nestTYPE + nBehavs + caste + (1|nestID),
+ps1 <- glmer(shan1 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
               data = dol)
-ps2 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID),
+ps2 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
               data = dol)
-ps3 <- glmer(shan1 ~ nestTYPE + caste + (1|nestID),
+ps3 <- glmer(shan1 ~ nestTYPE + caste + (1|nestID) + (1|natal),
               data = dol)
-ps4 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID),
+ps4 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
               data = dol)
-ps5 <- glmer(shan1 ~ nBehavs + caste + (1|nestID),
+ps5 <- glmer(shan1 ~ nBehavs + caste + (1|nestID) + (1|natal),
               data = dol)
-ps6 <- glmer(shan1 ~ nestTYPE + (1|nestID),
+ps6 <- glmer(shan1 ~ nestTYPE + (1|nestID) + (1|natal),
               data = dol)
-ps7 <- glmer(shan1 ~ nBehavs + (1|nestID),
+ps7 <- glmer(shan1 ~ nBehavs + (1|nestID) + (1|natal),
               data = dol)
-ps8 <- glmer(shan1 ~ caste + (1|nestID),
+ps8 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal),
               data = dol)
 model.sel(ps0, ps1, ps2, ps3, ps4)
 
@@ -426,15 +476,108 @@ hist(modelResiduals)
 
 # glmms on early vs. late shannons
 ```{r}
-# it's not really normal... not sure what distribution to use
-ggdensity(dolT$shannon)
-qqp(dolT$shannon, "norm")
+# two part model
+# make a new column for over or under 0
+dolT$shan0 <- NA
+# if shannon = 0, shan0 = 1
+dolT$shan0[dolT$shannon == 0] <- 1
+# if shannon > 0, shan0 = 0
+dolT$shan0[dolT$shannon > 0] <- 0
 
+
+# model 0 vs. >0 shannon values
 # need to add natal colony as random effect
-ts <- glmer(shannon ~ timepoint + nBehavs + nestTYPE + caste + (1|nestID),
+ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps1 <- glmer(shan0 ~ timepoint + nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps2 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps3 <- glmer(shan0 ~ timepoint + nestTYPE + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps4 <- glmer(shan0 ~ timepoint + nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps5 <- glmer(shan0 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps6 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps7 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps8 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps9 <- glmer(shan0 ~ timepoint + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps10 <- glmer(shan0 ~ nestTYPE + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps11 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps12 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps13 <- glmer(shan0 ~ nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps14 <- glmer(shan0 ~ nestTYPE + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps15 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
+              data = dolT, family = binomial(link = "logit"))
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
+
+mymodel <- ps15
+tab_model(mymodel)
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+################
+
+# make a new column that contains only shannon for bees with shannon > 0
+dolT$shan1 <- NA
+dolT$shan1[dolT$shannon > 0] <- dolT$shannon[dolT$shannon > 0]
+# it's mostly normal
+hist(dolT$shan1)
+qqp(dolT$shan1, "norm")
+
+# model 0 vs. >0 shannon values
+# need to add natal colony as random effect
+ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|natal),
               data = dolT)
-mymodel <- ts
-summary(mymodel)
+ps1 <- glmer(shan1 ~ timepoint + nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps2 <- glmer(shan1 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps3 <- glmer(shan1 ~ timepoint + nestTYPE + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps4 <- glmer(shan1 ~ timepoint + nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = dolT)
+ps5 <- glmer(shan1 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps6 <- glmer(shan1 ~ nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps7 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestID) + (1|natal),
+              data = dolT)
+ps8 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+              data = dolT)
+ps9 <- glmer(shan1 ~ timepoint + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps10 <- glmer(shan1 ~ nestTYPE + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps11 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+              data = dolT)
+ps12 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = dolT)
+ps13 <- glmer(shan1 ~ nBehavs + caste + (1|nestID) + (1|natal),
+              data = dolT)
+ps14 <- glmer(shan1 ~ nestTYPE + (1|nestID) + (1|natal),
+              data = dolT)
+ps15 <- glmer(shan1 ~ nBehavs + (1|nestID) + (1|natal),
+              data = dolT)
+ps16 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal),
+              data = dolT)
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
+
+mymodel <- ps0
 tab_model(mymodel)
 
 # plot model residuals
@@ -450,10 +593,17 @@ ggdensity(dolT$shanDist)
 qqp(dolT$shanDist, "norm")
 
 # need to add natal colony as random effect
-cs <- glmer(shanDist ~ nestTYPE + caste + (1|nestID),
+cs0 <- glmer(shanDist ~ 1 + (1|nestID) + (1|natal),
               data = dolT)
-mymodel <- cs
-summary(mymodel)
+cs1 <- glmer(shanDist ~ nestTYPE + caste + (1|nestID) + (1|natal),
+              data = dolT)
+cs2 <- glmer(shanDist ~ nestTYPE + (1|nestID) + (1|natal),
+              data = dolT)
+cs3 <- glmer(shanDist ~ caste + (1|nestID) + (1|natal),
+              data = dolT)
+model.sel(cs0, cs1, cs2, cs3)
+
+mymodel <- cs2
 tab_model(mymodel)
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
