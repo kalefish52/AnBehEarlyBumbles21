@@ -17,19 +17,21 @@ library(ggpubr)   # ggdensity plots
 library(lme4)     # glmms
 library(sjPlot)   # model summary
 library(multcomp) # tukey tests
+library(car)      # qqp
+library(MuMIn)    # model.sel
 ```
 
 # load data
 ```{r}
-# pooled data across timepoints, values are proportion of total observations in a given nest carried out by that bee/task combination
-# bees with >3 observations, regardless of # observations per nest
+# pooled data across timepoints, values are counts
+# only includes bees with >=3 observations, regardless of # observations per nest
 shanP_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
 shanP_data$nestTYPE <- ordered(shanP_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
-# split across timepoints, bees with >3 observations, regardless of # observations per nest
+# split across timepoints, bees with >=3 observations, regardless of # observations per nest
+# some bees are only included in early (and not late) and vice versa 
 shanEarly_data <- read.csv("../Data/tempData/beeEarlyCounts_filt.csv")
 shanLate_data <- read.csv("../Data/tempData/beeLateCounts_filt.csv")
-
 # merge early and late shannon
 shanT_data <- rbind(shanEarly_data, shanLate_data)
 shanT_data$nestTYPE <- ordered(shanT_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
@@ -40,37 +42,32 @@ shanT_data
 
 # POOLED TIMEPOINTS, including egg laying, separate foraging
 yields df: dol
-same as shanP_data df, but with shannon index as dol_shannon column
+same as shanP_data df, but with shannon index as shannon column
 ```{r}
-# start with matrix where each row is an individual, and each column is a behavior
-# data is transformed such that all values for a given nest sum to 1
+# rename for reproducibility
 dol <- shanP_data
 
-# convert to matrix of behaviors to be used in shannon
+# start with matrix where each row is an individual, and each column is a behavior
 dol_m <- as.matrix(dol[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
 
-# calculate shannon for each bee in the matrix
+# make a column to enter shannon into dol df
+dol$shannon <- NA
+# calculate shannon for each bee in the matrix and add to shannon column
 dol$shannon <- diversity(dol_m, index = "shannon") 
 
-# plot shannon values by nest type
+# plot density curves of shannon values by nest type
 ggplot(dol, aes(shannon, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 ggsave("../figures/shannonHist.jpg")
 
-# add group size column
-dol$nBees[dol$nestTYPE == "NT"] <- 3 
-dol$nBees[dol$nestTYPE == "NF"] <- 5
-dol$nBees[dol$nestTYPE == "QT"] <- 4 
-dol$nBees[dol$nestTYPE == "QF"] <- 6 
-
-# nestTYPE vs. shannon scatterplot
+# plot nestTYPE vs. shannon scatterplot
 ggplot(dol, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/pooledShannon.jpg")
 
-# number of behaviors vs. shannon scatterplot
+# plot number of behaviors vs. shannon scatterplot
 ggplot(dol, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8, size = 2) +
   scale_shape_manual(values = c(21, 16))
@@ -89,7 +86,9 @@ nonSpecPool <- dol[dol$shannon >= shannonSpecialist,]
 # name the behavior that each specialist specializes in
 # define the number of columns prior to the first behavior
 skip <- 8
-# name the behavior: column index of max number of behaviors + skip columns
+# make a column for behavioral specialization
+specPool$specBehav <- NA
+# name the behavior that each individual specialized in: column index of max number of behaviors + skip columns
 for (i in 1:nrow(specPool)) {
   specPool$specBehav[i] <- names(specPool[skip + max.col(specPool[i, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])])
 }
@@ -98,7 +97,7 @@ specPool
 # add back in non-specialists, with NA value in specBehav column
 
 # make NA column for specBehav
-nonSpecPool$specBehav <- NA
+nonSpecPool$specBehav <- "generalist"
 ALLspecPool <- rbind(specPool, nonSpecPool)
 
 
@@ -106,24 +105,24 @@ ALLspecPool <- rbind(specPool, nonSpecPool)
 write.csv(ALLspecPool, "../Data/tempData/beeCounts_filtSpecPOOLED.csv")
 ALLspecPool
 
-# count number of specialists in each category
+# count number of specialists in each category per nest
 # make empty matrix to put number into
-nSpec <- matrix(NA, ncol = 3, nrow = length(unique(dol$nestID))*4)
+nSpec <- matrix(NA, ncol = 3, nrow = length(unique(dol$nestID))*5)
 # convert to df
 nSpec <- as.data.frame(nSpec)
 # name columns relevant info
 colnames(nSpec) <- c("nestID", "specBehav", "nBeesPerNest")
 # repeat the 4 behaviors over in specBehav column
-nSpec$specBehav <- c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")
+nSpec$specBehav <- c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying", "generalist")
 # set number of specialists to 0
 nSpec$nBeesPerNest <- 0
-# fill nestID with 4x each nest id (one for each behavior)
+# fill nestID with 5x each nest id (one for each behavior)
 for (i in 0:(length(unique(dol$nestID))-1)) {
-  nSpec$nestID[((i * 4) + 1):((i + 1) * 4)] <- unique(dol$nestID)[i + 1]
+  nSpec$nestID[((i * 5) + 1):((i + 1) * 5)] <- unique(dol$nestID)[i + 1]
 }
-# replace number of bees > 0 with accurate number
+# replace number of bees with accurate number
 # first summarize 
-nSpec_missing0 <- specPool %>% dplyr::group_by(nestID, nestTYPE, specBehav) %>% dplyr::summarise(nBeesPerNest = dplyr::n())
+nSpec_missing0 <- ALLspecPool %>% dplyr::group_by(nestID, nestTYPE, specBehav) %>% dplyr::summarise(nBeesPerNest = dplyr::n())
 nSpec_missing0
 
 # for each line in nSpec_missing0
@@ -140,6 +139,8 @@ for (i in 1:nrow(nSpec_missing0)) {
 nSpec
 nSpec$nestTYPE <- substr(nSpec$nestID, start = 1, stop = 2)
 nSpec$nestTYPE <- ordered(nSpec$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nSpec$specBehav <- ordered(nSpec$specBehav, levels = c("generalist", "pollenforaging", "nectarforaging", "feedsbrood", "egglaying"))
+
 
 ggplot(nSpec, aes(nBeesPerNest, specBehav)) +
   geom_point(position = position_jitter(width=0.15, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
@@ -188,7 +189,7 @@ for (i in 1:nrow(dolT)) {                                                   # fo
 ggplot(dolT, aes(shanDist, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 
-avgShannDist <- dolT %>% summarize(avg = mean(shanDist, na.rm = T)) %>% pull(avg)
+avgShannDist <- dolT %>% dplyr::summarize(avg = mean(shanDist, na.rm = T)) %>% dplyr::pull(avg)
 avgShannDist
 ggplot(dolT, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.5) +
@@ -224,7 +225,7 @@ specTime
 # add back in non-specialists, with NA value in specBehav column
 
 # make NA column for specBehav
-nonSpecTime$specBehav <- NA
+nonSpecTime$specBehav <- "generalist"
 ALLspecTime <- rbind(specTime, nonSpecTime)
 
 
@@ -234,24 +235,24 @@ ALLspecTime
 
 # count number of specialists in each category
 # make empty matrix to put number into
-nSpecT <- matrix(NA, ncol = 4, nrow = length(unique(dolT$nestID))*6)
+nSpecT <- matrix(NA, ncol = 4, nrow = length(unique(dolT$nestID))*10)
 # convert to df
 nSpecT <- as.data.frame(nSpecT)
 # name columns relevant info
 colnames(nSpecT) <- c("nestID", "timepoint", "specBehav", "nBeesPerNest")
 # repeat the 4 behaviors over in specBehav column
-nSpecT$specBehav <- c("feedsbrood", "feedsbrood", "nectarforaging", "nectarforaging", "pollenforaging", "pollenforaging")
+nSpecT$specBehav <- c("feedsbrood", "feedsbrood", "nectarforaging", "nectarforaging", "pollenforaging", "pollenforaging", "egglaying", "egglaying", "generalist", "generalist")
 # repeat the timepoints over in timepoint column
 nSpecT$timepoint <- c("early", "late")
 # set number of specialists to 0
 nSpecT$nBeesPerNest <- 0
 # fill nestID with 4x each nest id (one for each behavior)
 for (i in 0:(length(unique(dolT$nestID))-1)) {
-  nSpecT$nestID[((i * 6) + 1):((i + 1) * 6)] <- unique(dolT$nestID)[i + 1]
+  nSpecT$nestID[((i * 10) + 1):((i + 1) * 10)] <- unique(dolT$nestID)[i + 1]
 }
 # replace number of bees > 0 with accurate number
 # first summarize 
-nSpec_missing0T <- specTime %>% dplyr::group_by(nestID, nestTYPE, specBehav, timepoint) %>% dplyr::summarise(nBeesPerNest = dplyr::n())
+nSpec_missing0T <- ALLspecTime %>% dplyr::group_by(nestID, nestTYPE, specBehav, timepoint) %>% dplyr::summarise(nBeesPerNest = dplyr::n())
 nSpec_missing0T
 
 # for each line in nSpec_missing0T
@@ -268,6 +269,7 @@ for (i in 1:nrow(nSpec_missing0T)) {
 
 nSpecT$nestTYPE <- substr(nSpecT$nestID, start = 1, stop = 2) 
 nSpecT$nestTYPE <- ordered(nSpecT$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nSpecT$specBehav <- ordered(nSpecT$specBehav, levels = c("generalist", "pollenforaging", "nectarforaging", "feedsbrood", "egglaying"))
 
 ggplot(nSpecT, aes(nBeesPerNest, specBehav, shape = timepoint)) +
   geom_point(position = position_jitter(width=0.18, height=0.2), alpha = 0.7, aes(color = nestTYPE)) +
@@ -277,26 +279,150 @@ ggsave("../figures/nSpecialistsTIME.jpg")
 
 
 ```
-
-# glmms on pooled shannon across nestTYPEs
+# two part model on pooled shannon across nestTYPES
 ```{r}
-# it's not really normal... not sure what distribution to use
-ggdensity(dol$shannon)
-qqp(dol$shannon, "norm")
-dol
+# make a new column for over or under 0
+dol$shan0 <- NA
+# if shannon = 0, shan0 = 1
+dol$shan0[dol$shannon == 0] <- 1
+# if shannon > 0, shan0 = 0
+dol$shan0[dol$shannon > 0] <- 0
 
+
+# model 0 vs. >0 shannon values
 # need to add natal colony as random effect
-ps <- glmer(shannon ~ nestTYPE + caste + (1|nestID),
-              data = dol)
-mymodel <- ps
-summary(mymodel)
-tab_model(mymodel)
+ps0 <- glmer(shan0 ~ 1 + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps1 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps2 <- glmer(shan0 ~ nestTYPE + nBehavs + caste + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps3 <- glmer(shan0 ~ nestTYPE + caste + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps4 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps5 <- glmer(shan0 ~ nBehavs + caste + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps6 <- glmer(shan0 ~ nestTYPE + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps7 <- glmer(shan0 ~ nBehavs + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+ps8 <- glmer(shan0 ~ caste + (1|nestID),
+              data = dol, family = binomial(link = "logit"))
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8)
 
+mymodel <- ps5
+tab_model(mymodel)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+################
+
+# make a new column that contains only shannon for bees with shannon > 0
+dol$shan1[dol$shannon > 0] <- dol$shannon[dol$shannon > 0]
+# it's mostly normal
+qqp(dol$shan1, "norm")
+
+# model 0 vs. >0 shannon values
+# need to add natal colony as random effect
+ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|caste),
+              data = dol)
+ps1 <- glmer(shan1 ~ nestTYPE + nBehavs + caste + (1|nestID),
+              data = dol)
+ps2 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID),
+              data = dol)
+ps3 <- glmer(shan1 ~ nestTYPE + caste + (1|nestID),
+              data = dol)
+ps4 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID),
+              data = dol)
+ps5 <- glmer(shan1 ~ nBehavs + caste + (1|nestID),
+              data = dol)
+ps6 <- glmer(shan1 ~ nestTYPE + (1|nestID),
+              data = dol)
+ps7 <- glmer(shan1 ~ nBehavs + (1|nestID),
+              data = dol)
+ps8 <- glmer(shan1 ~ caste + (1|nestID),
+              data = dol)
+model.sel(ps0, ps1, ps2, ps3, ps4)
+
+mymodel <- ps0
+tab_model(mymodel)
+# plot model residuals
+modelResiduals <- resid(mymodel, type = "pearson") # Extract standardized residuals 
+hist(modelResiduals)
 ```
+<!-- # glmms on pooled shannon across nestTYPEs -->
+<!-- ```{r} -->
+<!-- # it's not normal... not sure what distribution to use -->
+<!-- over0 <- dol$shannon[dol$shannon > 0] -->
+<!-- ggdensity(dol$shannon) -->
+<!-- hist(dol$shannon) -->
+<!-- qqp(dol$shannon, "norm") -->
+<!-- qqp(over0, "norm") -->
+<!-- dol$shannon1 <- dol$shannon + 1 -->
+<!-- gamma <- fitdistr(dol$shannon1, "gamma") -->
+<!-- qqp(dol$shannon1, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]]) -->
+<!-- beta <- fitdistr(dol$shannon1, "beta") -->
+<!-- qqp(dol$shannon1, "beta", shape = beta$estimate[[1]], rate = beta$estimate[[2]]) -->
+<!-- qqp(dol$shannon, "beta") -->
+<!-- ebeta() -->
+
+<!-- library(qqplotr) -->
+<!-- di <- "exp" -->
+<!-- dp <- list(rate = 2) -->
+<!-- de <- TRUE # enabling the detrend option -->
+<!-- # normal -->
+<!-- gg <- ggplot(data = dol, mapping = aes(sample = shannon)) + -->
+<!--     stat_qq_band() + -->
+<!--     stat_qq_line() + -->
+<!--     stat_qq_point() -->
+<!-- # other -->
+<!-- gg <- ggplot(data = dol, mapping = aes(sample = shannon)) + -->
+<!--     stat_qq_band(distribution = di, dparams = dp, detrend = de) + -->
+<!--     stat_qq_line(distribution = di, dparams = dp, detrend = de) + -->
+<!--     stat_qq_point(distribution = di, dparams = dp, detrend = de) -->
+<!-- gg -->
+<!-- qqPlot(dol$shannon, "normal") -->
+<!-- dol -->
+
+<!-- # MODELS -->
+
+<!-- dol$queen <- 0 -->
+<!-- dol$queen[dol$nestTYPE == "QT"] <- 1 -->
+<!-- dol$queen[dol$nestTYPE == "QF"] <- 1 -->
+<!-- dol -->
+<!-- # need to add natal colony as random effect -->
+<!-- # ps0 <- glmer(shannon ~ 1 + (1|nestID) + (1|caste), -->
+<!-- #               data = dol) -->
+<!-- # ps1 <- glmer(shannon ~ nestTYPE*nBehavs + (1|nestID) + (1|caste), -->
+<!-- #               data = dol) -->
+<!-- ps2 <- glmer(shannon ~ nestTYPE + nBehavs + (1|nestID) + (1|caste), -->
+<!--              data = dol) -->
+<!-- # ps3 <- glmer(shannon ~ nestTYPE + (1|nestID) + (1|caste), -->
+<!-- #               data = dol) -->
+<!-- # ps4 <- glmer(shannon ~ nBehavs + (1|nestID) + (1|caste), -->
+<!-- #               data = dol) -->
+<!-- # model.sel(ps0, ps1, ps2, ps3, ps4) -->
+
+<!-- mymodel <- ps -->
+
+<!-- # mymodel <- ps2 -->
+<!-- # summary(mymodel) -->
+<!-- # tab_model(mymodel) -->
+
+<!-- # library("glmmTMB") -->
+<!-- # mymodel <- glmmTMB(shannon ~ nestTYPE + nBehavs + (1|nestID) + (1|caste), -->
+<!-- #                    family = nbinom2, data = dol) -->
+<!-- # library("mgcv") -->
+<!-- # mymodel <- gam(shannon ~ nestTYPE + nBehavs, -->
+<!-- #                    family = nb, method = "ML", data = dol) -->
+<!-- # plot model residuals -->
+<!-- plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals") -->
+<!-- abline(h = 0, lty = 2) -->
+<!-- lines(smooth.spline(fitted(mymodel), residuals(mymodel))) -->
+<!-- ``` -->
 
 # glmms on early vs. late shannons
 ```{r}
@@ -305,7 +431,7 @@ ggdensity(dolT$shannon)
 qqp(dolT$shannon, "norm")
 
 # need to add natal colony as random effect
-ts <- glmer(shannon ~ timepoint + nestTYPE + caste + (1|nestID),
+ts <- glmer(shannon ~ timepoint + nBehavs + nestTYPE + caste + (1|nestID),
               data = dolT)
 mymodel <- ts
 summary(mymodel)
