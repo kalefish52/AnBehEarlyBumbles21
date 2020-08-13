@@ -493,7 +493,7 @@ obs_data[is.na(obs_data)] <- 0
 ## select only relevant information
 allBees <- dplyr::select(obs_data, nestID, beeID, caste)
 ## remove duplicates
-allBees <- unique(allBees[c("nestID", "beeID")])
+allBees <- unique(allBees[c("nestID", "beeID", "caste")])
 
 #print how many bees are now included in obs_data
 print(paste("There are", nrow(allBees), "bees total to be included in the analyses, not including unknown and unaccounted for bees.", sep = " "))
@@ -504,7 +504,7 @@ if (nrow(allBees)==nrow(masterBees)) {
 }
 
 # make new dataframe listing the bees without any recorded behaviors
-noObsBees <- obs_data[obs_data$obsID == "0", c("nestID", "beeID")]
+noObsBees <- obs_data[obs_data$obsID == "0", c("nestID", "beeID", "caste")]
 noObsBees
 write.csv(noObsBees, "../Data/noObsBees.csv")
 write.csv(allBees, "../Data/allBees.csv")
