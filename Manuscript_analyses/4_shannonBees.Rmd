@@ -40,7 +40,7 @@ shanT_data
 
 # add natal colony to both dfs
 ```{r}
-master <- read.csv("../Data/master_data.csv")
+master <- read.csv("../Data/CleanMasterData.csv")
 master
 
 # make a new column in shanP_data for natal colony
@@ -126,7 +126,7 @@ ggsave("../figures/pooledShannonVSnBehavs.jpg")
 # POOLED behavioral specialists
 ```{r}
 # define shannon threshold under which represents a specialist
-shannonSpecialist <- 0.5
+shannonSpecialist <- 0.6
 
 # subset to look only at specialists
 specPool <- dol[dol$shannon < shannonSpecialist,]
@@ -137,16 +137,36 @@ nonSpecPool <- dol[dol$shannon >= shannonSpecialist,]
 skip <- 8
 # make a column for behavioral specialization
 specPool$specBehav <- NA
-# name the behavior that each individual specialized in: column index of max number of behaviors + skip columns
+specPool$specProp <- NA
+
 for (i in 1:nrow(specPool)) {
-  specPool$specBehav[i] <- names(specPool[skip + max.col(specPool[i, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])])
+  # name the behavior that each individual specialized in: column index of max number of behaviors + skip columns
+  behavior <- names(specPool[skip + max.col(specPool[i, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])])
+  # input that behavior into specBehav column
+  specPool$specBehav[i] <- behavior
+  # calculate proportion of total behaviors comprised by specialized behavior
+  specPool$specProp[i] <- specPool[i, behavior] / specPool$nBehavs[i]
 }
 specPool
+
+# caclulate minimum proportion of behaviors carried out by specialists
+minSpecProp <- min(specPool$specProp)
+print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
+
+
+behavior <- specPool$specBehav[1]
+behavior
+specPool[1, behavior]
+specPool
+
+# look at proportions of behaviors with specialists
+
 
 # add back in non-specialists, with NA value in specBehav column
 
 # make NA column for specBehav
 nonSpecPool$specBehav <- "generalist"
+nonSpecPool$specProp <- NA
 ALLspecPool <- rbind(specPool, nonSpecPool)
 
 
@@ -256,7 +276,7 @@ dolT
 # COMAPRE EARLY AND LATE behavioral specialists
 ```{r}
 # define shannon threshold under which represents a specialist
-shannonSpecialist <- 0.5
+shannonSpecialist <- 0.6
 
 # subset to look only at specialists
 specTime <- dolT[dolT$shannon < shannonSpecialist,]
@@ -403,7 +423,7 @@ tab_model(mymodel)
 modelResiduals <- resid(mymodel, type = "pearson") # Extract standardized residuals 
 hist(modelResiduals)
 ```
-<!-- # glmms on pooled shannon across nestTYPEs -->
+# glmms on pooled shannon across nestTYPEs -->
 <!-- ```{r} -->
 <!-- # it's not normal... not sure what distribution to use -->
 <!-- over0 <- dol$shannon[dol$shannon > 0] -->
@@ -614,14 +634,138 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
+# tally specialists switching across timepoints
+```{r}
+ALLspecTime
+
+# condense df so each bee is one row with early/late specializations as separate columns
+specSwitch <- pivot_wider(data = ALLspecTime, 
+                          id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal"),
+                          names_from = timepoint,
+                          values_from = specBehav)
+
+# tally switches
+## rename NA to "lazy"
+specSwitch[is.na(specSwitch$early), "early"] <- "lazy"
+specSwitch[is.na(specSwitch$late), "late"] <- "lazy"
+## name the behavioral specializations
+behavs <- unique(specSwitch$early)
+behavs
+## make a df with each row and column as each behavior
+tallySwitches <- matrix(0, nrow = length(behavs), ncol = length(behavs))
+tallySwitches <- as.data.frame(tallySwitches)
+rownames(tallySwitches) <- behavs
+colnames(tallySwitches) <- behavs
+## tally the switches
+for(i in 1:nrow(specSwitch)) {
+  if(specSwitch$early[i] == "feedsbrood") {
+    if(specSwitch$late[i] == "feedsbrood") {
+      tallySwitches["feedsbrood", "feedsbrood"] <- tallySwitches["feedsbrood", "feedsbrood"] + 1
+    }
+    if(specSwitch$late[i] == "nectarforaging") {
+      tallySwitches["feedsbrood", "nectarforaging"] <- tallySwitches["feedsbrood", "nectarforaging"] + 1
+    }
+    if(specSwitch$late[i] == "pollenforaging") {
+      tallySwitches["feedsbrood", "pollenforaging"] <- tallySwitches["feedsbrood", "pollenforaging"] + 1
+    }
+    if(specSwitch$late[i] == "generalist") {
+      tallySwitches["feedsbrood", "generalist"] <- tallySwitches["feedsbrood", "generalist"] + 1
+    }
+    if(specSwitch$late[i] == "lazy") {
+      tallySwitches["feedsbrood", "lazy"] <- tallySwitches["feedsbrood", "lazy"] + 1
+    }
+  }
+  if(specSwitch$early[i] == "nectarforaging") {
+    if(specSwitch$late[i] == "feedsbrood") {
+      tallySwitches["nectarforaging", "feedsbrood"] <- tallySwitches["nectarforaging", "feedsbrood"] + 1
+    }
+    if(specSwitch$late[i] == "nectarforaging") {
+      tallySwitches["nectarforaging", "nectarforaging"] <- tallySwitches["nectarforaging", "nectarforaging"] + 1
+    }
+    if(specSwitch$late[i] == "pollenforaging") {
+      tallySwitches["nectarforaging", "pollenforaging"] <- tallySwitches["nectarforaging", "pollenforaging"] + 1
+    }
+    if(specSwitch$late[i] == "generalist") {
+      tallySwitches["nectarforaging", "generalist"] <- tallySwitches["nectarforaging", "generalist"] + 1
+    }
+    if(specSwitch$late[i] == "lazy") {
+      tallySwitches["nectarforaging", "lazy"] <- tallySwitches["nectarforaging", "lazy"] + 1
+    }
+  }
+  if(specSwitch$early[i] == "pollenforaging") {
+    if(specSwitch$late[i] == "feedsbrood") {
+      tallySwitches["pollenforaging", "feedsbrood"] <- tallySwitches["pollenforaging", "feedsbrood"] + 1
+    }
+    if(specSwitch$late[i] == "nectarforaging") {
+      tallySwitches["pollenforaging", "nectarforaging"] <- tallySwitches["pollenforaging", "nectarforaging"] + 1
+    }
+    if(specSwitch$late[i] == "pollenforaging") {
+      tallySwitches["pollenforaging", "pollenforaging"] <- tallySwitches["pollenforaging", "pollenforaging"] + 1
+    }
+    if(specSwitch$late[i] == "generalist") {
+      tallySwitches["pollenforaging", "generalist"] <- tallySwitches["pollenforaging", "generalist"] + 1
+    }
+    if(specSwitch$late[i] == "lazy") {
+      tallySwitches["pollenforaging", "lazy"] <- tallySwitches["pollenforaging", "lazy"] + 1
+    }
+  }
+  if(specSwitch$early[i] == "generalist") {
+    if(specSwitch$late[i] == "feedsbrood") {
+      tallySwitches["generalist", "feedsbrood"] <- tallySwitches["generalist", "feedsbrood"] + 1
+    }
+    if(specSwitch$late[i] == "nectarforaging") {
+      tallySwitches["generalist", "nectarforaging"] <- tallySwitches["generalist", "nectarforaging"] + 1
+    }
+    if(specSwitch$late[i] == "pollenforaging") {
+      tallySwitches["generalist", "pollenforaging"] <- tallySwitches["generalist", "pollenforaging"] + 1
+    }
+    if(specSwitch$late[i] == "generalist") {
+      tallySwitches["generalist", "generalist"] <- tallySwitches["generalist", "generalist"] + 1
+    }
+    if(specSwitch$late[i] == "lazy") {
+      tallySwitches["generalist", "lazy"] <- tallySwitches["generalist", "lazy"] + 1
+    }
+  }
+  if(specSwitch$early[i] == "lazy") {
+    if(specSwitch$late[i] == "feedsbrood") {
+      tallySwitches["lazy", "feedsbrood"] <- tallySwitches["lazy", "feedsbrood"] + 1
+    }
+    if(specSwitch$late[i] == "nectarforaging") {
+      tallySwitches["lazy", "nectarforaging"] <- tallySwitches["lazy", "nectarforaging"] + 1
+    }
+    if(specSwitch$late[i] == "pollenforaging") {
+      tallySwitches["lazy", "pollenforaging"] <- tallySwitches["lazy", "pollenforaging"] + 1
+    }
+    if(specSwitch$late[i] == "generalist") {
+      tallySwitches["lazy", "generalist"] <- tallySwitches["lazy", "generalist"] + 1
+    }
+    if(specSwitch$late[i] == "lazy") {
+      tallySwitches["lazy", "lazy"] <- tallySwitches["lazy", "lazy"] + 1
+    }
+  }
+}
+tallySwitches
+
+## add bees who were lazy at both timepoints
+allBees <- read.csv("../Data/allBees.csv")
+## remove unknown bees
+allBees <- allBees[allBees$beeID != "unknown",]
+## combine beeID and nestID to use unique identifier
+allBees$beeID <- paste0(allBees$nestID, allBees$beeID)
+## filter allBees to look only at bees not included in specSwitch df (these are the bees w/o obs at either timepoint -- i.e.-- lazy-lazy)
+lazylazy <- allBees %>% filter(!beeID %in% specSwitch$beeID)
+## add the number of lazylazy bees to the tallySwitches df
+tallySwitches["lazy","lazy"] <- nrow(lazylazy)
+tallySwitches
+write.csv(tallySwitches, "../Data/tallySwitches.csv")
+```
 
 
 
 
 
 
-
-
+ 
 
 
 
