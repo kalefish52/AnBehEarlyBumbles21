@@ -20,6 +20,9 @@ library(factoextra)
 library(vegan) 
 library(lme4)
 library(plotly)
+library(effects) # plot output of glmm
+library(MuMIn) # model.sel
+
 ```
 
 * you must run the 4_shannonBees.Rmd file before running this. 
@@ -32,6 +35,28 @@ nmds_data <- read.csv("../Data/tempData/beeCounts_filt.csv")
 # add specialist information from shannonBees.Rmd file
 spec <- read.csv("../Data/tempData/beeCounts_filtSpecPOOLED.csv")
 
+# add lazyBees to account for bees with <3 obs
+# load bees with 0 observations
+noObsBees <- read.csv("../Data/noObsBees.csv")
+noObsBees <- noObsBees[, c("nestID", "beeID", "caste")]
+noObsBees$beeID <- paste0(noObsBees$nestID, noObsBees$beeID)
+
+# load bees with 1-2 observations
+lowCountsBees <- read.csv("../Data/tempData/lowCountsBees.csv")
+lowCountsBees <- lowCountsBees[, c("nestID", "beeID", "caste")]
+lowCountsBees$beeID <- paste0(lowCountsBees$nestID, lowCountsBees$beeID)
+
+# merge together for single df with all bees not included in nmds/dol analyses
+lazyBees <- rbind(noObsBees, lowCountsBees)
+lazyBees <- lazyBees[!lazyBees$beeID == "unknown",]
+
+# add ovary and body size information to analyze specialists 
+ovary <- read.csv("../Data/Ovarydata.csv", col.names = c("nestID", "beeID", "fb", "ov", "l1", "s1", "l2", "s2", "notes", "x", "xx"))
+size <- read.csv("../Data/bodysizeworkers.csv", col.names = c("beeID", "nestID", "date", "wing1", "wing2", "size"), na.strings = "na")
+# make beeID unique
+ovary$beeID <- paste0(ovary$nestID, ovary$beeID)
+size$beeID <- paste0(size$nestID, size$beeID)
+ovary
 ```
 
 # NMDS on all pooled data -- individual specialization over time
@@ -94,8 +119,8 @@ ggsave("../figures/nmdsAll.jpg")
 spec$beeID <- paste0(spec$nestID, spec$beeID)
 data.scores$beeID <- paste0(data.scores$nestID, data.scores$beeID)
 
-# make NA specialists named "none"
-spec[is.na(spec$specBehav), "specBehav"] <- "none"
+# make NA specialists named "generalist"
+spec[is.na(spec$specBehav), "specBehav"] <- "generalist"
 
 # make new column for specBehav in data.scores
 data.scores$specBehav <- NA
@@ -108,20 +133,692 @@ for (i in 1:nrow(data.scores)) {
   }
 }
 data.scores
-spec
+data.scores[data.scores$specBehav == "nectarforaging", ]
 
-data.scores$specBehav <- ordered(data.scores$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
-behav.scores$behav <- ordered(behav.scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "none"))
+data.scores$specBehav <- ordered(data.scores$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+behav.scores$behav <- ordered(behav.scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 
 # Plot it using ggplot
 ggplot() + 
   geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, shape = caste, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
   scale_shape_manual(values = c(21, 16)) +
-  scale_color_manual(values = c("#C77CFF", "#00BFC4", "#F8766D", "grey")) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
   geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2)) +
   labs(color = "specialist")
 ggsave("../figures/nmdsSpec.jpg")
+```
+
+# does body size correspond to behavioral specialization?
+```{r}
+size
+Scores <- data.scores
+Scores
+Scores$size <- NA
+# add body size to Scores df
+for (i in 1:nrow(Scores)) {
+  for (j in 1:nrow(size)) {
+    if (Scores$beeID[i] == size$beeID[j]) {
+      Scores$size[i] <- size$size[j]
+    }
+  }
+}
+
+# add workers without behaviors from lazyBees df
+lazySize <- size %>% subset(beeID %in% lazyBees$beeID)
+# make df matching Scores to fill with lazySize info
+addLazy <- matrix(NA, nrow = nrow(lazySize), ncol = ncol(Scores))
+addLazy <- as.data.frame(addLazy)
+colnames(addLazy) <- colnames(Scores)
+# add beeID, nestID and size of lazy bees to addLazy
+addLazy$beeID <- lazySize$beeID
+addLazy$nestID <- lazySize$nestID
+addLazy$size <- lazySize$size
+addLazy$nestTYPE <- substr(addLazy$nestID, start = 1, stop = 2)
+addLazy$specBehav <- "lazy"
+# add caste info
+for (i in 1:nrow(addLazy)) {
+  for (j in 1:nrow(lazyBees)) {
+    if (addLazy$beeID[i] == lazyBees$beeID[j]) {
+      addLazy$caste[i] <- lazyBees$caste[j]
+    }
+  }
+}
+# make W and Q castes worker and queen
+addLazy[addLazy$caste == "W", "caste"] <- "worker"
+addLazy[addLazy$caste == "Q", "caste"] <- "queen"
+
+# bind to data.scores
+Scores <- rbind(Scores, addLazy)
+Scores
+addLazy
+
+ggplot(data = Scores, aes(size, specBehav, color = specBehav, shape = caste)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_shape_manual(values = c(1, 16)) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "body size", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/bodySize.jpg")
+```
+
+# does ovary development correspond to behavioral specialization?
+```{r}
+ovary
+ovaryScores <- Scores
+
+
+# OVARY LENGTH - missing lots of values
+
+# calculate average ovary length
+ovary$length <- rowMeans(ovary[,c("l1", "l2")], na.rm = TRUE)
+
+Scores$length <- NA
+# add ovary data to data.scores df
+for (i in 1:nrow(Scores)) {
+  for (j in 1:nrow(ovary)) {
+    if (Scores$beeID[i] == ovary$beeID[j]) {
+      Scores$length[i] <- ovary$length[j]
+    }
+  }
+}
+
+ggplot(data = Scores, aes(length, specBehav, color = specBehav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey", "black")) +
+  labs(x = "ovary length", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/ovaryLength.jpg")
+
+
+# OVARY STAGE 
+
+Scores$s1 <- NA
+Scores$s2 <- NA
+# add ovary data to data.scores df
+for (i in 1:nrow(Scores)) {
+  for (j in 1:nrow(ovary)) {
+    if (Scores$beeID[i] == ovary$beeID[j]) {
+      Scores$s1[i] <- ovary$s1[j]
+      Scores$s2[i] <- ovary$s2[j]
+    }
+  }
+}
+
+# convert s1 to numbers
+Scores[is.na(Scores$s1), "s1"] <- "N"
+Scores[Scores$s1 == "I", "s1"] <- 1
+Scores[Scores$s1 == "II", "s1"] <- 2
+Scores[Scores$s1 == "III", "s1"] <- 3
+Scores[Scores$s1 == "III+", "s1"] <- 3.5
+Scores[Scores$s1 == "IV", "s1"] <- 4
+Scores[Scores$s1 == "IV+", "s1"] <- 4
+Scores[Scores$s1 == "R + II", "s1"] <- "R"
+Scores[Scores$s1 == "VI", "s1"] <- 4
+Scores[Scores$s1 == "R", "s1"] <- 4
+Scores[Scores$s1 == "N", "s1"] <- NA
+Scores$s1 <- as.numeric(Scores$s1)
+
+# convert s2 to numbers
+Scores[is.na(Scores$s2), "s2"] <- "N"
+Scores[Scores$s2 == "I", "s2"] <- 1
+Scores[Scores$s2 == "II", "s2"] <- 2
+Scores[Scores$s2 == "III", "s2"] <- 3
+Scores[Scores$s2 == "III+", "s2"] <- 3.5
+Scores[Scores$s2 == "IV", "s2"] <- 4
+Scores[Scores$s2 == "IV+", "s2"] <- 4
+Scores[Scores$s2 == "R + II", "s2"] <- "R"
+Scores[Scores$s2 == "VI", "s2"] <- 4
+Scores[Scores$s2 == "R", "s2"] <- 4
+Scores[Scores$s2 == "N", "s2"] <- NA
+Scores$s2 <- as.numeric(Scores$s2)
+
+# calculate mean for each bee
+Scores$avgStage <- rowMeans(Scores[,c("s1", "s2")], na.rm = TRUE)
+
+ggplot(data = Scores, aes(avgStage, specBehav, color = specBehav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "ovary stage", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/ovaryStage.jpg")
+
+
+# # WITHOUT RESORBED OOCYTES -- same trends
+# 
+# ovaryScores$s1 <- NA
+# ovaryScores$s2 <- NA
+# # add ovary data to data.scores df
+# for (i in 1:nrow(ovaryScores)) {
+#   for (j in 1:nrow(ovary)) {
+#     if (ovaryScores$beeID[i] == ovary$beeID[j]) {
+#       ovaryScores$s1[i] <- ovary$s1[j]
+#       ovaryScores$s2[i] <- ovary$s2[j]
+#     }
+#   }
+# }
+# 
+# # convert s1 to numbers
+# ovaryScores[is.na(ovaryScores$s1), "s1"] <- "N"
+# ovaryScores[ovaryScores$s1 == "I", "s1"] <- 1
+# ovaryScores[ovaryScores$s1 == "II", "s1"] <- 2
+# ovaryScores[ovaryScores$s1 == "III", "s1"] <- 3
+# ovaryScores[ovaryScores$s1 == "III+", "s1"] <- 3.5
+# ovaryScores[ovaryScores$s1 == "IV", "s1"] <- 4
+# ovaryScores[ovaryScores$s1 == "IV+", "s1"] <- 4
+# ovaryScores[ovaryScores$s1 == "R + II", "s1"] <- "N"
+# ovaryScores[ovaryScores$s1 == "VI", "s1"] <- 4
+# ovaryScores[ovaryScores$s1 == "R", "s1"] <- "N"
+# ovaryScores[ovaryScores$s1 == "N", "s1"] <- NA
+# ovaryScores$s1 <- as.numeric(ovaryScores$s1)
+# 
+# # convert s2 to numbers
+# ovaryScores[is.na(ovaryScores$s2), "s2"] <- "N"
+# ovaryScores[ovaryScores$s2 == "I", "s2"] <- 1
+# ovaryScores[ovaryScores$s2 == "II", "s2"] <- 2
+# ovaryScores[ovaryScores$s2 == "III", "s2"] <- 3
+# ovaryScores[ovaryScores$s2 == "III+", "s2"] <- 3.5
+# ovaryScores[ovaryScores$s2 == "IV", "s2"] <- 4
+# ovaryScores[ovaryScores$s2 == "IV+", "s2"] <- 4
+# ovaryScores[ovaryScores$s2 == "R + II", "s2"] <- "N"
+# ovaryScores[ovaryScores$s2 == "VI", "s2"] <- 4
+# ovaryScores[ovaryScores$s2 == "R", "s2"] <- "N"
+# ovaryScores[ovaryScores$s2 == "N", "s2"] <- NA
+# ovaryScores$s2 <- as.numeric(ovaryScores$s2)
+# 
+# # calculate mean for each bee
+# ovaryScores$avgStage <- rowMeans(ovaryScores[,c("s1", "s2")], na.rm = TRUE)
+# 
+# ggplot(data = ovaryScores, aes(avgStage, specBehav, color = specBehav)) +
+#   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+#   stat_summary(fun = mean, geom = "point", size = 5) +
+#   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey", "black")) +
+#   labs(x = "ovary stage", y = "behavioral specialization", color = "behavioral specialization")
+# ggsave("../figures/ovaryStage.jpg")
+
+
+# OOCYTE RESORPTION - similar trends
+
+Scores$r1 <- NA
+Scores$r2 <- NA
+# add ovary data to data.scores df
+for (i in 1:nrow(Scores)) {
+  for (j in 1:nrow(ovary)) {
+    if (Scores$beeID[i] == ovary$beeID[j]) {
+      Scores$r1[i] <- ovary$s1[j]
+      Scores$r2[i] <- ovary$s2[j]
+    }
+  }
+}
+
+# convert r1 to numbers
+Scores[is.na(Scores$r1), "r1"] <- "N"
+Scores[Scores$r1 == "I", "r1"] <- 0
+Scores[Scores$r1 == "II", "r1"] <- 0
+Scores[Scores$r1 == "III", "r1"] <- 0
+Scores[Scores$r1 == "III+", "r1"] <- 0
+Scores[Scores$r1 == "IV", "r1"] <- 0
+Scores[Scores$r1 == "IV+", "r1"] <- 0
+Scores[Scores$r1 == "R + II", "r1"] <- 1
+Scores[Scores$r1 == "VI", "r1"] <- 0
+Scores[Scores$r1 == "R", "r1"] <- 1
+Scores[Scores$r1 == "N", "r1"] <- NA
+Scores$r1 <- as.numeric(Scores$r1)
+
+# convert r2 to numbers
+Scores[is.na(Scores$r2), "r2"] <- "N"
+Scores[Scores$r2 == "I", "r2"] <- 0
+Scores[Scores$r2 == "II", "r2"] <- 0
+Scores[Scores$r2 == "III", "r2"] <- 0
+Scores[Scores$r2 == "III+", "r2"] <-
+Scores[Scores$r2 == "IV", "r2"] <-0
+Scores[Scores$r2 == "IV+", "r2"] <- 0
+Scores[Scores$r2 == "R + II", "r2"] <- 1
+Scores[Scores$r2 == "VI", "r2"] <- 0
+Scores[Scores$r2 == "R", "r2"] <- 1
+Scores[Scores$r2 == "N", "r2"] <- NA
+Scores$r2 <- as.numeric(Scores$r2)
+
+# calculate mean for each bee
+Scores$avgRes <- rowMeans(Scores[,c("r1", "r2")], na.rm = TRUE)
+
+ggplot(data = Scores, aes(avgRes, specBehav, color = specBehav)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "resorption status", y = "behavioral specialization", color = "behavioral specialization")
+ggsave("../figures/ovarResorb.jpg")
+```
+
+# add natal colony to Scores df
+```{r}
+master <- read.csv("../Data/master_data.csv")
+master
+
+# make a new column in Scores for natal colony
+Scores$natal <- NA
+
+# for each bee in the Scores df
+for (i in 1:nrow(Scores)) {
+  # go through master until you find the matching nestID
+  for (j in 1:nrow(master)) {
+    # if the nest ID matches
+    if (Scores$nestID[i] == master$nestID[j]) {
+      # if Scores bee is a queen
+      if(Scores$caste[i] == "queen") {
+        # add queen natal colony to Scores
+        Scores$natal[i] <- master$Qnatal[j]
+      }
+      # if Scores bee is a worker
+      if (Scores$caste[i] == "worker") {
+        # add worker natal colony to Scores
+        Scores$natal[i] <- master$Wnatal[j]
+      }
+    }
+  }
+}
+
+Scores
+```
+
+# glmms on behavioral specialization vs. oocyte length
+```{r}
+# it's not really normal... not sure what distribution to use
+ggdensity(Scores$size)
+Scores
+
+# transform the data to make each specialization a different column, with yes/no (0/1) data in each row
+wideScores <- pivot_wider(Scores, id_cols = c(caste, nestTYPE, beeID, nestID, size, avgStage, avgRes, natal), names_from = specBehav, values_from = specBehav)
+# remove queens since we have no ovary data for them
+wideScores <- wideScores[wideScores$caste == "worker",]
+
+# make NA values 0 in behavioral specialization
+wideScores$feedsbrood <- as.character(wideScores$feedsbrood)
+wideScores[is.na(wideScores$feedsbrood), "feedsbrood"] <- "other"
+wideScores$feedsbrood <- factor(wideScores$feedsbrood, levels = c("feedsbrood", "other"))
+
+wideScores$nectarforaging <- as.character(wideScores$nectarforaging)
+wideScores[is.na(wideScores$nectarforaging), "nectarforaging"] <- "other"
+wideScores$nectarforaging <- factor(wideScores$nectarforaging, levels = c("nectarforaging", "other"))
+
+wideScores$egglaying <- as.character(wideScores$egglaying)
+wideScores[is.na(wideScores$egglaying), "egglaying"] <- "other"
+wideScores$egglaying <- factor(wideScores$egglaying, levels = c("egglaying", "other"))
+
+wideScores$lazy <- as.character(wideScores$lazy)
+wideScores[is.na(wideScores$lazy), "lazy"] <- "other"
+wideScores$lazy <- factor(wideScores$lazy, levels = c("lazy", "other"))
+
+wideScores$generalist <- as.character(wideScores$generalist)
+wideScores[is.na(wideScores$generalist), "generalist"] <- "other"
+wideScores$generalist <- factor(wideScores$generalist, levels = c("generalist", "other"))
+
+wideScores$caste <- factor(wideScores$caste, levels = c("queen", "worker"))
+wideScores
+# need to add natal colony as random effect for all these analyses
+```
+
+```{r}
+# MODEL EGG LAYING 
+el0 <- glmer(egglaying ~ 1 + (1|natal) + (1|nestID),
+              data = wideScores, family = binomial)
+el1 <- glmer(egglaying ~ size + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el2 <- glmer(egglaying ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el3 <- glmer(egglaying ~ size + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el4 <- glmer(egglaying ~ size + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el5 <- glmer(egglaying ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el6 <- glmer(egglaying ~ size + avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el7 <- glmer(egglaying ~ size + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el8 <- glmer(egglaying ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el9 <- glmer(egglaying ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el10 <- glmer(egglaying ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el11 <- glmer(egglaying ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el12 <- glmer(egglaying ~ size + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el13 <- glmer(egglaying ~ avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el14 <- glmer(egglaying ~ avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+el15 <- glmer(egglaying ~ nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+model.sel(el0, el2, el5, el6, el7, el8, el10, el11, el13, el14, el15)
+mymodel <- el6
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+```
+
+```{r}
+# MODEL BROOD FEEDING
+fb0 <- glmer(feedsbrood ~ 1 + (1|natal) + (1|nestID),
+              data = wideScores, family = binomial)
+fb1 <- glmer(feedsbrood ~ size + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb2 <- glmer(feedsbrood ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb3 <- glmer(feedsbrood ~ size + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb4 <- glmer(feedsbrood ~ size + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb5 <- glmer(feedsbrood ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb6 <- glmer(feedsbrood ~ size + avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb7 <- glmer(feedsbrood ~ size + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb8 <- glmer(feedsbrood ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb9 <- glmer(feedsbrood ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb10 <- glmer(feedsbrood ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb11 <- glmer(feedsbrood ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb12 <- glmer(feedsbrood ~ size + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb13 <- glmer(feedsbrood ~ avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb14 <- glmer(feedsbrood ~ avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+fb15 <- glmer(feedsbrood ~ nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+model.sel(fb0, fb1, fb2, fb3, fb4, fb5, fb6, fb7, fb8, fb9, fb10, fb11, fb12, fb13, fb14, fb15)
+
+mymodel <- fb6
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+```
+
+```{r}
+# MODEL NECTAR FORAGING
+nf0 <- glmer(nectarforaging ~ 1 + (1|natal) + (1|nestID),
+              data = wideScores, family = binomial)
+nf1 <- glmer(nectarforaging ~ size + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf2 <- glmer(nectarforaging ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf3 <- glmer(nectarforaging ~ size + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf4 <- glmer(nectarforaging ~ size + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf5 <- glmer(nectarforaging ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf6 <- glmer(nectarforaging ~ size + avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf7 <- glmer(nectarforaging ~ size + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf8 <- glmer(nectarforaging ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf9 <- glmer(nectarforaging ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf10 <- glmer(nectarforaging ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf11 <- glmer(nectarforaging ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf12 <- glmer(nectarforaging ~ size + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf13 <- glmer(nectarforaging ~ avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf14 <- glmer(nectarforaging ~ avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+nf15 <- glmer(nectarforaging ~ nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+model.sel(nf0, nf1, nf2, nf3, nf4, nf5, nf6, nf7, nf8, nf9, nf10, nf11, nf12, nf13, nf14, nf15)
+
+mymodel <- nf6
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+```
+
+
+```{r}
+# MODEL GENERALISTS
+gen0 <- glmer(generalist ~ 1 + (1|natal) + (1|nestID),
+              data = wideScores, family = binomial)
+gen1 <- glmer(generalist ~ size + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen2 <- glmer(generalist ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen3 <- glmer(generalist ~ size + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen4 <- glmer(generalist ~ size + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen5 <- glmer(generalist ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen6 <- glmer(generalist ~ size + avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen7 <- glmer(generalist ~ size + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen8 <- glmer(generalist ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen9 <- glmer(generalist ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen10 <- glmer(generalist ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen11 <- glmer(generalist ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen12 <- glmer(generalist ~ size + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen13 <- glmer(generalist ~ avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen14 <- glmer(generalist ~ avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+gen15 <- glmer(generalist ~ nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+model.sel(gen0, gen1, gen2, gen3, gen4, gen5, gen6, gen7, gen8, gen9, gen10, gen11, gen12, gen13, gen14, gen15)
+
+mymodel <- gen6
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+```
+
+
+```{r}
+# MODEL LAZY
+laz0 <- glmer(lazy ~ 1 + (1|natal) + (1|nestID),
+              data = wideScores, family = binomial)
+laz1 <- glmer(lazy ~ size + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz2 <- glmer(lazy ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz3 <- glmer(lazy ~ size + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz4 <- glmer(lazy ~ size + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz5 <- glmer(lazy ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz6 <- glmer(lazy ~ size + avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz7 <- glmer(lazy ~ size + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz8 <- glmer(lazy ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz9 <- glmer(lazy ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz10 <- glmer(lazy ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz11 <- glmer(lazy ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz12 <- glmer(lazy ~ size + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz13 <- glmer(lazy ~ avgStage + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz14 <- glmer(lazy ~ avgRes + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+laz15 <- glmer(lazy ~ nestTYPE + (1|nestID) + (1|natal),
+              data = wideScores, family = binomial)
+model.sel(laz0, laz1, laz2, laz3, laz4, laz5, laz6, laz7, laz8, laz9, laz10, laz11, laz12, laz13, laz14, laz15)
+mymodel <- laz6
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+```
+
+```{r}
+# MODEL SIZE 
+hist(Scores$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID),
+              data = Scores)
+s1 <- glmer(size ~ specBehav + avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s2 <- glmer(size ~ specBehav + avgStage + avgRes + (1|nestID) + (1|natal),
+              data = Scores)
+s3 <- glmer(size ~ specBehav + avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s4 <- glmer(size ~ specBehav + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s5 <- glmer(size ~ avgStage + avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s6 <- glmer(size ~ specBehav + avgStage + (1|nestID) + (1|natal),
+              data = Scores)
+s7 <- glmer(size ~ specBehav + avgRes + (1|nestID) + (1|natal),
+              data = Scores)
+s8 <- glmer(size ~ avgStage + avgRes + (1|nestID) + (1|natal),
+              data = Scores)
+s9 <- glmer(size ~ specBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s10 <- glmer(size ~ avgStage + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s11 <- glmer(size ~ avgRes + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s12 <- glmer(size ~ specBehav + (1|nestID) + (1|natal),
+              data = Scores)
+s13 <- glmer(size ~ avgStage + (1|nestID) + (1|natal),
+              data = Scores)
+s14 <- glmer(size ~ avgRes + (1|nestID) + (1|natal),
+              data = Scores)
+s15 <- glmer(size ~ nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
+mymodel <- s14
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+# plot all
+ggplot(data = Scores, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "ovary resorption", y = "body size", color = "behavioral specialization")
+ggsave("../figures/ovaryResVsize.jpg")
+```
+
+```{r}
+# MODEL OVARY STAGE
+hist(Scores$avgStage)
+
+s0 <- glmer(avgStage ~ 1 + (1|natal) + (1|nestID),
+              data = Scores)
+s1 <- glmer(avgStage ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s2 <- glmer(avgStage ~ specBehav + size + (1|nestID) + (1|natal),
+              data = Scores)
+s3 <- glmer(avgStage ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s4 <- glmer(avgStage ~ specBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s5 <- glmer(avgStage ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s6 <- glmer(avgStage ~ specBehav + size + (1|nestID) + (1|natal),
+              data = Scores)
+s7 <- glmer(avgStage ~ specBehav + (1|nestID) + (1|natal),
+              data = Scores)
+s8 <- glmer(avgStage ~ size + (1|nestID) + (1|natal),
+              data = Scores)
+s9 <- glmer(avgStage ~ specBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s10 <- glmer(avgStage ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s11 <- glmer(avgStage ~ nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s12 <- glmer(avgStage ~ specBehav + (1|nestID) + (1|natal),
+              data = Scores)
+s13 <- glmer(avgStage ~ size + (1|nestID) + (1|natal),
+              data = Scores)
+s14 <- glmer(avgStage ~ nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14)
+mymodel <- s2
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+
+posthoc1 <- glht(mymodel, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+
+
+ggplot(data = Scores, aes(avgStage, size, color = specBehav, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.15, height = 0), size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "ovary stage", y = "body size", color = "behavioral specialization")
+ggsave("../figures/ovaryVsize.jpg")
+```
+
+```{r}
+# MODEL OVARY RESORPTION
+hist(Scores$avgRes)
+
+s0 <- glmer(avgRes ~ 1 + (1|natal) + (1|nestID),
+              data = Scores)
+s1 <- glmer(avgRes ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s2 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+              data = Scores)
+s3 <- glmer(avgRes ~ specBehav + size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s4 <- glmer(avgRes ~ specBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s5 <- glmer(avgRes ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s6 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+              data = Scores)
+s7 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+              data = Scores)
+s8 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+              data = Scores)
+s9 <- glmer(avgRes ~ specBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s10 <- glmer(avgRes ~ size + nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s11 <- glmer(avgRes ~ nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+s12 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+              data = Scores)
+s13 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+              data = Scores)
+s14 <- glmer(avgRes ~ nestTYPE + (1|nestID) + (1|natal),
+              data = Scores)
+model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14)
+mymodel <- s8
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
 ```
 
 

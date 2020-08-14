@@ -111,7 +111,7 @@ counts_pooled
 beeCounts_filt <- counts_pooled[counts_pooled$nBehavs >= 3,]
 beeCounts_filt <- beeCounts_filt[beeCounts_filt$beeID != "unknown",]
 beeCounts_filt
-lowCountsBees <- counts_pooled[counts_pooled$nBehavs < 3, c("nestID", "beeID")]
+lowCountsBees <- counts_pooled[counts_pooled$nBehavs < 3, c("nestID", "beeID", "caste")]
 write.csv(beeCounts_filt, "../Data/tempData/beeCounts_filt.csv")
 write.csv(lowCountsBees, "../Data/tempData/lowCountsBees.csv")
 beeCounts_sums <- ddply(beeCounts_filt, 
