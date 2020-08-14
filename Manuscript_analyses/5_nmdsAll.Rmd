@@ -392,7 +392,7 @@ ggsave("../figures/ovarResorb.jpg")
 
 # add natal colony to Scores df
 ```{r}
-master <- read.csv("../Data/master_data.csv")
+master <- read.csv("../Data/cleanMasterData.csv")
 master
 
 # make a new column in Scores for natal colony
@@ -458,6 +458,7 @@ wideScores
 # need to add natal colony as random effect for all these analyses
 ```
 
+## egg laying
 ```{r}
 # MODEL EGG LAYING 
 el0 <- glmer(egglaying ~ 1 + (1|natal) + (1|nestID),
@@ -499,6 +500,7 @@ tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
 
+## brood feeding
 ```{r}
 # MODEL BROOD FEEDING
 fb0 <- glmer(feedsbrood ~ 1 + (1|natal) + (1|nestID),
@@ -540,7 +542,7 @@ summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
-
+## nectar foraging
 ```{r}
 # MODEL NECTAR FORAGING
 nf0 <- glmer(nectarforaging ~ 1 + (1|natal) + (1|nestID),
@@ -583,7 +585,7 @@ tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
 
-
+## generalists
 ```{r}
 # MODEL GENERALISTS
 gen0 <- glmer(generalist ~ 1 + (1|natal) + (1|nestID),
@@ -626,7 +628,7 @@ tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
 
-
+## lazy
 ```{r}
 # MODEL LAZY
 laz0 <- glmer(lazy ~ 1 + (1|natal) + (1|nestID),
@@ -668,6 +670,7 @@ tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
 
+## size
 ```{r}
 # MODEL SIZE 
 hist(Scores$size)
@@ -723,6 +726,7 @@ ggplot(data = Scores, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
 ggsave("../figures/ovaryResVsize.jpg")
 ```
 
+## ovary stage
 ```{r}
 # MODEL OVARY STAGE
 hist(Scores$avgStage)
@@ -780,6 +784,7 @@ ggplot(data = Scores, aes(avgStage, size, color = specBehav, shape = nestTYPE)) 
 ggsave("../figures/ovaryVsize.jpg")
 ```
 
+## ovary resorption
 ```{r}
 # MODEL OVARY RESORPTION
 hist(Scores$avgRes)
@@ -821,6 +826,96 @@ tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
 
+# plot nmds with heat map of ovary stage WORKERS ONLY
+```{r}
+# remove bees with NA beeID
+workerNMDS <- nmds_data[!is.na(nmds_data$beeID),]
+# remove queens 
+workerNMDS <- workerNMDS[workerNMDS$caste == "worker",]
+workerNMDS
+  
+# make matrix of only behavior counts for all timepoints
+nmds_worker <- as.matrix(workerNMDS[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+nmds_worker
+
+# Run NMDS with euclidean distance
+nmds_worker <- metaMDS(nmds_worker)
+plot(nmds_worker)
+
+# Get coordinates to graph it 
+# Gets NMDS info for each individual
+data.scores <- as.data.frame(scores(nmds_worker))
+data.scores$caste <- workerNMDS$caste
+data.scores$nestTYPE <-workerNMDS$nestTYPE
+data.scores$beeID <-workerNMDS$beeID
+data.scores$nestID <- workerNMDS$nestID
+data.scores$nBees <- workerNMDS$nBees
+data.scores$nWork <- workerNMDS$nWork
+data.scores$queen <- workerNMDS$queen
+data.scores
+
+# Gets NMDS info for each behavior
+behav.scores<-as.data.frame(scores(nmds_worker, "species"))
+behav.scores$behav<-rownames(behav.scores)
+behav.scores
+
+data.scores$nestTYPE <- ordered(data.scores$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+# add ovary stage and body size into worker NMDS plot
+data.scores$beeID <- paste0(data.scores$nestID, data.scores$beeID)
+data.scores$avgStage <- NA
+data.scores$size <- NA
+for (i in 1:nrow(data.scores)) {
+  for (j in 1:nrow(Scores)) {
+    if (data.scores$beeID[i] == Scores$beeID[j]) {
+      data.scores$avgStage[i] <- Scores$avgStage[j]
+      data.scores$size[i] <- Scores$size[j]
+    }
+  }
+}
+# add ovary stage and body size into workerNMDS df
+workerNMDS$beeID <- paste0(workerNMDS$nestID, workerNMDS$beeID)
+workerNMDS$avgStage <- NA
+workerNMDS$size <- NA
+for (i in 1:nrow(workerNMDS)) {
+  for (j in 1:nrow(Scores)) {
+    if (workerNMDS$beeID[i] == Scores$beeID[j]) {
+      workerNMDS$avgStage[i] <- Scores$avgStage[j]
+      workerNMDS$size[i] <- Scores$size[j]
+    }
+  }
+}
+
+# plot ovary stage onto nmds
+ggplot() + 
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, color = avgStage), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "blue") + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsOVARY.jpg")
+
+# plot ovary stage by egg laying
+ggplot() +
+  geom_point(data = workerNMDS, aes(x = egglaying, y = avgStage, color = avgStage), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.5) +
+    scale_colour_gradient(low = "yellow", high = "blue") 
+ggsave("../figures/eggOVARY.jpg")
+
+# plot body size onto nmds
+ggplot() + 
+  geom_point(data=data.scores, aes(x=NMDS1, y=NMDS2, color = size), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "red") + 
+  geom_text(data=behav.scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsSIZE.jpg")
+
+# plot body size by egg laying
+ggplot() +
+  geom_point(data = workerNMDS, aes(x = egglaying, y = size, color = size), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.2) + 
+    scale_colour_gradient(low = "yellow", high = "red")
+ggsave("../figures/eggSIZE.jpg")
+```
 
 
 
