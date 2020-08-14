@@ -186,7 +186,7 @@ ggsave("../figures/lazyBeesTIME.jpg")
 
 # add natal colony to lazyPerNest and lazyPerNestTIME dfs
 ```{r}
-master <- read.csv("../Data/master_data.csv")
+master <- read.csv("../Data/CleanMasterData.csv")
 master
 
 # make a new column in lazyPerNest for natal colony
