@@ -134,7 +134,7 @@ print(paste(nrow(counts_pooled)-nrow(beeCounts_filt), "bees were filtered out of
 # subset unknown workers from filtered nests
 unknownWorkers.csv
 ```{r}
-obs_data <- read.csv("../Data/obs_data")
+obs_data <- read.csv("../Data/obs_data.csv")
 cleaned_obs <- subset(obs_data, (nestID %in% nestCounts_filt$nestID))
 
 unknown_workers <- cleaned_obs[cleaned_obs$beeID == "unknown",]
