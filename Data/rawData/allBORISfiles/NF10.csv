@@ -1,0 +1,28 @@
+,,Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Worker 2 (72),Unknown,Unknown,Unknown,Unknown,Unknown,Unknown,Unknown,Unknown,Unknown,Unknown
+,,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,nectarforaging,nectarforaging,nectarforaging,nectarforaging,nectarforaging,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,nectarforaging,nectarforaging,nectarforaging,nectarforaging,nectarforaging
+,Total length (s),Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time
+for	NF10	20180814	14,1404.520,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29.564,1,29.564,0,0.021
+for	NF10	20180814	21,3592.640,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180814	8,1453.320,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180815	14,3597.960,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180816	1,3579.400,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180816	11,3599.000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180816	5,3604.320,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180820	13,2235.200,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180820	19,5415.950,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180821	17,3597.600,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180821	23,3593.680,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	NF10	20180822	2,3590.280,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180814	1,1208.640,0.000,1,0.000,0,0.000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180814	11,2505.710,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180814	14,1616.570,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180814	21,3591.930,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180814	8,1741.360,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180815	14,3589.210,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180816	1,3591.430,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180816	11,3590.210,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180816	3,3595.570,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180816	5,3593.290,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180820	12,2569.140,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180820	13,2657.140,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	NF10	20180820	2,2270.290,0.000,3,0.000,0.000,0.000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
