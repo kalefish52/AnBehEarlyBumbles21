@@ -20,7 +20,13 @@ library(dplyr)
 library(ggplot2)
 ```
 
-We have to manually download each project file from Boris. Each project is a single aggregated data file and represents one nest (ex. QF01). To download Boris files into a directory for data cleaning, do the following: 
+
+
+
+# Load Data
+THIS ASSUMES YOUR DEFAULT WORKING DIRECTORY IS WHERE THIS DOCUMENT LIVES (MANUSCRIPT_ANALYSES)
+
+We have to manually download each project file from Boris. Each project is a single aggregated data file and represents one nest (ex. QF01). To download Boris files into a directory for data cleaning, do the following:
 1) Open project file in BORIS
 2) Observations -> Export Events -> Aggregated events
 3) Press select all and then ok 
@@ -37,13 +43,6 @@ To download information about all videos watched (including those without any ob
 4) Press ok
 5) Save file as nest name eg. "QF01" as a .csv file in the allBORISfiles directory
 6) Click okay without selecting any additional behaviors to subtract from total time
-
-
-
-
-
-# Load Data
-THIS ASSUMES YOUR DEFAULT WORKING DIRECTORY IS WHERE THIS DOCUMENT LIVES (MANUSCRIPT_ANALYSES)
 
 import the BORIS observation datafiles and combine them into a single df called obs_data. this contains all the behavioral observations
 ```{r}
@@ -1113,7 +1112,8 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
 
 
 
-# Filter and save dfs for future analyses to include only nests that have passed the threshold amount of video watched 
+# Filter and save dfs for future analyses 
+filter to include only nests that have passed a threshold amount of video watched
 ```{r}
 # threshold foraging video = 20,000 seconds
 forThres <- 20000
