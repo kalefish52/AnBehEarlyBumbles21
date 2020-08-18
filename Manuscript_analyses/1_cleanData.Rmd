@@ -9,6 +9,9 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+ 
+  
+  
   
 # Load Packages
 ```{r}
@@ -35,17 +38,17 @@ To download information about all videos watched (including those without any ob
 5) Save file as nest name eg. "QF01" as a .csv file in the allBORISfiles directory
 6) Click okay without selecting any additional behaviors to subtract from total time
 
+
+
+
 # Load Data
 THIS ASSUMES YOUR DEFAULT WORKING DIRECTORY IS WHERE THIS DOCUMENT LIVES (MANUSCRIPT_ANALYSES)
-```{r}
-## if your wd is not manuscript_analyses, run this line of code below, but comment this out to knit:
-#setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set it to where this doc lives (Manuscript_analyses)
-```
+
 import the BORIS observation datafiles and combine them into a single df called obs_data. this contains all the behavioral observations
 ```{r}
-## function to return list of filenames in BORISfiles folder
-  ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
-  ## use full.names=TRUE so that it reads in files using absolute file path 
+# function to return list of filenames in BORISfiles folder
+# # use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
+# # use full.names=TRUE so that it reads in files using absolute file path 
 getBORISfilenames <- function(gitfilepath) {
   filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
@@ -53,11 +56,10 @@ getBORISfilenames <- function(gitfilepath) {
   return(filenames)
 }
 
-## make the list of filenames
+# make the list of filenames
 BORISfilenames <- getBORISfilenames("../Data/BORISfiles")
-getwd()
 
-## loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
+# loop over the files in the list and import all of them into a single dataframe. rename column names to remove "." and make shorter
 obs_data <- do.call(rbind, lapply(BORISfilenames, 
                                     function(i) {
                                       read.csv(i, header = TRUE,
@@ -79,17 +81,19 @@ obs_data <- do.call(rbind, lapply(BORISfilenames,
                      }
 ))
 
+# look at the data
 obs_data
+
+# check the number of total observations (total number of unfiltered behaviors recorded)
 init_obs <- nrow(obs_data)
 print(paste("There are", init_obs, "observations in the initial obs_data dataframe.", sep = " "))
 
 ```
-
-import BORIS synthetic time budget datasheets and merge them into a single dataframe called videos_data
+import BORIS synthetic time budget datasheets and merge them into a single df called videos_data
 ```{r}
-## function to return list of filenames in BORISfiles folder
-  ## use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
-  ## use full.names=TRUE so that it reads in files using absolute file path 
+# function to return list of filenames in BORISfiles folder
+# # use pattern="*.csv", when getting files from google drive stream, there is an extra non-.csv file 
+# # use full.names=TRUE so that it reads in files using absolute file path 
 getBORISfilenames <- function(gitfilepath) {
   filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
@@ -97,29 +101,29 @@ getBORISfilenames <- function(gitfilepath) {
   return(filenames)
 }
 
-## make the list of filenames
+# make the list of filenames
 BORISfilenames <- getBORISfilenames("../Data/allBORISfiles")
 BORISfilenames
-## loop over the files in the list and import all of them into a single dataframe. skip first 3 lines of column headers and only import first 2 columns (obsID and totLen)
+# loop over the files in the list and import all of them into a single dataframe. skip first 3 lines of column headers and only import first 2 columns (obsID and totLen)
 videos_data <- do.call(rbind, lapply(BORISfilenames, 
                                     function(i) {
                                       read.csv(i, skip = 3, header = FALSE)[,1:2]
                      }
 ))
 
-## rename column headers to be descriptive
+# rename column headers to be descriptive
 names(videos_data)[1] <- "obsID"
 names(videos_data)[2] <- "totalLen"
 
+# look at the data
 videos_data
+# check how many total videos in unfiltered data we watched
 init_videos <- nrow(videos_data)
 print(paste("There are", init_videos, "videos in the initial videos_data dataframe.", sep = " "))
-
 ```
-
 import the master datasheets and combine them into a single df called master_data. this contains beeIDs and natal colony for each nest. this will enable us to include the bees that we did not have observed behaviors for in our analyses
 ```{r}
-## do the same for the master datasheets that contain bee ID numbers
+# do the same for the master datasheets that contain bee ID numbers
 getMasterfilenames <- function(gitfilepath) {
   filenames <- list.files(gitfilepath,
                           pattern = "*.csv",
@@ -127,10 +131,10 @@ getMasterfilenames <- function(gitfilepath) {
   return(filenames)
 }
 
-## make the list of filenames
+# make the list of filenames
 masterfilenames <- getMasterfilenames("../Data/MasterDatasheets")
 
-## loop over the files and import all of them. rename column names to remove "." and make shorter
+# loop over the files and import all of them. rename column names to remove "." and make shorter
 master_data <- do.call(rbind, lapply(masterfilenames, 
                                     function(i) {
                                       read.csv(i, 
@@ -151,6 +155,7 @@ master_data <- do.call(rbind, lapply(masterfilenames,
                                                              "WID3",
                                                              "WID4",
                                                              "WID5",
+                                                             "WID6",
                                                              "Eggs",
                                                              "DaysToEggs",
                                                              "LarvDate",
@@ -164,37 +169,50 @@ master_data <- do.call(rbind, lapply(masterfilenames,
                      }
 ))
 
+# look at the data
 master_data
-init_master <- nrow(master_data)
 
-print(paste("There are", init_master, "bees accounted for in the initial master_data dataframe.", sep = " "))
+# check how many total, unfiltered nests there are
+init_master <- nrow(master_data)
+print(paste("There are", init_master, "nests accounted for in the initial master_data dataframe.", sep = " "))
+```
+import egg laying datasheets
+```{r}
+egglaying_data <- read.csv("../Data/Egg_laying_Events.csv", 
+                           col.names = c("nestID", "dateLaid", "beeID", "caste", "timeLaid", "viewer", "notes"))
+```
+import body size datasheets
+```{r}
+size_data <- read.csv("../Data/bodysizeworkers.csv", 
+                      col.names = c("beeID", "nestID", "date", "wing1", "wing2", "size"), na.strings = "na")
+```
+import ovary development datasheets
+```{r}
+ovary_data <- read.csv("../Data/Ovarydata.csv", 
+                       col.names = c("nestID", "beeID", "fb", "ov", "l1", "s1", "l2", "s2", "notes", "x", "xx"))
 ```
 
 
 # Clean Data
+
+## filter nests
 split obsID column from obs_data and videos_data into its component parts to enable manipulation by camera/colony/time/date
 ```{r}
-## convert columns to character to enable manipulation with strsplit() and subset(startsWith())
-obs_data$beeID <- as.character(obs_data$beeID)
+# convert columns to character to enable manipulation with strsplit() and subset(startsWith())
 obs_data$obsID <- as.character(obs_data$obsID)
 videos_data$obsID <- as.character(videos_data$obsID)
 
-## edit incorrect obsID information
-## remove Kate from front of obsID name
+# edit incorrect obsID information
+# remove Kate from front of obsID name
 obs_data[obs_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
 videos_data[videos_data$obsID == "Kate\tfor\tNF02\t20180703\t13", 1] <- "for\tNF02\t20180703\t13"
-## remove space in front of for in one obsID and nest in another
+# remove spaces in front of for in or nest
 obs_data[startsWith(obs_data$obsID, " for"), 1] <- sub(".", "", obs_data[startsWith(obs_data$obsID, " for"), 1])
 videos_data[startsWith(videos_data$obsID, " for"), 1] <- sub(".", "", videos_data[startsWith(videos_data$obsID, " for"), 1])
 obs_data[startsWith(obs_data$obsID, " nest"), 1] <- sub(".", "", obs_data[startsWith(obs_data$obsID, " nest"), 1])
 videos_data[startsWith(videos_data$obsID, " nest"), 1] <- sub(".", "", videos_data[startsWith(videos_data$obsID, " nest"), 1])
 
-# obs_data[startsWith(obs_data$obsID, " for"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " for"), 1], 2, str_length(x))
-# videos_data[startsWith(videos_data$obsID, " for"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " for"), 1], 2, str_length(x))
-# obs_data[startsWith(obs_data$obsID, " nest"), 1] <- substring(obs_data[startsWith(obs_data$obsID, " nest"), 1], 2, str_length(x))
-# videos_data[startsWith(videos_data$obsID, " nest"), 1] <- substring(videos_data[startsWith(videos_data$obsID, " nest"), 1], 2, str_length(x))
-
-## add non to beginning of obsID that are missing for or nest
+# add "non" to beginning of obsID for entries that are missing nest or for info
 for (i in 1:nrow(obs_data)){
   if (startsWith(obs_data$obsID[i], "for") | startsWith(obs_data$obsID[i], "nest")) {}
   else {
@@ -208,8 +226,8 @@ for (i in 1:nrow(videos_data)){
     }
 }
 
-## split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
-## element 1 is camID
+# split out obsID into camID, nestID, dateID and hourID (split based on the tab (\t) between elements)
+# element 1 is camID
 obs_data$camID <- sapply(strsplit(obs_data$obsID, "\t"), 
                           function(x){
                             x[1]
@@ -218,7 +236,7 @@ videos_data$camID <- sapply(strsplit(videos_data$obsID, "\t"),
                           function(x){
                             x[1]
                             } )
-## element 2 is nestID
+# element 2 is nestID
 obs_data$nestID <- sapply(strsplit(obs_data$obsID, "\t"), 
                           function(x){
                             x[2]
@@ -227,7 +245,7 @@ videos_data$nestID <- sapply(strsplit(videos_data$obsID, "\t"),
                           function(x){
                             x[2]
                             } )
-## element 3 is dateID
+# element 3 is dateID
 obs_data$dateID <- sapply(strsplit(obs_data$obsID, "\t"), 
                           function(x){ 
                             x[3]
@@ -236,7 +254,7 @@ videos_data$dateID <- sapply(strsplit(videos_data$obsID, "\t"),
                           function(x){ 
                             x[3]
                             } )
-## element 4 is hourID
+# element 4 is hourID
 obs_data$hourID <- sapply(strsplit(obs_data$obsID, "\t"), 
                           function(x){ 
                             x[4]
@@ -245,14 +263,79 @@ videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"),
                           function(x){ 
                             x[4]
                             } )
+```
+subset data to only include nests and behaviors of interest for analyses
+```{r}
+# remove unusable nests from master_data first, then subset other dataframes to include only those nests we want to keep
 
-## pull out caste from beeID column
+# make nestID character to enable startsWith 
+master_data$nestID <- as.character(master_data$nestID)
+
+# remove colonies that were not frozen from master_data (these colonies died before males eclosed)
+master_data <- master_data[!is.na(master_data$FreezeDate),]
+
+# remove QF01 (it was frozen and males eclosed, but all adults died)
+master_data <- master_data[!master_data$nestID == "QF01",]
+
+# remove QF08 & NT07 (missing workers)
+master_data <- master_data[!master_data$nestID == "QF08",]
+master_data <- master_data[!master_data$nestID == "NT07",]
+
+# remove QT07 (queen died)
+master_data <- master_data[!master_data$nestID == "QT07",]
+
+# write master_data with QA gropus for erica's analyses
+write.csv(master_data, "../Data/cleanMasterData.csv")
+
+# remove QA groups and bees (data for a different experiment)
+master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
+
+# subset observations and videos to only include the filtered nests
+obs_data <- subset(obs_data, nestID %in% master_data$nestID)
+videos_data <- subset(videos_data, nestID %in% master_data$nestID)
+
+# subset observations to include only the behaviors we're interested in
+obs_data <- obs_data[(obs_data$behav == "feedsbrood" | obs_data$behav == "nectarforaging" | obs_data$behav == "pollenforaging") ,]
+
+# check how many remaining observations we have after filtering
+clean_obs <- nrow(obs_data)
+clean_videos <- nrow(videos_data)
+clean_master <- nrow(master_data)
+print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
+print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
+print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
+```
+## format all dfs the same way with the same information
+pull out caste information and ID number from beeIDs, name unidentified observations as "unknown" bee, pull out nestTYPE information
+```{r}
+# format the master_data in the same way as the obs_data
+# gather the master_data so each worker and queen has their own row
+masterBees <- master_data %>%
+  gather(QID, WID1, WID2, WID3, WID4, WID5, WID6,  
+         key = "IDtype", 
+         value = "beeID")
+
+# pull out caste info from masterBees
+masterBees$caste <- sapply(strsplit(masterBees$IDtype, ""), 
+                          function(x){
+                            x[1]
+                          })
+# pull out caste info from obs_data
+obs_data$beeID <- as.character(obs_data$beeID)
 obs_data$caste <- sapply(strsplit(obs_data$beeID, ""), 
                           function(x){
                             x[1]
                           })
+# make caste "N" and "U" (from unidentified bees with unidentified caste) worker -- if it were a queen we would be able to tell by size
+obs_data[obs_data$caste == "U", "caste"] <- "W"
+obs_data[obs_data$caste == "N", "caste"] <- "W"
 
-## pull out ID number from beeID column (instead of "Worker 5 (76)" or "Queen (43)" etc)
+# reformat caste info from egglaying_data to match
+egglaying_data[egglaying_data$caste == "worker", "caste"] <- "W"
+egglaying_data[egglaying_data$caste == "queen", "caste"] <- "Q"
+
+
+# pull out ID number from beeID column in obs_data (instead of "Worker 5 (76)" or "Queen (43)" etc)
 obs_data$beeID <- sapply(strsplit(obs_data$beeID, ")"),
                         function(x){
                           x[1]
@@ -262,70 +345,61 @@ obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
                           x[2]
                         })
 
-## make nestID character to enable startsWith (will remove nests from master_data first, then subset other dataframes)
-master_data$nestID <- as.character(master_data$nestID)
-## remove colonies that were not frozen from master_data
-master_data <- master_data[!is.na(master_data$FreezeDate),]
-## remove QF01 (it was frozen and males eclosed, but all adults died)
-master_data <- master_data[!master_data$nestID == "QF01",]
-## remove QF08 & NT07 (missing workers)
-master_data <- master_data[!master_data$nestID == "QF08",]
-master_data <- master_data[!master_data$nestID == "NT07",]
-
-## rename unknown workers
+# rename unidentified workers from the video data
 obs_data[, "beeID"][is.na(obs_data[, "beeID"])] <- "unknown"
+# rename "6 or 9" bee to 6
+obs_data[obs_data$beeID == "6 or 9", "beeID"] <- 6
 
-# write master_data with QA gropus for erica's analyses
-write.csv(master_data, "../Data/cleanMasterData.csv")
+# remove masterBees without an ID number (these are blank spaces on the datasheet that do not represent bees)
+masterBees <- masterBees[!is.na(masterBees$beeID),]
 
-## remove QA groups and bees
-master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
-# remove additional colonies we don't want to include
+# combine beeID and nestID so that each bee has a unique identifier (some numbers are duplicated across nests)
+masterBees$beeID <- paste0(masterBees$nestID, masterBees$beeID)
+obs_data$beeID <- paste0(obs_data$nestID, obs_data$beeID)
+egglaying_data$beeID <- paste0(egglaying_data$nestID, egglaying_data$beeID)
+ovary_data$beeID <- paste0(ovary_data$nestID, ovary_data$beeID)
+size_data$beeID <- paste0(size_data$nestID, size_data$beeID)
 
-##subset observations and videos to remove nests we don't want to include
-obs_data <- subset(obs_data, nestID %in% master_data$nestID)
-videos_data <- subset(videos_data, nestID %in% master_data$nestID)
-
-# remove behaviors we're not interested in
-obs_data <- obs_data[(obs_data$behav == "feedsbrood" | obs_data$behav == "nectarforaging" | obs_data$behav == "pollenforaging") ,]
-
-clean_obs <- nrow(obs_data)
-clean_videos <- nrow(videos_data)
-clean_master <- nrow(master_data)
-print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
-print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
-print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
-
-obs_data
+# pull out nestTYPE as a separate column
+obs_data$nestTYPE <- substr(obs_data$nestID, start = 1, stop = 2)
+videos_data$nestTYPE <- substr(videos_data$nestID, start = 1, stop = 2)
+masterBees$nestTYPE <- substr(masterBees$nestID, start = 1, stop = 2)
+egglaying_data$nestTYPE <- substr(egglaying_data$nestID, start = 1, stop = 2)
+ovary_data$nestTYPE <- substr(ovary_data$nestID, start = 1, stop = 2)
+size_data$nestTYPE <- substr(size_data$nestID, start = 1, stop = 2)
 ```
-
-Remove foraging events less than 10 seconds long and remove nest video data after first 5 minutes
+## filter observations
+remove foraging events less than 10 seconds long (poop trips) and remove nest video data after first 5 minutes (errors)
 ```{r}
-## remove all nectar foraging events under 10 seconds long
+# remove all nectar foraging events under 10 seconds long
 beforeNectRemov <- nrow(obs_data)
 obs_data <- obs_data[!(obs_data$behav == "nectarforaging" & obs_data$dur < 10),]
-## remove all pollen foraging events under 10 seconds long
+
+# remove all pollen foraging events under 10 seconds long
 beforePollRemov <- nrow(obs_data)
 obs_data <- obs_data[!(obs_data$behav == "pollenforaging" & obs_data$dur < 10),]
 
-## print how many were removed that were under 10 seconds long
+# check how many foraging observations were removed that were under 10 seconds long
 NectPollRemov <- nrow(obs_data)
 print(paste(beforeNectRemov - beforePollRemov, "nectar foraging observations were removed because they were under 10 seconds long.", sep = " "))
 print(paste(beforePollRemov - NectPollRemov, "pollen foraging observations were removed because they were under 10 seconds long.", sep = " "))
 
-## cut out all but the first five minutes of nest videos
-## make time variables numeric
+# remove all but the first five minutes of nest videos
+
+# make time variables numeric
 obs_data$start <- as.numeric(obs_data$start)
 obs_data$stop <- as.numeric(obs_data$stop)
 obs_data$totalLen <- as.numeric(obs_data$totalLen)
 videos_data$totalLen <- as.numeric(videos_data$totalLen)
-## remove nest behaviors that start after 5 minute mark
+
+# remove nest behaviors that start after 5 minute mark
 obs_data <- obs_data[!(obs_data$camID == "nest" & obs_data$start > 300),]
-## print how many were removed that started after 5 minutes
+
+# check how many were removed that started after 5 minutes
 fiveMinRemov_obs <- nrow(obs_data)
 print(paste(NectPollRemov - fiveMinRemov_obs, "nest observations were removed because they started after the five minute mark.", sep = " "))
 
-## cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
+# cut down nest videos to only look at first 5 minutes (300 seconds), and make all behaviors stop by 5 minutes
 for (i in 1:nrow(obs_data)) {                                             # for every row in the dataframe
   if ((obs_data$camID[i] == "nest") & (obs_data$totalLen[i] > 300)) {     # if it's a nest video and it is over 300 seconds long
     obs_data$totalLen[i] <- 300                                           # make the total length of the video 300 seconds (5 minutes)
@@ -342,275 +416,392 @@ for (i in 1:nrow(videos_data)) {                                             # f
   }
 }
 
-## make duration of all brood feeding events 1 second duration to enable duration comparisons
+# make duration of all brood feeding events 1 second duration to enable duration comparisons
 for (i in 1:nrow(obs_data)) {
   if (!is.na(obs_data$behav[i]) && obs_data$behav[i] == "feedsbrood") {
     obs_data$dur[i] <- 1
   }
 }
 
-head(obs_data)
-obs_data
+# save cleaned obs_data for downstream analyses
 write.csv(obs_data, "../Data/obs_data.csv")
+
+# check how many observations remain after all cleaning has been completed
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
 print(paste("There are now", clean_obs, "observations remaining in the fully cleaned obs_data.", init_obs - clean_obs, "observations fewer than the initial observations, because", beforeNectRemov - beforePollRemov + beforePollRemov - NectPollRemov + NectPollRemov - fiveMinRemov_obs, "were removed above.",  sep = " "))
 print(paste("There are now", clean_videos, "out of", init_videos, "remaining videos in fully cleaned videos_data", sep = " "))
 ```
 
-### look at how many observations we have for each nest for each BORIS download
-These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many videos have been observed for each project for foraging and nest, at the two different time points. 
+
+
+
+# Combine Data
+
+## combine masterBees and obs_data
+merge obs_data to masterBees to add bees who did not carry out any recorded behaviors (ie missing from initial obs_data file)
+***Remove behaviors from all unidentified bees from future analyses --> i removed this b/c we want unidentified bees for certain analyses, i think.
 ```{r}
+# make a list of all the bees we do have records for
+recordedBees <- subset(masterBees, (beeID %in% obs_data$beeID))
 
-## Make a new column for nest type ie. NT or QT etc.
-Queencharacter<-sapply(strsplit(obs_data$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(obs_data$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-                          
-obs_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+# make a list of all bees we do not have observations for
+missingBees <- subset(masterBees, !(beeID %in% obs_data$beeID))
 
-## remove data from nest types other than the ones we want (remove bad data)
-obs_data <- subset(obs_data, subset = (obs_data$nestTYPE == "NT" | obs_data$nestTYPE == "NF" | obs_data$nestTYPE == "QT" | obs_data$nestTYPE == "QF"))
-
-data_sum<- obs_data %>% dplyr::select(camID, nestID, nestTYPE) %>% dplyr::arrange(nestID, camID)
-
-sumsTOTAL<-data_sum %>% dplyr::group_by(nestID, camID) %>% dplyr::summarise(Observations=dplyr::n())
-sumsTYPE<-data_sum %>% dplyr::group_by(nestTYPE, camID) %>% dplyr::summarise(Observations=dplyr::n())
-
-##look at number of observations we have so far based on each colony 
-ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-
-## look at number of observations we have so far based on each type of colony 
-ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-
-
-sumsTYPE
-sumsTOTAL
-```
-
-### combine master_data and obs_data
-merge obs_data to master_data to add bees who did not carry out any recorded behaviors (ie missing from obs_data file)
-Remove behaviors from all unidentified bees from future analyses
-```{r}
-## subset master_data to only include nests in the obs_data file
-master_data <- subset(master_data, nestID %in% obs_data$nestID)
-master_data
-## make a list of all the bees we do have records for
-## select only relevant information
-recordedBees <- dplyr::select(obs_data, nestID, beeID)
-## remove duplicates
-recordedBees <- unique(recordedBees[c("nestID", "beeID")])
-
-## remove NA values from total number of recorded bees -- these are the unknown or no focal subject observations**
-nRecordedBeesTotal <- nrow(recordedBees)
-recordedBees <- recordedBees[!is.na(recordedBees$beeID),]
-nRecordedIdentifiedBees <- nrow(recordedBees)
-print(paste("There were", nRecordedBeesTotal - nRecordedIdentifiedBees, "unidentified bees removed from the recordedBees df.", sep = " "))
-## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
-recordedBees$ID <- paste(recordedBees$nestID, recordedBees$beeID)
-## list only IDs
-# recordedBees <- select(recordedBees, ID)
-## print how many bees have behaviors recorded
-print(paste("There are", nrow(recordedBees), "identified bees for which we have recorded behaviors.", sep = " "))
-recordedBees
-
-## format the master_data in the same way as the obs_data
-## gather the master_data so each worker and queen has their own row
-masterBees <- master_data %>%
-  gather(QID, WID1, WID2, WID3, WID4, WID5, 
-         key = "IDtype", 
-         value = "IDnum")
-masterBees
-
-## pull out caste from masterBees
-masterBees$caste <- sapply(strsplit(masterBees$IDtype, ""), 
-                          function(x){
-                            x[1]
-                          })
-
-## remove NA values  **this also removed any queens that didn't get ID tags -- double check that we have a number for all queens
-masterBees <- masterBees[!is.na(masterBees$IDnum),]
-
-# #So we can add caste information to the counts data 
-# CasteInfo <- select(masterBees, nestID, IDnum, IDtype)
-# CasteInfo
-
-## select only relevant information
-masterBees <- dplyr::select(masterBees, nestID, IDnum, caste)
-
-## combine nestID and IDnum into one variable because some beeIDs are duplicated across nests
-masterBees$ID <- paste(masterBees$nestID, masterBees$IDnum)
-## list only IDs
-# masterBees <- select(masterBees, ID)
-## print how many total bees we have
+# print how many total bees we have
 print(paste("There are", nrow(masterBees), "total bees across all colonies in the master datasheet.", sep = " "))
-masterBees
 
-## subset masterBees to only include those not recorded
-missingBees <- subset(masterBees, !(ID %in% recordedBees$ID))
-
-## print how many bees we don't have records for
+# print how many bees we don't have records for
 print(paste("There are", nrow(missingBees), "bees for which we do not have any recorded behaviors.", sep = " "))
-missingBees  
-
-## add missing bees to obs_data file
-## add rows to obs_data, filled with NA values, number of rows equal to number of missingBees
+  
+# add missing bees to obs_data file
+# # add rows to obs_data, filled with NA values, number of rows equal to number of missingBees
 emptydf <- data.frame(matrix(NA, nrow = nrow(missingBees), ncol = ncol(obs_data)))
-## make column names the same
+# # make column names the same
 names(emptydf) <- names(obs_data)
-## rbind the data. emptydf is at the tail of obs_data
+# # rbind the data. emptydf is at the tail of obs_data
 obs_data <- rbind(obs_data, emptydf)  
-
-
-masterBees
-
-## fill the empty rows just added to obs_data with the missing bee nestID and beeID
+# # fill the empty rows just added to obs_data with the missing bee nestID, nestTYPE, beeID, and caste
 for (i in 0:(nrow(missingBees) - 1)) {
   obs_data$nestID[nrow(obs_data) - i] <- missingBees$nestID[i+1]
-  obs_data$beeID[nrow(obs_data) - i] <- missingBees$IDnum[i+1]
-  obs_data$caste[nrow(obs_data) - i] <- missingBees$caste[i+1]}
+  obs_data$beeID[nrow(obs_data) - i] <- missingBees$beeID[i+1]
+  obs_data$caste[nrow(obs_data) - i] <- missingBees$caste[i+1]
+  obs_data$nestTYPE[nrow(obs_data) - i] <- missingBees$nestTYPE[i+1]}
 
-## add random number column to make table compatible with pivot_wider in future steps. needs a unique identifier for each individual
+# add natal colony info from masterBees to obs_data
+obs_data$natal <- NA
+for (i in 1:nrow(obs_data)) {
+  for (j in 1:nrow(masterBees)) {
+    if (obs_data$beeID[i] == masterBees$beeID[j]) {
+      if (obs_data$caste[i] == "W") {
+        obs_data$natal[i] <- masterBees$Wnatal[j] 
+      }
+      if (obs_data$caste[i] == "Q") {
+        obs_data$natal[i] <- masterBees$Qnatal[j] 
+      }
+    }
+  }
+}
+
+# add random number column to make table compatible with pivot_wider in future steps. needs a unique identifier for each individual
 obs_data$rand <- NA
 for (i in 1:(nrow(obs_data))) {
   obs_data$rand[i] <- runif(1)
 }
 
-# ## remove NA beeID values from obs_data ** THIS REMOVES ALL UNIDENTIFIED BEES FROM ALL FUTURE ANALYSES **
-# obs_data <- obs_data[!is.na(obs_data$beeID),]
+# # make NA values equal to 0
+# obs_data[is.na(obs_data)] <- 0
 
-## make NA values equal to 0
-obs_data[is.na(obs_data)] <- 0
+# check how many bees we have in the new obs_data. should equal the number of bees in the master_data
+# select only relevant information
+allBees <- dplyr::select(obs_data, nestID, nestTYPE, beeID, caste, natal)
+# remove duplicates
+allBees <- unique(allBees[c("nestID", "nestTYPE", "beeID", "caste", "natal")])
+unknownBees <- allBees[is.na(allBees$natal),]
 
-## check how many bees we have in the new obs_data. this is copied and pasted from the methods above. should equal the number of bees in the master_data
-## select only relevant information
-allBees <- dplyr::select(obs_data, nestID, beeID, caste)
-## remove duplicates
-allBees <- unique(allBees[c("nestID", "beeID", "caste")])
-
-#print how many bees are now included in obs_data
-print(paste("There are", nrow(allBees), "bees total to be included in the analyses, not including unknown and unaccounted for bees.", sep = " "))
-if (nrow(allBees)==nrow(masterBees)) {
+# check how many bees are now included in obs_data
+print(paste("There are", nrow(allBees), "bees total to be included in the analyses, including", nrow(unknownBees), "unidentified for bees.", sep = " "))
+if (nrow(allBees) - nrow(unknownBees) == nrow(masterBees)) {
   print("All bees from the master datasheets are accounted for!")
 } else {
-  print(paste("ERROR! There are", nrow(allBees), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
+  print(paste("ERROR! There are", nrow(allBees) - nrow(unknownBees), "identified bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
 }
 
 # make new dataframe listing the bees without any recorded behaviors
-noObsBees <- obs_data[obs_data$obsID == "0", c("nestID", "beeID", "caste")]
+noObsBees <- obs_data[is.na(obs_data$obsID), c("nestID", "nestTYPE", "beeID", "caste", "natal")]
 noObsBees
 write.csv(noObsBees, "../Data/noObsBees.csv")
 write.csv(allBees, "../Data/allBees.csv")
 ```
-### make count data df with counts of each behavior observed for each bee
+## make nestDEV df with obs_data split out by timepoint
+output same as obs_data but with column for timepoint (early/late)
+```{r}
+# rename so we don't interfere in upstream code
+nestDEV <- obs_data
+nestDEV
+# format dateID as a date
+nestDEV$dateID <- as.Date(nestDEV$dateID, "%Y%m%d")
+
+# add column for timepoint filled with NA values
+nestDEV$timepoint <- NA
+
+# sort by nestID, then dateID
+nestDEV <- nestDEV[order(nestDEV$dateID),]
+nestDEV <- nestDEV[order(nestDEV$nestID),]
+nestDEV <- nestDEV[!is.na(nestDEV$dateID),]
+
+# make empty early df
+nestDEVearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
+# make column names the same as nestDEV
+names(nestDEVearly) <- names(nestDEV)
+
+# make empty late df
+nestDEVlate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
+# make column names the same as nestDEV
+names(nestDEVlate) <- names(nestDEV)
+
+# for a given nestID
+for(i in 1:length(unique(nestDEV$nestID))) {
+  # make a temporary dataframe containing info from only that nest
+  NDnestid_data <- nestDEV[nestDEV$nestID == unique(nestDEV$nestID)[i],]
+  # add first row to early_data
+  nestDEVearly <- rbind(nestDEVearly, NDnestid_data[1,])
+  # for each dateID
+  if(nrow(NDnestid_data) > 1) {
+      for(j in 2:nrow(NDnestid_data)) {
+      # if dateID is less than or equal to previous dateID + 2
+        if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
+          # move that row to early_data df
+          nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
+        }
+        # if dateID is more than or equal to previous dateID + 4
+        else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
+          # move that row to late_data df
+          nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
+      }
+  }
+}
+
+# check to make sure all observations were accounted for
+if (nrow(nestDEV) == nrow(nestDEVearly) + nrow(nestDEVlate)) {
+  print("All observations are accounted for!")
+} else {print("ERROR: THERE ARE MISSING OR EXTRA OBSERVATIONS")}
+
+# add the timepoint to the nestDEV column
+nestDEVearly$timepoint <- "early"
+nestDEVlate$timepoint <- "late"
+
+# rewrite nestDEV with the timepoints included
+nestDEV <- rbind(nestDEVearly, nestDEVlate)
+nestDEV
+
+# add back in additional information from count_data (eg, body size, ovary dev, natal colony, etc)
+write.csv(nestDEV, "../Data/nestDEV.csv")
+```
+## make count_data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
 ```{r}
-## collapse the dataframe to count the number of instances doing each behavior
-  ## this outputs a new dataframe with columns nestID, beeID, nectarforaging, feedsbrood, pollenforaging 
-  ## (and any other behaviors recorded), with counts for each behavior in as values
-  ## assumes rand number is not duplicated across individuals. 
+# collapse the dataframe to count the number of instances doing each behavior
+  # this outputs a new dataframe with columns nestID, nestTYPE, beeID, caste, natal, nectarforaging, feedsbrood, pollenforaging 
+  # (and any other behaviors recorded), with counts for each behavior in as values
+  # assumes rand number is not duplicated across individuals. 
 
-head(obs_data)
-## rename to count_data for clarity 
+# rename to count_data for clarity 
 count_data <- obs_data
-## add a column with value 1 that counts the behavioral observations this makes each behavior a count of 1 
+# add a column with value 1 that counts the behavioral observations this makes each behavior a count of 1 
 count_data$count <- 1  
-## condense data frame into relevant columns, each row is a single observation for an individual
+# condense data frame into relevant columns, each row is a single observation for an individual
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "caste", "behav"), 
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "behav"), 
               names_from = rand, 
               values_from = count) 
 
-## add column to fill with sum of counts for each behav
-count_data$totCount <- rowSums(count_data[5:ncol(count_data)], na.rm = TRUE)
-count_data
-## subset dataframe so that all is left is nestID, beeID, behav, totCount, and caste
-count_data <- count_data %>%
-  dplyr::select(nestID, beeID, behav, totCount, caste)
+# add column to fill with sum of counts for each behav
+countCol1 <- 7 # firstcolumn containing counts
+count_data$totCount <- rowSums(count_data[countCol1:ncol(count_data)], na.rm = TRUE)
 
-## collapse dataframe so that each bee has one single row. cols = nestID, beeID, nectarforaging, *other behaviors
+# subset dataframe to remove random number generated columns (only want summary data)
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "beeID", "caste"), 
+  dplyr::select(nestID, nestTYPE, beeID, caste, natal, behav, totCount)
+
+# collapse dataframe so that each bee has one single row and behaviors are additional columns
+count_data <- count_data %>%
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal"), 
               names_from = behav, 
               values_from = totCount)
 
-## replace NA values with 0
-count_data[is.na(count_data)] <- 0
+# remove NA column
+count_data <- count_data[ , !names(count_data) %in% c("NA")]
 
-## sum rows excluding first two (nestID and beeID) to see total number of behaviors carried out by each indiv
-count_data$nBehavs <- rowSums(count_data[, 4:ncol(count_data)], na.rm = TRUE)
-# 
-# ## add column for queen / worker status based on first letter in beeID
-# beeTypeCharacter <- sapply(strsplit(count_data$beeID, ""), 
-#                           function(x){
-#                             x[1]
-#                           })
-# 
-# count_data$beeType <- beeTypeCharacter
+# replace NA values in count columns with 0 (don't change NA values in natal column)
+count_data[!names(count_data) %in% c("natal")] [is.na(count_data[!names(count_data) %in% c("natal")])] <- 0
+count_data
+```
+## add egg laying data to counts_data
+```{r}
+# make new column in count_data to include egglaying
+count_data$egglaying <- 0
 
-## print how many bees we have here. should equal masterdata
+# go through count_data and egglaying_data -- for any matching beeIDs, add 1 to the egglaying column for that bee
+for(i in 1:nrow(count_data)) {
+  for (j in 1:nrow(egglaying_data)) {
+    if (count_data$beeID[i] == egglaying_data$beeID[j]) {
+      count_data$egglaying[i] <- count_data$egglaying[i] + 1
+    }
+  }
+}
+
+# sum counts of behaviors to see total number of behaviors carried out by each indiv
+count_data$nBehavs <- rowSums(count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")], na.rm = TRUE)
+
+# print how many bees we have here. should equal masterdata
 print(paste("There are", nrow(count_data), "bees accounted for."))
-if (nrow(count_data)==nrow(masterBees)) {
+if (nrow(count_data) - nrow(unknownBees) == nrow(masterBees)) {
   print("All bees from the master datasheets are accounted for!")
 } else {
   print(paste("All bees are not properly accounted for. There are", nrow(count_data), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
 }
-knownWorkers <- nrow(count_data)
 
-## remove unknown worker data
-# count_data <- count_data[!count_data$caste == "U", ]
-# count_data <- count_data[!count_data$caste == "N", ]
-
-## make missingBees caste NA
+# Save dataframe as .csv so it can be used in other downstream analyses 
+write.csv(count_data, "../Data/tempData/count_data.csv")
+count_data
+```
+## add body size data to count_data
+```{r}
+count_data$size <- NA
 for (i in 1:nrow(count_data)) {
-  if (count_data$caste[i] == 1 || 
-      count_data$caste[i] == 2 || 
-      count_data$caste[i] == 3 ||
-      count_data$caste[i] == 4 ||
-      count_data$caste[i] == 5 ||
-      count_data$caste[i] == 6 ||
-      count_data$caste[i] == 7 ||
-      count_data$caste[i] == 8 ||
-      count_data$caste[i] == 9) {
-    count_data$caste[i] <- 0
+  for (j in 1:nrow(size_data)) {
+    if (count_data$beeID[i] == size_data$beeID[j]) {
+      count_data$size[i] <- size_data$size[j]
+    }
   }
 }
-## print how many unknown workers were removed
-print(paste("There were", knownWorkers - nrow(count_data), "unknown workers removed from the dataset.", sep = " "))
- 
-##Save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(count_data, "../Data/tempData/count_data.csv")
-
 count_data
+```
+## add ovary development data to count_data (workers only)
+```{r}
+# OVARY LENGTH - missing lots of values
 
-##graph the number of behaviors we have per nest
-Queencharacter <- sapply(strsplit(count_data$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(count_data$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-                          
-count_data$nestTYPE<-paste0(Queencharacter, Numbercharacter)
+# add to ovary length count_data
+count_data$ovL1 <- NA
+count_data$ovL2 <- NA
+for (i in 1:nrow(count_data)) {
+  for (j in 1:nrow(ovary_data)) {
+    if (count_data$beeID[i] == ovary_data$beeID[j]) {
+      count_data$ovL1[i] <- ovary_data$l1[j]
+      count_data$ovL2[i] <- ovary_data$l2[j]
+    }
+  }
+}
 
-## remove data from nest types other than the ones we want (remove bad data)
-count_data <- subset(count_data, subset = (count_data$nestTYPE == "NT" | count_data$nestTYPE == "NF" | count_data$nestTYPE == "QT" | count_data$nestTYPE == "QF"))
+# OOCYTE RESORPTION
 
+# duplicate stage columns to input resorption status
+ovary_data$r1 <- ovary_data$s1
+ovary_data$r2 <- ovary_data$s2
+ovary_data
+# convert r1 to numbers
+ovary_data[is.na(ovary_data$r1), "r1"] <- "N"
+ovary_data[ovary_data$r1 == "I", "r1"] <- 0
+ovary_data[ovary_data$r1 == "II", "r1"] <- 0
+ovary_data[ovary_data$r1 == "III", "r1"] <- 0
+ovary_data[ovary_data$r1 == "III+", "r1"] <- 0
+ovary_data[ovary_data$r1 == "IV", "r1"] <- 0
+ovary_data[ovary_data$r1 == "IV+", "r1"] <- 0
+ovary_data[ovary_data$r1 == "R + II", "r1"] <- 1
+ovary_data[ovary_data$r1 == "VI", "r1"] <- 0
+ovary_data[ovary_data$r1 == "R", "r1"] <- 1
+ovary_data[ovary_data$r1 == "N", "r1"] <- NA
+ovary_data$r1 <- as.numeric(ovary_data$r1)
+
+# convert r2 to numbers
+ovary_data[is.na(ovary_data$r2), "r2"] <- "N"
+ovary_data[ovary_data$r2 == "I", "r2"] <- 0
+ovary_data[ovary_data$r2 == "II", "r2"] <- 0
+ovary_data[ovary_data$r2 == "III", "r2"] <- 0
+ovary_data[ovary_data$r2 == "III+", "r2"] <-
+ovary_data[ovary_data$r2 == "IV", "r2"] <-0
+ovary_data[ovary_data$r2 == "IV+", "r2"] <- 0
+ovary_data[ovary_data$r2 == "R + II", "r2"] <- 1
+ovary_data[ovary_data$r2 == "VI", "r2"] <- 0
+ovary_data[ovary_data$r2 == "R", "r2"] <- 1
+ovary_data[ovary_data$r2 == "N", "r2"] <- NA
+ovary_data$r2 <- as.numeric(ovary_data$r2)
+
+count_data$ovR1 <- NA
+count_data$ovR2 <- NA
+
+# add ovary_data to count_data df
+for (i in 1:nrow(count_data)) {
+  for (j in 1:nrow(ovary_data)) {
+    if (count_data$beeID[i] == ovary_data$beeID[j]) {
+      count_data$ovR1[i] <- ovary_data$r1[j]
+      count_data$ovR2[i] <- ovary_data$r2[j]
+    }
+  }
+}
+
+# OVARY STAGE - includes converting resorbed oocytes to stage 4
+
+# convert ovary 1 stage numerals to numbers
+ovary_data[is.na(ovary_data$s1), "s1"] <- "N"
+ovary_data[ovary_data$s1 == "I", "s1"] <- 1
+ovary_data[ovary_data$s1 == "II", "s1"] <- 2
+ovary_data[ovary_data$s1 == "III", "s1"] <- 3
+ovary_data[ovary_data$s1 == "III+", "s1"] <- 3.5
+ovary_data[ovary_data$s1 == "IV", "s1"] <- 4
+ovary_data[ovary_data$s1 == "IV+", "s1"] <- 4
+ovary_data[ovary_data$s1 == "R + II", "s1"] <- "R"
+ovary_data[ovary_data$s1 == "VI", "s1"] <- 4
+ovary_data[ovary_data$s1 == "R", "s1"] <- 4
+ovary_data[ovary_data$s1 == "N", "s1"] <- NA
+ovary_data$s1 <- as.numeric(ovary_data$s1)
+
+# convert ovary 2 stage numerals to numbers
+ovary_data[is.na(ovary_data$s2), "s2"] <- "N"
+ovary_data[ovary_data$s2 == "I", "s2"] <- 1
+ovary_data[ovary_data$s2 == "II", "s2"] <- 2
+ovary_data[ovary_data$s2 == "III", "s2"] <- 3
+ovary_data[ovary_data$s2 == "III+", "s2"] <- 3.5
+ovary_data[ovary_data$s2 == "IV", "s2"] <- 4
+ovary_data[ovary_data$s2 == "IV+", "s2"] <- 4
+ovary_data[ovary_data$s2 == "R + II", "s2"] <- "R"
+ovary_data[ovary_data$s2 == "VI", "s2"] <- 4
+ovary_data[ovary_data$s2 == "R", "s2"] <- 4
+ovary_data[ovary_data$s2 == "N", "s2"] <- NA
+ovary_data$s2 <- as.numeric(ovary_data$s2)
+
+# add ovary stage to count_data
+count_data$ovS1 <- NA
+count_data$ovS2 <- NA
+for (i in 1:nrow(count_data)) {
+  for (j in 1:nrow(ovary_data)) {
+    if (count_data$beeID[i] == ovary_data$beeID[j]) {
+      count_data$ovS1[i] <- ovary_data$s1[j]
+      count_data$ovS2[i] <- ovary_data$s2[j]
+    }
+  }
+}
+```
+
+
+
+
+
+
+
+
+# Visualize Data
+
+## graph at the number of observations per camera type per nest 
+These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many observations have been recorded for each project for foraging and nest, at the two different time points. 
+```{r}
+# summarize the data to look at the total number of observations per nest
+data_sum<- obs_data %>% dplyr::select(camID, nestID, nestTYPE) %>% dplyr::arrange(nestID, camID)
+
+sumsTOTAL<-data_sum %>% dplyr::group_by(nestID, camID) %>% dplyr::summarise(Observations=dplyr::n())
+sumsTYPE<-data_sum %>% dplyr::group_by(nestTYPE, camID) %>% dplyr::summarise(Observations=dplyr::n())
+
+#look at number of observations we have so far based on each colony 
+ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+# look at number of observations we have so far based on each type of colony 
+ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+
+sumsTYPE
+sumsTOTAL
+```
+
+## graph the number of observations per behavior per nest
+```{r}
+# graph the number of behaviors we have per nest
 data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood) %>% arrange(nestID)
 
 sumsTYPE<-data_sum %>% group_by(nestTYPE) 
 
-##look at data we have so far based on each colony 
-
+# look at data we have so far based on each nestID 
 ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
@@ -620,7 +811,7 @@ ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
 ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
-## look at data we have so far based on each type of colony 
+# look at data we have so far based on each nestTYPE 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
@@ -629,11 +820,26 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
-
-
 ```
 
-<!-- ### make duration df with duration of each behavior for each bee -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[[REMOVE AFTER COPIED]] make duration df with duration of each behavior for each bee 
 <!-- output df with each bee as a single row, behaviors as columns, total duration of each behavior per bee as values. -->
 <!-- this data includes unidentified bees -->
 <!-- ```{r} -->
@@ -724,7 +930,11 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 <!--   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) -->
 <!-- ``` -->
 
-### duration of video watched for each colony
+
+
+
+
+# Count duration of video watched for each nest
 output df with total duration of video watched per colony. columns = nestID and totalLen
 ```{r}
 ## select only the obsID, nestID, and totalLen columns
@@ -875,6 +1085,7 @@ for (i in 1:nrow(camDur)) {
 }
 ```
 
+
 # visualize amount of video for each of the two timepoints (late and early)
 ```{r}
 # rename it so i can manipulate from here
@@ -942,11 +1153,6 @@ dates_data
 head(dates_data)
 
 ```
-
-
-
-
-
 ```{r}
 #plot it!
 
@@ -1044,84 +1250,9 @@ sumsTYPE
 
 ```
 
-# Add early/late to obs_data and then make into counts_data
+
+import egglaying data
 ```{r}
-
-head(obs_data)
-#Make obs_data into new dataframe so we don't interfere in upstream code
-nestDEV<-obs_data
-nestDEV
-nestDEV$dateID <- as.Date(nestDEV$dateID, "%Y%m%d")
-
-# Re-used Erica code to add early/late data into obs_data
-
-# add column for timepoint filled with NA values
-nestDEV$timepoint <- NA
-
-# sort by nestID, then dateID
-nestDEV <- nestDEV[order(nestDEV$dateID),]
-nestDEV <- nestDEV[order(nestDEV$nestID),]
-nestDEV <- nestDEV[!is.na(nestDEV$dateID),]
-
-# make empty early df
-nestDEVearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
-## make column names the same
-names(nestDEVearly) <- names(nestDEV)
-
-# make empty late df
-nestDEVlate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
-## make column names the same
-names(nestDEVlate) <- names(nestDEV)
-
-# make empty error df
-nestDEVerror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(nestDEV)))
-## make column names the same
-names(nestDEVerror) <- names(nestDEV)
-
-# for a given nestID
-for(i in 1:length(unique(nestDEV$nestID))) {
-  # make a temporary dataframe containing info from only that nest
-  NDnestid_data <- nestDEV[nestDEV$nestID == unique(nestDEV$nestID)[i],]
-  # add first row to early_data
-  nestDEVearly <- rbind(nestDEVearly, NDnestid_data[1,])
-  # for each dateID
-  if(nrow(NDnestid_data) > 1) {
-      for(j in 2:nrow(NDnestid_data)) {
-      # if dateID is less than or equal to previous dateID + 2
-        if(NDnestid_data$dateID[j] <= NDnestid_data$dateID[1] + 2) {
-          # move that row to early_data df
-          nestDEVearly <- rbind(nestDEVearly, NDnestid_data[j,])
-        }
-        # if dateID is more than or equal to previous dateID + 4
-        else if(NDnestid_data$dateID[j] >= NDnestid_data$dateID[1] + 4) {
-          # move that row to late_data df
-          nestDEVlate<- rbind(nestDEVlate, NDnestid_data[j,])}
-        else {
-          nestDEVerror <- rbind(nestDEVerror, NDnestid_data[j,])
-       }
-    }
-  }
-}
-
-nestDEVearly
-nestDEVlate
-nestDEVerror
-print(paste("There are", nrow(nestDEV) - nrow(nestDEVearly) - nrow(nestDEVlate), "missing observations", sep = " "))
-nrow(nestDEV)
-nrow(nestDEVearly)
-nrow(nestDEVlate)
-
-
-nestDEVearly$timepoint <- "early"
-nestDEVlate$timepoint <- "late"
-nestDEV <- rbind(nestDEVearly, nestDEVlate)
-nestDEV
-write.csv(nestDEV, "../Data/nestDEV.csv")
-head(nestDEV)
-```
-
-```{r}
-
 #Import egglaying data - find median timepoint, make early/late column and then merge to nestDEV
 head(nestDEV)
 egglaying<-read.csv("../Data/Egg_laying_Events.csv")
@@ -1134,51 +1265,52 @@ egglaying$Date.Eggs.Laid <- as.Date(egglaying$Date.Eggs.Laid, "%m/%d/%y")
 egglaying<-egglaying %>% dplyr::rename(dateID=Date.Eggs.Laid)
 egglaying<-egglaying %>% dplyr::rename(nestID=MicrocolonyID)
 
-#Calculate median date between egg laying events for each nestID
-datesmedian<-egglaying %>% group_by(nestID) %>% dplyr::summarize(median=(ceiling(max(dateID)-min(dateID))/2)+min(dateID))
-#Combine median date information with egglaying dataframe
-egglayingmedian <- dplyr::left_join(egglaying, datesmedian, by= c("nestID" = "nestID"))
-#Now write a loop to go through each row and add it either to late or early 
-egglayingmedian$timepoint<-NA
+# #Calculate median date between egg laying events for each nestID
+# datesmedian<-egglaying %>% group_by(nestID) %>% dplyr::summarize(median=(ceiling(max(dateID)-min(dateID))/2)+min(dateID))
+# #Combine median date information with egglaying dataframe
+# egglayingmedian <- dplyr::left_join(egglaying, datesmedian, by= c("nestID" = "nestID"))
+# 
+# #Now write a loop to go through each row and add it either to late or early 
+# egglayingmedian$timepoint<-NA
+# 
+# # make empty early df
+# eggsearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
+# ## make column names the same
+# names(eggsearly) <- names(egglayingmedian)
+# # make empty late df
+# eggslate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
+# ## make column names the same
+# names(eggslate) <- names(egglayingmedian)
+# # make empty error df
+# eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
+# ## make column names the same
+# names(eggserror) <- names(egglayingmedian)
+# 
+# for(i in 1:nrow(egglayingmedian)){
+#   #if dateID is less than or equal to median
+#   if(egglayingmedian$dateID[i]<=egglayingmedian$median[i]){
+#     #move that row to early data df
+#     eggsearly<-rbind(eggsearly,egglayingmedian[i,])
+#   }
+#   else if (egglayingmedian$dateID[i]>egglayingmedian$median[i]){
+#     eggslate<-rbind(eggslate, egglayingmedian[i,])
+#   }
+#   else {eggserror<-rbind(eggserror, egglayingmedian[i,])}
+# }
+# 
+# #add early to timepoint column 
+# eggsearly <-  eggsearly %>% mutate(timepoint="early")
+# #add late to timepoint column 
+# eggslate<-eggslate %>% mutate(timepoint="late")
+# #Merge early and late dataframes
+# eggstotal<-rbind(eggsearly, eggslate)
 
-# make empty early df
-eggsearly <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
-## make column names the same
-names(eggsearly) <- names(egglayingmedian)
-# make empty late df
-eggslate <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
-## make column names the same
-names(eggslate) <- names(egglayingmedian)
-# make empty error df
-eggserror <- data.frame(matrix(NA, nrow = 0, ncol = ncol(egglayingmedian)))
-## make column names the same
-names(eggserror) <- names(egglayingmedian)
-
-for(i in 1:nrow(egglayingmedian)){
-  #if dateID is less than or equal to median
-  if(egglayingmedian$dateID[i]<=egglayingmedian$median[i]){
-    #move that row to early data df
-    eggsearly<-rbind(eggsearly,egglayingmedian[i,])
-  }
-  else if (egglayingmedian$dateID[i]>egglayingmedian$median[i]){
-    eggslate<-rbind(eggslate, egglayingmedian[i,])
-  }
-  else {eggserror<-rbind(eggserror, egglayingmedian[i,])}
-}
-
-#add early to timepoint column 
-eggsearly <-  eggsearly %>% mutate(timepoint="early")
-#add late to timepoint column 
-eggslate<-eggslate %>% mutate(timepoint="late")
-#Merge early and late dataframes
-eggstotal<-rbind(eggsearly, eggslate)
 #eggstotal has all the egglaying information (observer, notes, etc.), select only variables we need for analysis
 head(eggstotal)
 eggsmerge<-eggstotal %>% dplyr::select(nestID, dateID, WorkerID, Caste, Time, timepoint)
 head(eggsmerge)
 
 ```
-
 Combine egg laying and nestDEV to make count data 
 ```{r}
 head(eggsmerge)
@@ -1319,15 +1451,3 @@ write.csv(countsDATA, "../Data/countsanalysis.csv")
 
 countsDATA
 ```
-
-
-
-
-
-
-
-
-
-
-
-
