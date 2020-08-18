@@ -297,7 +297,7 @@ master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
 # subset observations and videos to only include the filtered nests
 obs_data <- subset(obs_data, nestID %in% master_data$nestID)
 videos_data <- subset(videos_data, nestID %in% master_data$nestID)
-
+unique(videos_data$nestID)
 # subset observations to include only the behaviors we're interested in
 obs_data <- obs_data[(obs_data$behav == "feedsbrood" | obs_data$behav == "nectarforaging" | obs_data$behav == "pollenforaging") ,]
 
@@ -307,7 +307,7 @@ clean_videos <- nrow(videos_data)
 clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
-print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " "))
+print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " ")) 
 ```
 ## format all dfs the same way with the same information
 pull out caste information and ID number from beeIDs, name unidentified observations as "unknown" bee, pull out nestTYPE information
@@ -845,7 +845,7 @@ write.csv(count_time, "../Data/filtData/countsanalysis.csv")
 
 # Visualize Data
 
-## graph at the number of observations per camera type per nest 
+## graph the number of observations per camera type per nest 
 These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many observations have been recorded for each project for foraging and nest, at the two different time points. 
 ```{r}
 # summarize the data to look at the total number of observations per nest
@@ -892,51 +892,53 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
 ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 ```
-## calculate total duration of video watched per colony. columns = nestID and totalLen
+## calculate and graph total duration of video watched per nest
 ```{r}
-## select only the obsID, nestID, and totalLen columns
-## subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
+# select only the obsID, nestID, and totalLen columns
+# subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
 nVids <- nrow(videos_data)
 totalLen_data <- videos_data %>%
-  dplyr::select(obsID, nestID, totalLen) %>%
+  dplyr::select(obsID, nestID, nestTYPE, totalLen) %>%
   unique()
 totalLen_data
-## print how many videos were removed
+# print how many videos were removed
 print(paste("There were", nVids - nrow(totalLen_data), "duplicate videos removed.", sep = " "))
 
-## split out obsID into camID, dateID and hourID (split based on the tab (\t) between elements)
-## element 1 is camID
+# split out obsID into camID, dateID and hourID (split based on the tab (\t) between elements)
+# element 1 is camID
 totalLen_data$camID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
                           function(x){
                             x[1]
                             } )
-## element 3 is dateID
+# element 3 is dateID
 totalLen_data$dateID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
                           function(x){ 
                             x[3]
                             } )
-## element 4 is hourID
+# element 4 is hourID
 totalLen_data$hourID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
                           function(x){ 
                             x[4]
                             } )
-## combine date and hour into a single column called timeID
-totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
-## subset the df to remove the obs, hour, and date columns
+# # combine date and hour into a single column called timeID
+# totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
+
+# subset the df to remove the obs, hour, and date columns
 totalLen_data <- totalLen_data %>%
-  dplyr::select(camID, timeID, nestID, totalLen)
+  dplyr::select(camID, dateID, hourID, nestTYPE, nestID, totalLen)
 
 totalLen_data
-## verify we have the correct number of colonies and videos
+# verify we have the correct number of colonies and videos
 print(paste("There are", nrow(totalLen_data), "videos out of", clean_videos, "fully cleaned videos accounted for in the totalLen_data dataframe."))
 
-## create empty dataframe to put length into
+# create empty dataframe to put length into
 camDur <- data.frame(nestID = NA,
+                     nestTYPE = NA,
                      forLen = NA,
                      nestLen = NA,
                      totalLen = NA)
 
-## for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
+# for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
 for (i in 1:length(unique(totalLen_data$nestID))) {
   sub_data <- subset(totalLen_data, nestID == unique(totalLen_data$nestID)[i]) # subset to look at a single nest
   for_data <- subset(sub_data, sub_data$camID == "for")                        # subset foraging video only into for_data
@@ -944,15 +946,17 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   forSum <- sum(for_data$totalLen)                                             # sum the video duration of all foraging videos
   nestSum <- sum(nest_data$totalLen)                                           # sum the video duration of all nest videos
   totalSum <- sum(sub_data$totalLen)                                           # sum the video duration of all videos
-  camDur <- rbind(camDur, c(sub_data$nestID[1], forSum, nestSum, totalSum))    # add the sum totals to the camDur df
+  camDur <- rbind(camDur, c(sub_data$nestID[1], sub_data$nestTYPE[1], forSum, nestSum, totalSum))    # add the sum totals to the camDur df
 }
-## remove NA row initially created
+camDur
+
+# remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
 
-## count to make sure all colonies are accounted for
+# count to make sure all colonies are accounted for
 print(paste("There are", nrow(camDur), "colonies accounted for in the camDur dataframe out of", nrow(master_data), "master colonies.", sep = " "))
 
-## make columns numeric so i can calculate ratio in next step
+# make columns numeric so i can calculate ratio in next step
 camDur$totalLen <- as.numeric(camDur$totalLen)
 camDur$forLen <- as.numeric(camDur$forLen)
 camDur$nestLen <- as.numeric(camDur$nestLen)
@@ -964,31 +968,15 @@ for (i in 1:nrow(camDur)) {
   camDur$FNratio[i] <- camDur$forLen[i] / camDur$nestLen[i]
 }
 
-##Save dataframe as .csv so it can be used in other downstrea analyses 
-write.csv(camDur, "../Data/tempData/camDur.csv")
+##Save df to be used in future analyses 
+write.csv(camDur, "../Data/filtData/camDur.csv")
 
-## check to see how much video was watched for each nest and for each treatment
-## must be equal + ratio must be 1 to compare
+# check to see how much video was watched for each nest and for each treatment
+# must be equal + ratio must be 1 to compare
 camDur
 camDur <- camDur[order(camDur$nestID),]
 
-## graph total duration of video watched for each colony
-##look at data we have so far based on each colony 
-
-## Make a new column for nest type ie. NT or QT 
-Queencharacter<-sapply(strsplit(camDur$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(camDur$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-                          
-camDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
-
-## remove data from nest types other than the ones we want (remove bad data)
-camDur <- subset(camDur, subset = (camDur$nestTYPE == "NT" | camDur$nestTYPE == "NF" | camDur$nestTYPE == "QT" | camDur$nestTYPE == "QF"))
+# graph total duration of video watched for each nestID
 
 sumsTYPE<-camDur %>% group_by(nestTYPE)
 ggplot(camDur, aes(x=nestID, y=forLen, fill = nestTYPE)) +
@@ -997,7 +985,7 @@ ggplot(camDur, aes(x=nestID, y=forLen, fill = nestTYPE)) +
 ggplot(camDur, aes(x=nestID, y=nestLen, fill = nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
-## look at data we have so far based on each type of colony 
+# look at data we have so far based on each nestTYPE
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
@@ -1005,9 +993,9 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = nestTYPE)) +
 ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
 
-## print number of seconds and hours of video watched
+# print number of seconds and hours of video watched
 
-## summary of all videos
+# summary of all videos
 allNestH <- sum(camDur$nestLen)/60/60
 allForH <- sum(camDur$forLen)/60/60
 allVideosH <- sum(camDur$totalLen)/60/60
@@ -1015,7 +1003,7 @@ avgNestH <- mean(camDur$nestLen)/60/60
 avgForH <- mean(camDur$forLen)/60/60
 avgTotalH <- mean(camDur$totalLen)/60/60
 
-# summary by group
+# summary by nestTYPE
 avgNFnestH <- mean(camDur$nestLen[camDur$nestTYPE == "NF"])/60/60
 avgNTnestH <- mean(camDur$nestLen[camDur$nestTYPE == "NT"])/60/60
 avgQFnestH <- mean(camDur$nestLen[camDur$nestTYPE == "QF"])/60/60
@@ -1036,52 +1024,41 @@ print(paste("NT COLONIES: we watched an average of", round(avgNTnestH, digits = 
 print(paste("QF COLONIES: we watched an average of", round(avgQFnestH, digits = 1), "hours of NEST and", round(avgQFforH, digits = 1), "hours of FOR", sep = " "))
 print(paste("QT COLONIES: we watched an average of", round(avgQTnestH, digits = 1), "hours of NEST and", round(avgQTforH, digits = 1), "hours of FOR", sep = " "))
 
-# summary by colony 
+# summary by nestID 
 for (i in 1:nrow(camDur)) {
   print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
 ```
-## graph total amount of video watched at each of the two timepoints (late and early) for each nest
+## calculate and graph total amount of video watched at each of the two timepoints (late and early) for each nest
 ```{r}
 # rename it so i can manipulate from here
-dates_data <- totalLen_data
-dates_data
-# pull out dateID from time ID
-dates_data$dateID <- sapply(strsplit(dates_data$timeID, " "), 
-                          function(x){
-                            x[1]
-                            } )
-# format dateID as date so we can do math on it
-dates_data$dateID <- as.Date(dates_data$dateID, "%Y%m%d")
-dates_data
+totalLen_time <- totalLen_data
+
+# format date as date to do math on it
+totalLen_time$dateID <- as.Date(totalLen_time$dateID, "%Y%m%d")
 
 # add column for timepoint filled with NA values
-dates_data$timepoint <- NA
+totalLen_time$timepoint <- NA
 
 # sort by nestID, then dateID
-dates_data <- dates_data[order(dates_data$dateID),]
-dates_data <- dates_data[order(dates_data$nestID),]
-dates_data
+totalLen_time <- totalLen_time[order(totalLen_time$dateID),]
+totalLen_time <- totalLen_time[order(totalLen_time$nestID),]
+totalLen_time
 
 # make empty early df
-early_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(dates_data)))
+early_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(totalLen_time)))
 ## make column names the same
-names(early_data) <- names(dates_data)
+names(early_data) <- names(totalLen_time)
 
 # make empty late df
-late_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(dates_data)))
+late_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(totalLen_time)))
 ## make column names the same
-names(late_data) <- names(dates_data)
-
-# make empty error df
-error_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(dates_data)))
-## make column names the same
-names(error_data) <- names(dates_data)
+names(late_data) <- names(totalLen_time)
 
 # for a given nestID
-for(i in 1:length(unique(dates_data$nestID))) {
+for(i in 1:length(unique(totalLen_time$nestID))) {
   # make a temporary dataframe containing info from only that nest
-  nestid_data <- dates_data[dates_data$nestID == unique(dates_data$nestID)[i],]
+  nestid_data <- totalLen_time[totalLen_time$nestID == unique(totalLen_time$nestID)[i],]
   # add first row to early_data
   early_data <- rbind(early_data, nestid_data[1,])
   # for each dateID
@@ -1095,34 +1072,31 @@ for(i in 1:length(unique(dates_data$nestID))) {
     else if(nestid_data$dateID[j] >= nestid_data$dateID[1] + 4) {
       #   move that row to late_data df
       late_data <- rbind(late_data, nestid_data[j,])
-    } else {
-      error_data <- rbind(error_data, nestid_data[j,])
     }
   }
 }
 
 early_data$timepoint <- "early"
 late_data$timepoint <- "late"
-dates_data <- rbind(early_data, late_data)
-dates_data
-head(dates_data)
+totalLen_time <- rbind(early_data, late_data)
+totalLen_time
+head(totalLen_time)
 
-```
-```{r}
 #plot it!
 
 # subset the df to remove the obs, hour, and date columns
-timepoint_data <- dates_data %>%
-  dplyr::select(camID, nestID, totalLen)
+timepoint_data <- totalLen_time %>%
+  dplyr::select(camID, nestID, nestTYPE, totalLen)
 # create empty dataframe to put length into
 dateDur <- data.frame(nestID = NA,
+                      nestTYPE = NA,
                       early_forSum = NA,
                       late_forSum = NA,
                       early_nestSum = NA,
                       late_nestSum = NA)
 # for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
-for (i in 1:length(unique(dates_data$nestID))) {
-  sub_data <- subset(dates_data, nestID == unique(dates_data$nestID)[i])       # subset to look at a single nest
+for (i in 1:length(unique(totalLen_time$nestID))) {
+  sub_data <- subset(totalLen_time, nestID == unique(totalLen_time$nestID)[i])       # subset to look at a single nest
   for_data <- subset(sub_data, sub_data$camID == "for")                        # subset foraging video only into for_data
   early_for_data <- subset(for_data, for_data$timepoint == "early")            # subset early foraging videos into early_for_data
   late_for_data <- subset(for_data, for_data$timepoint == "late")              # subset late foraging videos into late_for_data
@@ -1135,23 +1109,11 @@ for (i in 1:length(unique(dates_data$nestID))) {
   nestSum <- sum(nest_data$totalLen)                                           # sum the video duration of all nest videos
   early_nestSum <- sum(early_nest_data$totalLen)                               # sum the video duration of all early nest videos
   late_nestSum <- sum(late_nest_data$totalLen)                                      # sum the video duration of all late nest videos
-  dateDur <- rbind(dateDur, c(sub_data$nestID[1], early_forSum, late_forSum, early_nestSum, late_nestSum, totalSum)) # add the sum totals to the dateDur df
+  dateDur <- rbind(dateDur, c(sub_data$nestID[1], sub_data$nestTYPE[1], early_forSum, late_forSum, early_nestSum, late_nestSum, totalSum)) # add the sum totals to the dateDur df
 }
 # remove NA row initially created
 dateDur <- dateDur[2:nrow(dateDur),]
 dateDur
-
-
-## Make a new column for nest type ie. NT or QT 
-Queencharacter<-sapply(strsplit(dateDur$nestID, ""), 
-                          function(x){
-                            x[1]
-                          })
-Numbercharacter<-sapply(strsplit(dateDur$nestID, ""),
-                        function(x){
-                          x[2]
-                        })    
-dateDur$nestTYPE<-paste0(Queencharacter, Numbercharacter)
 
 ## gather sums into a single column to graph together
 dateDur <- dateDur %>%
