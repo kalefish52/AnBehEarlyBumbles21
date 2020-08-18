@@ -288,16 +288,13 @@ master_data <- master_data[!master_data$nestID == "NT07",]
 # remove QT07 (queen died)
 master_data <- master_data[!master_data$nestID == "QT07",]
 
-# write master_data with QA gropus for erica's analyses
-write.csv(master_data, "../Data/cleanMasterData.csv")
-
 # remove QA groups and bees (data for a different experiment)
 master_data <- master_data[!startsWith(master_data$nestID, "QA"),]
 
 # subset observations and videos to only include the filtered nests
 obs_data <- subset(obs_data, nestID %in% master_data$nestID)
 videos_data <- subset(videos_data, nestID %in% master_data$nestID)
-unique(videos_data$nestID)
+
 # subset observations to include only the behaviors we're interested in
 obs_data <- obs_data[(obs_data$behav == "feedsbrood" | obs_data$behav == "nectarforaging" | obs_data$behav == "pollenforaging") ,]
 
@@ -308,6 +305,11 @@ clean_master <- nrow(master_data)
 print(paste("There are", clean_obs, "out of", init_obs, "remaining observations in the cleaned obs_data", sep = " "))
 print(paste("There are", clean_videos, "out of", init_videos, "remaining observations in cleaned videos_data", sep = " "))
 print(paste("There are", clean_master, "out of", init_master, "remaining observations in cleaned master_data", sep = " ")) 
+
+# check how many nests are contained in each dataframe (they should be equal!)
+if(length(unique(master_data$nestID)) == length(unique(obs_data$nestID)) && length(unique(master_data$nestID)) == length(unique(videos_data$nestID))) {
+  print("All nests are accounted for in the video, obs, and master dataframes!")
+} else { print("Some nests are not accounted for in one or more of the video, obs, or master dataframes") }
 ```
 ## format all dfs the same way with the same information
 pull out caste information and ID number from beeIDs, name unidentified observations as "unknown" bee, pull out nestTYPE information
@@ -427,9 +429,6 @@ for (i in 1:nrow(obs_data)) {
   }
 }
 
-# save cleaned obs_data for downstream analyses
-write.csv(obs_data, "../Data/filtData/obs_data.csv")
-
 # check how many observations remain after all cleaning has been completed
 clean_obs <- nrow(obs_data)
 clean_videos <- nrow(videos_data)
@@ -510,10 +509,6 @@ if (nrow(allBees) - nrow(unknownBees) == nrow(masterBees)) {
 
 # make new dataframe listing the bees without any recorded behaviors
 noObsBees <- obs_data[is.na(obs_data$obsID), c("nestID", "nestTYPE", "beeID", "caste", "natal")]
-
-# save list of bees for future analyses
-write.csv(noObsBees, "../Data/filtData/noObsBees.csv")
-write.csv(allBees, "../Data/filtData/allBees.csv")
 ```
 ## make count_data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -578,10 +573,6 @@ if (nrow(count_data) - nrow(unknownBees) == nrow(masterBees)) {
 } else {
   print(paste("All bees are not properly accounted for. There are", nrow(count_data), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
 }
-
-# Save dataframe as .csv so it can be used in other downstream analyses 
-write.csv(count_data, "../Data/tempData/count_data.csv")
-count_data
 ```
 ## add body size data to count_data
 ```{r}
@@ -699,9 +690,6 @@ for (i in 1:nrow(count_data)) {
     }
   }
 }
-
-# save count_data for future analyses
-write.csv("../Data/filtData/count_data.csv")
 ```
 ## make nestDEV df with counts of each behavior observed for each bee split out by timepoint
 output same as count_data but data split out by timepoint (early/late), excluding egg laying data
@@ -764,8 +752,6 @@ nestDEVlate$timepoint <- "late"
 # rewrite nestDEV with the timepoints included
 nestDEV <- rbind(nestDEVearly, nestDEVlate)
 nestDEV
-
-# write.csv(nestDEV, "../Data/nestDEV.csv")
 
 # format to same as count_data & add back in additional information from count_data (eg, body size, ovary dev, etc)
 
@@ -830,12 +816,6 @@ for (i in 1:nrow(count_time)){
     }
   }
 }
-
-# save this df for future analyses
-write.csv(count_time, "../Data/filtData/count_time.csv")
-
-# ***REMOVE THIS AND UPDATE ALL TO USE COUNT_TIME***
-write.csv(count_time, "../Data/filtData/countsanalysis.csv")
 ```
 
 
@@ -898,36 +878,12 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 # subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
 nVids <- nrow(videos_data)
 totalLen_data <- videos_data %>%
-  dplyr::select(obsID, nestID, nestTYPE, totalLen) %>%
+  dplyr::select(obsID, camID, nestID, nestTYPE, dateID, hourID, totalLen) %>%
   unique()
-totalLen_data
+
 # print how many videos were removed
 print(paste("There were", nVids - nrow(totalLen_data), "duplicate videos removed.", sep = " "))
 
-# split out obsID into camID, dateID and hourID (split based on the tab (\t) between elements)
-# element 1 is camID
-totalLen_data$camID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){
-                            x[1]
-                            } )
-# element 3 is dateID
-totalLen_data$dateID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){ 
-                            x[3]
-                            } )
-# element 4 is hourID
-totalLen_data$hourID <- sapply(strsplit(totalLen_data$obsID, "\t"), 
-                          function(x){ 
-                            x[4]
-                            } )
-# # combine date and hour into a single column called timeID
-# totalLen_data$timeID <- paste(totalLen_data$dateID, totalLen_data$hourID)
-
-# subset the df to remove the obs, hour, and date columns
-totalLen_data <- totalLen_data %>%
-  dplyr::select(camID, dateID, hourID, nestTYPE, nestID, totalLen)
-
-totalLen_data
 # verify we have the correct number of colonies and videos
 print(paste("There are", nrow(totalLen_data), "videos out of", clean_videos, "fully cleaned videos accounted for in the totalLen_data dataframe."))
 
@@ -967,9 +923,6 @@ camDur$FNratio <- NA
 for (i in 1:nrow(camDur)) {
   camDur$FNratio[i] <- camDur$forLen[i] / camDur$nestLen[i]
 }
-
-##Save df to be used in future analyses 
-write.csv(camDur, "../Data/filtData/camDur.csv")
 
 # check to see how much video was watched for each nest and for each treatment
 # must be equal + ratio must be 1 to compare
@@ -1033,6 +986,7 @@ for (i in 1:nrow(camDur)) {
 ```{r}
 # rename it so i can manipulate from here
 totalLen_time <- totalLen_data
+totalLen_time
 
 # format date as date to do math on it
 totalLen_time$dateID <- as.Date(totalLen_time$dateID, "%Y%m%d")
@@ -1080,13 +1034,6 @@ early_data$timepoint <- "early"
 late_data$timepoint <- "late"
 totalLen_time <- rbind(early_data, late_data)
 totalLen_time
-head(totalLen_time)
-
-#plot it!
-
-# subset the df to remove the obs, hour, and date columns
-timepoint_data <- totalLen_time %>%
-  dplyr::select(camID, nestID, nestTYPE, totalLen)
 # create empty dataframe to put length into
 dateDur <- data.frame(nestID = NA,
                       nestTYPE = NA,
@@ -1111,11 +1058,12 @@ for (i in 1:length(unique(totalLen_time$nestID))) {
   late_nestSum <- sum(late_nest_data$totalLen)                                      # sum the video duration of all late nest videos
   dateDur <- rbind(dateDur, c(sub_data$nestID[1], sub_data$nestTYPE[1], early_forSum, late_forSum, early_nestSum, late_nestSum, totalSum)) # add the sum totals to the dateDur df
 }
+
 # remove NA row initially created
 dateDur <- dateDur[2:nrow(dateDur),]
 dateDur
 
-## gather sums into a single column to graph together
+# gather sums into a single column to graph together
 dateDur <- dateDur %>%
   gather(early_nestSum, late_nestSum, early_forSum, late_forSum, 
          key = "videoType", 
@@ -1124,50 +1072,97 @@ dateDur <- dateDur %>%
 dateDur$videoType <- factor(dateDur$videoType, levels = c("early_forSum", "late_forSum", "early_nestSum", "late_nestSum"))
 dateDur$length <- as.numeric(dateDur$length)
 
-#proportion of early to late for NF
+# proportion of early to late for NF
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               theme(axis.text.x = element_text(angle = 90), legend.position="top")
 
-#proportion of early to late for NT
+# proportion of early to late for NT
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NT")
 sumsTOTAL$length <- as.numeric(sumsTOTAL$length)
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               theme(axis.text.x = element_text(angle = 90), legend.position="top")
 
-#proportion of early to late for QT
+# proportion of early to late for QT
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QT")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               theme(axis.text.x = element_text(angle = 90), legend.position="top")
 
-#proportion of early to late for QF
+# proportion of early to late for QF
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               theme(axis.text.x = element_text(angle = 90), legend.position="top")
 
-#all nests individually
+# all nests individually
 sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
 ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   geom_bar(stat ="identity") + 
   theme(axis.text.x = element_text(angle = 90), legend.position = "top")
 
-#all nests by group
+# all nests by group
 sumsTYPE <- dateDur %>% group_by(nestTYPE)
 ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
   geom_bar(stat = "identity", position = position_dodge()) + 
   theme(axis.text.x = element_text(angle = 90), legend.position = "top")
-
-dateDur
-sumsTOTAL
-sumsTYPE
-
 ```
 
 
+
+
+# Filter and save dfs for future analyses to include only nests that have passed the threshold amount of video watched 
+```{r}
+# threshold foraging video = 20,000 seconds
+forThres <- 20000
+# threshold nest video = 2,000 seconds
+nestThres <- 2000
+
+# filter camDur to include nests that pass both thresholds
+camDur_filt <- camDur[camDur$forLen >= forThres, ]
+# and a minimum of 2000 nest
+camDur_filt <- camDur_filt[camDur_filt$nestLen >= nestThres, ]
+
+# check how many nests were removed
+print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
+
+
+# FILTER
+
+# filter obs_data and save for future analyses
+obs_data <- obs_data %>% subset(nestID %in% camDur_filt$nestID)
+write.csv(obs_data, "../Data/filtData/obs_data.csv")
+# each observation is a single row
+# every bee (including unknown and unobserved bees) is accounted for
+
+# filter count_data and save for future analyses
+count_data <- count_data %>% subset(nestID %in% camDur_filt$nestID)
+write.csv(count_data, "../Data/filtData/count_data.csv")
+# each bee as a single row
+# every bee (including unknown and unobserved bees) is accounted for
+# columns = counts of behaviors, total number of behaviors, nest info, bee info (caste, natal, ovaries, etc)
+
+# filter count_time
+count_time <- count_time %>% subset(nestID %in% camDur_filt$nestID)
+write.csv(count_time, "../Data/filtData/count_time.csv")
+# count_data split out by timepoint
+# each bee has 0-2 rows
+# only includes bees with at least one observation (including unknown bees)
+# columns same as count_data
+
+# ***REMOVE THIS AND UPDATE ALL TO USE COUNT_TIME***
+write.csv(count_time, "../Data/filtData/countsanalysis.csv")
+
+
+# write.csv(nestDEV, "../Data/nestDEV.csv")
+
+# save already filtered camDur for future analyses
+write.csv(camDur_filt, "../Data/filtData/camDur.csv")
+# each nest is a row
+# columns include foraging length, nest length, total length, F:N ratio, and nestTYPE
+```
 
 
 
