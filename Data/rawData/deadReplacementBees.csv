@@ -1,0 +1,37 @@
+nestID,beeID,died,added,addDate,diedDate,earlyObs,lateObs ,notes
+NF02,1,1,0,na,20180628,0703-0704,,we only have LATE timepoint for nf02 -- make sure to account for this in code
+NF02,1,0,1,20180702,na,,,
+NF03,73,1,0,na,20180627,0627-0629,0703-0705,early observations only had 4 live bees
+NF03,75,0,1,20180702,na,,,
+NF03,,,,,,0627-0629,0703-0705,
+NF03,28,0,1,20180712,na,,,do not include 28 in ovary/body size analyses
+NF06,10,1,0,na,20180817,0814-0816,0820-0822,
+NF06,12,0,1,20180820,na,,,
+NT01,85,1,0,na,20180628,629,0703-0705,
+NT01,85,0,1,20180702,na,,,
+NT07,49,1,0,na,20180831,0814-0816,0820-0822,
+NT07,NA,,,,,,,
+NT10,45,1,0,na,20180817,0817-0819,0823-0825,early observations only had 2 live bees
+NT10,6,0,1,20180820,na,,,
+NT15,60,1,0,na,20181114,1115-1117,1122-1123,"early observations only had 2 live bees for first half, plus callow bee for second half"
+NT15,14,0,1,20181116,na,,,
+QF03,32,1,0,na,20180628,0628-0630,0704-0706,early observations only had 5 live bees
+QF03,32,0,1,20180702,na,,,
+QF03,77,1,0,na,20180706,0628-0630,0704-0706,do not include bees other than original + 32 replacement in this nest
+QF03,,,,,,,,
+QF03,,1,0,na,20180711,0628-0630,0704-0706,do not include bees other than original + 32 replacement in this nest
+QF03,,,,,na,,,
+QF06,6,1,0,na,20180731,0810-0812,0816-0818,
+QF06,6,0,1,20180731,na,,,
+QF08,,1,0,,20180831,0811-0813,0817-0819,
+QF08,,,,,,,,
+QF09,17,1,0,na,20180813,0810-0812,0816-0818,late observations only had 5 live bees
+QF09,22,0,1,20180820,na,,,
+QT02,40,1,0,na,20180618,0628-0630,0704-0706,do not include 40 in ovary/body size analyses
+QT02,29,0,1,20180618,na,,,
+QT02,2,1,0,na,20180618,0628-0630,0704-0706,do not include 2 in ovary/body size analyses
+QT02,51,0,1,20180618,na,,,
+QF16,74,1,0,na,20181030,1108-1110,1114-1116,
+QF16,74,0,1,20181030,na,,,
+QF16,39,1,0,na,20181102,1108-1110,1114-1116,
+QF16,39,0,1,20181102,na,,,
