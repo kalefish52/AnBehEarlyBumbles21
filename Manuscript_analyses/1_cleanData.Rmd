@@ -4,22 +4,19 @@ output:
   pdf_document: default
   html_document:
     df_print: paged
+    code_folding: "hide"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
- 
-  
-  
-  
 # Load Packages
 ```{r}
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
 ```
-
+ 
 
 
 
@@ -80,6 +77,9 @@ obs_data <- do.call(rbind, lapply(BORISfilenames,
                                                              "comStop"))
                      }
 ))
+
+# remove unwanted columns
+obs_data <- subset(obs_data, select = -c(filename, fps, cat, mod, behavType, comStart, comStop))
 
 # look at the data
 obs_data
@@ -155,7 +155,8 @@ master_data <- do.call(rbind, lapply(masterfilenames,
                                                              "WID3",
                                                              "WID4",
                                                              "WID5",
-                                                             "WID6",
+                                                             "WIDrep1",
+                                                             "WIDrep2",
                                                              "Eggs",
                                                              "DaysToEggs",
                                                              "LarvDate",
@@ -176,6 +177,10 @@ master_data
 init_master <- nrow(master_data)
 print(paste("There are", init_master, "nests accounted for in the initial master_data dataframe.", sep = " "))
 ```
+import dead and replacement bee datasheets
+```{r}
+deadReplac_data <- read.csv("../Data/rawData/deadReplacementBees.csv", na.strings = c("na", " ", ""))
+```
 import egg laying datasheets
 ```{r}
 egglaying_data <- read.csv("../Data/rawData/Egg_laying_Events.csv", 
@@ -191,15 +196,16 @@ import ovary development datasheets
 ovary_data <- read.csv("../Data/rawData/Ovarydata.csv", 
                        col.names = c("nestID", "beeID", "fb", "ov", "l1", "s1", "l2", "s2", "notes", "x", "xx"))
 ```
-
+ 
 
 
 
 
 # Clean Data
 
-## filter nests
+## remove bad data
 split obsID column from obs_data and videos_data into its component parts to enable manipulation by camera/colony/time/date
+remove nests that died or otherwise are unusable
 ```{r}
 # convert columns to character to enable manipulation with strsplit() and subset(startsWith())
 obs_data$obsID <- as.character(obs_data$obsID)
@@ -316,12 +322,12 @@ pull out caste information and ID number from beeIDs, name unidentified observat
 # format the master_data in the same way as the obs_data
 # gather the master_data so each worker and queen has their own row
 masterBees <- master_data %>%
-  gather(QID, WID1, WID2, WID3, WID4, WID5, WID6,  
-         key = "IDtype", 
+  gather(QID, WID1, WID2, WID3, WID4, WID5, WIDrep1, WIDrep2,  
+         key = "beeType", 
          value = "beeID")
 
 # pull out caste info from masterBees
-masterBees$caste <- sapply(strsplit(masterBees$IDtype, ""), 
+masterBees$caste <- sapply(strsplit(masterBees$beeType, ""), 
                           function(x){
                             x[1]
                           })
@@ -339,7 +345,6 @@ obs_data[obs_data$caste == "N", "caste"] <- "W"
 egglaying_data[egglaying_data$caste == "worker", "caste"] <- "W"
 egglaying_data[egglaying_data$caste == "queen", "caste"] <- "Q"
 
-
 # pull out ID number from beeID column in obs_data (instead of "Worker 5 (76)" or "Queen (43)" etc)
 obs_data$beeID <- sapply(strsplit(obs_data$beeID, ")"),
                         function(x){
@@ -349,6 +354,16 @@ obs_data$beeID <- sapply(strsplit(obs_data$beeID, "\\("),
                         function(x){
                           x[2]
                         })
+
+# rename masterBees beeTypes to be only two categories (original or replacement bee)
+masterBees[masterBees$beeType == "QID", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WID1", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WID2", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WID3", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WID4", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WID5", "beeType"] <- "orig"
+masterBees[masterBees$beeType == "WIDrep1", "beeType"] <- "replac"
+masterBees[masterBees$beeType == "WIDrep2", "beeType"] <- "replac"
 
 # rename unidentified workers from the video data
 obs_data[, "beeID"][is.na(obs_data[, "beeID"])] <- "unknown"
@@ -361,6 +376,7 @@ masterBees <- masterBees[!is.na(masterBees$beeID),]
 # combine beeID and nestID so that each bee has a unique identifier (some numbers are duplicated across nests)
 masterBees$beeID <- paste0(masterBees$nestID, masterBees$beeID)
 obs_data$beeID <- paste0(obs_data$nestID, obs_data$beeID)
+deadReplac_data$beeID <- paste0(deadReplac_data$nestID, deadReplac_data$beeID)
 egglaying_data$beeID <- paste0(egglaying_data$nestID, egglaying_data$beeID)
 ovary_data$beeID <- paste0(ovary_data$nestID, ovary_data$beeID)
 size_data$beeID <- paste0(size_data$nestID, size_data$beeID)
@@ -373,7 +389,7 @@ egglaying_data$nestTYPE <- substr(egglaying_data$nestID, start = 1, stop = 2)
 ovary_data$nestTYPE <- substr(ovary_data$nestID, start = 1, stop = 2)
 size_data$nestTYPE <- substr(size_data$nestID, start = 1, stop = 2)
 ```
-## filter observations
+## remove bad observations
 remove foraging events less than 10 seconds long (poop trips) and remove nest video data after first 5 minutes (errors)
 ```{r}
 # remove all nectar foraging events under 10 seconds long
@@ -442,7 +458,6 @@ print(paste("There are now", clean_videos, "out of", init_videos, "remaining vid
 
 ## combine masterBees and obs_data
 merge obs_data to masterBees to add bees who did not carry out any recorded behaviors (ie missing from initial obs_data file)
-***Remove behaviors from all unidentified bees from future analyses --> i removed this b/c we want unidentified bees for certain analyses, i think.
 ```{r}
 # make a list of all the bees we do have records for
 recordedBees <- subset(masterBees, (beeID %in% obs_data$beeID))
@@ -470,11 +485,13 @@ for (i in 0:(nrow(missingBees) - 1)) {
   obs_data$caste[nrow(obs_data) - i] <- missingBees$caste[i+1]
   obs_data$nestTYPE[nrow(obs_data) - i] <- missingBees$nestTYPE[i+1]}
 
-# add natal colony info from masterBees to obs_data
+# add beeType and natal colony info from masterBees to obs_data
 obs_data$natal <- NA
+obs_data$beeType <- NA
 for (i in 1:nrow(obs_data)) {
   for (j in 1:nrow(masterBees)) {
     if (obs_data$beeID[i] == masterBees$beeID[j]) {
+      obs_data$beeType[i] <- masterBees$beeType[j]
       if (obs_data$caste[i] == "W") {
         obs_data$natal[i] <- masterBees$Wnatal[j] 
       }
@@ -493,9 +510,9 @@ for (i in 1:(nrow(obs_data))) {
 
 # check how many bees we have in the new obs_data. should equal the number of bees in the master_data
 # select only relevant information
-allBees <- dplyr::select(obs_data, nestID, nestTYPE, beeID, caste, natal)
+allBees <- dplyr::select(obs_data, nestID, nestTYPE, beeID, caste, natal, beeType)
 # remove duplicates
-allBees <- unique(allBees[c("nestID", "nestTYPE", "beeID", "caste", "natal")])
+allBees <- unique(allBees[c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType")])
 unknownBees <- allBees[is.na(allBees$natal),]
 
 # check how many bees are now included in obs_data
@@ -505,9 +522,35 @@ if (nrow(allBees) - nrow(unknownBees) == nrow(masterBees)) {
 } else {
   print(paste("ERROR! There are", nrow(allBees) - nrow(unknownBees), "identified bees accounted for, but the master datasheet has", nrow(masterBees), "bees. If there are only a few more bees than expected from the master datasheet, it is likely because of replacement bees. If there is a large difference here, something is wrong.", sep = " "))
 }
+```
+## add dead bee info
+mrege obs_data to deadReplac_data to take dead and replacement bees into account,
+remove bees that died prior to observations, 
+note bees that died < threshold number of days after observations
+```{r}
+# merge obs_data with deadReplac_data 
 
-# make new dataframe listing the bees without any recorded behaviors
-noObsBees <- obs_data[is.na(obs_data$obsID), c("nestID", "nestTYPE", "beeID", "caste", "natal")]
+# add columns to obs_data
+obs_data$addDate <- NA
+obs_data$diedDate <- NA
+# fill those columns with data from deadReplac_data
+for (i in 1:nrow(obs_data)) {
+  for (j in 1:nrow(deadReplac_data)) {
+    if (obs_data$beeID[i] == deadReplac_data$beeID[j]) {
+      if (!is.na(deadReplac_data$addDate[j])) {
+        obs_data$addDate[i] <- deadReplac_data$addDate[j] 
+      }
+      if (!is.na(deadReplac_data$diedDate[j])) {
+        obs_data$diedDate[i] <- deadReplac_data$diedDate[j]
+      }
+    }
+  }
+}
+
+# make a list of bees that died prior to observations starting
+diedEarly <- c("NF0328", "QT0240", "QT022")
+# remove those bees from obs_data - they will not be included an any analyses
+obs_data <- obs_data[!obs_data$beeID %in% diedEarly,]
 ```
 ## make count_data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values
@@ -523,29 +566,29 @@ count_data <- obs_data
 count_data$count <- 1  
 # condense data frame into relevant columns, each row is a single observation for an individual
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "behav"), 
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType", "addDate", "diedDate", "behav"),
               names_from = rand, 
               values_from = count) 
 
 # add column to fill with sum of counts for each behav
-countCol1 <- 7 # firstcolumn containing counts
+countCol1 <- 10 # firstcolumn containing counts
 count_data$totCount <- rowSums(count_data[countCol1:ncol(count_data)], na.rm = TRUE)
 
 # subset dataframe to remove random number generated columns (only want summary data)
 count_data <- count_data %>%
-  dplyr::select(nestID, nestTYPE, beeID, caste, natal, behav, totCount)
+  dplyr::select(nestID, nestTYPE, beeID, caste, natal, beeType, addDate, diedDate, behav, totCount)
 
 # collapse dataframe so that each bee has one single row and behaviors are additional columns
 count_data <- count_data %>%
-  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal"), 
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType", "addDate", "diedDate", "behav"),
               names_from = behav, 
               values_from = totCount)
 
 # remove NA column
 count_data <- count_data[ , !names(count_data) %in% c("NA")]
 
-# replace NA values in count columns with 0 (don't change NA values in natal column)
-count_data[!names(count_data) %in% c("natal")] [is.na(count_data[!names(count_data) %in% c("natal")])] <- 0
+# replace NA values in behavioral count columns with 0
+count_data[c("nectarforaging", "pollenforaging", "feedsbrood")] [is.na(count_data[c("nectarforaging", "pollenforaging", "feedsbrood")])] <- 0
 count_data
 ```
 ## add egg laying data to counts_data
@@ -766,29 +809,29 @@ count_time <- nestDEV
 count_time$count <- 1  
 # condense data frame into relevant columns, each row is a single observation for an individual
 count_time <- count_time %>%
-  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "timepoint", "behav"), 
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType", "addDate", "diedDate", "timepoint", "behav"),
               names_from = rand, 
               values_from = count) 
 count_time
 # add column to fill with sum of counts for each behav
-countCol1 <- 8 # firstcolumn containing counts
+countCol1 <- 11 # firstcolumn containing counts
 count_time$totCount <- rowSums(count_time[countCol1:ncol(count_time)], na.rm = TRUE)
 
 # subset dataframe to remove random number generated columns (only want summary data)
 count_time <- count_time %>%
-  dplyr::select(nestID, nestTYPE, beeID, caste, natal, behav, totCount, timepoint)
+  dplyr::select(nestID, nestTYPE, beeID, caste, natal, beeType, addDate, diedDate, timepoint, behav, totCount, timepoint)
 
 # collapse dataframe so that each bee has one single row and behaviors are additional columns
 count_time <- count_time %>%
-  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "timepoint"), 
+  pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType", "addDate", "diedDate", "timepoint", "behav"),
               names_from = behav, 
               values_from = totCount)
 
 # remove NA column
 count_time <- count_time[ , !names(count_time) %in% c("NA")]
 
-# replace NA values in count columns with 0 (don't change NA values in natal column)
-count_time[!names(count_time) %in% c("natal")] [is.na(count_time[!names(count_time) %in% c("natal")])] <- 0
+# replace NA values in behavioral count columns with 0
+count_time[c("nectarforaging", "pollenforaging", "feedsbrood")] [is.na(count_time[c("nectarforaging", "pollenforaging", "feedsbrood")])] <- 0
 
 # sum number of behaviors per bee per timepoint into nBehav column
 count_time$nBehavs <- rowSums(count_time[, c("feedsbrood", "nectarforaging", "pollenforaging")], na.rm = TRUE)
@@ -819,9 +862,6 @@ for (i in 1:nrow(count_time)){
 
 
 
-
-
-
 # Visualize Data
 
 ## graph the number of observations per camera type per nest 
@@ -835,11 +875,14 @@ sumsTYPE<-data_sum %>% dplyr::group_by(nestTYPE, camID) %>% dplyr::summarise(Obs
 
 #look at number of observations we have so far based on each colony 
 ggplot(sumsTOTAL, aes(x=nestID, y=Observations, fill=camID)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) +
+  ggtitle("number of observations for all filtered nests, regardless of video duration")
 
 # look at number of observations we have so far based on each type of colony 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) +
+  ggtitle("number of observations per nestTYPE for all filtered nests, regardless of video duration")
+
 
 sumsTYPE
 sumsTOTAL
@@ -853,23 +896,29 @@ sumsTYPE<-data_sum %>% group_by(nestTYPE)
 
 # look at data we have so far based on each nestID 
 ggplot(data_sum, aes(x=nestID, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of brood feeding observations for all filtered nests, regardless of video duration")
 
 ggplot(data_sum, aes(x=nestID, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of nectar foraging observations for all filtered nests, regardless of video duration")
 
 ggplot(data_sum, aes(x=nestID, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of pollen foraging observations for all filtered nests, regardless of video duration")
 
 # look at data we have so far based on each nestTYPE 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=feedsbrood, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of brood feeding observations for all filtered nests, regardless of video duration")
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of nectar foraging observations for all filtered nests, regardless of video duration")
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("number of pollen foraging observations for all filtered nests, regardless of video duration")
 ```
 ## calculate and graph total duration of video watched per nest
 ```{r}
@@ -932,18 +981,22 @@ camDur <- camDur[order(camDur$nestID),]
 
 sumsTYPE<-camDur %>% group_by(nestTYPE)
 ggplot(camDur, aes(x=nestID, y=forLen, fill = nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("duration of foraging video watched for all filtered nests, regardless of video duration threshold")
 
 ggplot(camDur, aes(x=nestID, y=nestLen, fill = nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("duration of nest video watched for all filtered nests, regardless of video duration threshold")
 
 # look at data we have so far based on each nestTYPE
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=forLen, fill = nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("duration of foraging video watched for all filtered nests, regardless of video duration threshold")
 
 ggplot(sumsTYPE, aes(x=nestTYPE, y=nestLen, fill = nestTYPE)) +
-  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90))
+  geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
+  ggtitle("duration of nest video watched for all filtered nests, regardless of video duration threshold")
 
 # print number of seconds and hours of video watched
 
@@ -981,7 +1034,7 @@ for (i in 1:nrow(camDur)) {
   print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
 ```
-## calculate and graph total amount of video watched at each of the two timepoints (late and early) for each nest
+## calculate and graph total duration of video watched at each of the two timepoints (late and early) per nest
 ```{r}
 # rename it so i can manipulate from here
 totalLen_time <- totalLen_data
@@ -1075,59 +1128,82 @@ dateDur$length <- as.numeric(dateDur$length)
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
-              theme(axis.text.x = element_text(angle = 90), legend.position="top")
+              scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+              theme(axis.text.x = element_text(angle = 90), legend.position="top") + 
+  ggtitle("duration of video watched for all NF filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for NT
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NT")
 sumsTOTAL$length <- as.numeric(sumsTOTAL$length)
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
-              theme(axis.text.x = element_text(angle = 90), legend.position="top")
+              scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+              theme(axis.text.x = element_text(angle = 90), legend.position="top") + 
+  ggtitle("duration of video watched for all NT filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for QT
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QT")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
-              theme(axis.text.x = element_text(angle = 90), legend.position="top")
+              scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+              theme(axis.text.x = element_text(angle = 90), legend.position="top") + 
+  ggtitle("duration of video watched for all QT filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for QF
 sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
-              theme(axis.text.x = element_text(angle = 90), legend.position="top")
+              scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+              theme(axis.text.x = element_text(angle = 90), legend.position="top") + 
+  ggtitle("duration of video watched for all QF filtered nests, regardless of video duration threshold")
 
 # all nests individually
 sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
 ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   geom_bar(stat ="identity") + 
-  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+  scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top") + 
+  ggtitle("duration of video watched for all filtered nests, regardless of video duration threshold")
 
 # all nests by group
 sumsTYPE <- dateDur %>% group_by(nestTYPE)
 ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top") + 
+  ggtitle("duration of video watched for all filtered nests, regardless of video duration threshold")
 ```
 
 
 
 
-# Filter and save dfs for future analyses 
+# Filter and Save Data
+
+## filter nests based on amount of video watched
 filter to include only nests that have passed a threshold amount of video watched
 ```{r}
-# threshold foraging video = 20,000 seconds
-forThres <- 20000
-# threshold nest video = 2,000 seconds
-nestThres <- 2000
+# set threshold for required seconds of foraging video watched
+forThres <- 0
+# set threshold for required seconds of nest video watched
+nestThres <- 0
 
 # filter camDur to include nests that pass both thresholds
 camDur_filt <- camDur[camDur$forLen >= forThres, ]
 # and a minimum of 2000 nest
 camDur_filt <- camDur_filt[camDur_filt$nestLen >= nestThres, ]
-
+camDur_filt
 # check how many nests were removed
-print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
-
+print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
+```
+### visualize and save duration-filtered data for analyses
+```{r}
+# graph amount of video watched from only fitered nests
+sumsTOTAL <- sumsTOTAL %>% subset(nestID %in% camDur_filt$nestID)
+ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
+  geom_bar(stat ="identity") + 
+  scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top") + 
+  ggtitle("duration of video watched for nests with video duration above threshold")
 
 # FILTER
 
@@ -1152,10 +1228,6 @@ write.csv(count_time, "../Data/filtData/count_time.csv")
 # only includes bees with at least one observation (including unknown bees)
 # columns same as count_data
 
-# ***REMOVE THIS AND UPDATE ALL TO USE COUNT_TIME***
-write.csv(count_time, "../Data/filtData/countsanalysis.csv")
-
-
 # write.csv(nestDEV, "../Data/nestDEV.csv")
 
 # save already filtered camDur for future analyses
@@ -1164,22 +1236,190 @@ write.csv(camDur_filt, "../Data/filtData/camDur.csv")
 # columns include foraging length, nest length, total length, F:N ratio, and nestTYPE
 ```
 
+## filter nests based on number of observations
+for nest-level analyses: filter out nests below threshold number of observations each of brood feeding and foraging behaviors, includes unknown worker observations
+count_nests.csv
+```{r}
+# first combine pollen and nectar foraging into a single value
+count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
 
+# gather broodfeeding and foraging behaviors into a single column so we can summarize based on number of observations
+counts_gathered <- count_data %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
 
+# summarize the number of observations per nest to enable filtering
+sumNest <- ddply(counts_gathered, 
+                c("nestID", "behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
 
+# remove nests with fewer than threshold number of observations of both foraging and brood feeding
 
+# count how many nests we start with before filtering
+initNests <- length(unique(sumNest$nestID))
+# set the threshold below which we remove data
+obsThres <- 3
+# filter out nests with < threshold brood feeding or foraging
+rmNests <- sumNest[sumNest$nObs < obsThres,]
+count_nests <- count_data %>% filter(!nestID %in% rmNests$nestID)
+# count and print how many nests we have after filtering
+filtNests <- length(unique(count_nests$nestID))
+print(paste("the following", initNests - filtNests, "nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
+unique(rmNests$nestID)
 
+# save for future analyses
+write.csv(count_nests, "../Data/filtData/count_nests.csv")
 
+# filter obs_data to obs_nests for future analyses
+obs_nests <- obs_data %>% subset(nestID %in% count_nests$nestID)
+write.csv(obs_nests, "../Data/filtData/obs_nests.csv")
+```
+### visualize filtered count_nests
+```{r}
+# gather all behaviors into a single column
+countsFilt_gathered <- count_nests %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
+countsFilt_gathered
 
+# summarize and graph the total number behaviors observed across all individuals
+statsBehavFilt <- ddply(countsFilt_gathered, 
+                c("behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+ggplot(statsBehavFilt, aes(x = behav, y = nObs, fill = behav)) + geom_bar(stat = "identity")
 
+# summarize and graph the total number behaviors observed for each filtered nest
+statsNestFilt <- ddply(countsFilt_gathered, 
+                c("nestID", "behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+statsNestFilt
+ggplot(statsNestFilt, aes(x = nestID, y = nObs, fill = behav)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+```
 
+## filter bees based on number of observations
+for bee-level analyses: filter out bees with below threshold number of behaviors, remove unknown workers
+count_bees.csv
+```{r}
+# filter out unknown bees (these bees have NA natal colony b/c they are unidentified)
+identifiedBees <- count_data[!is.na(count_data$natal),]
 
+# filter out bees with less than threshold number of behaviors
 
+# set threshold
+obsThres <- 3
+count_bees <- identifiedBees[identifiedBees$nBehavs >= obsThres,]
 
+# make a separate df with bees with less than threshold # observations -- this includes bees with 0 observations as well
+count_beesLow <- count_data[count_data$nBehavs < obsThres, ]
 
+# count and print how many bees we have after filtering
+print(paste(nrow(count_bees), "out of", nrow(count_data), "bees are identified and have at least 3 recorded observations.", sep = " "))
+print(paste(nrow(count_data)-nrow(identifiedBees), "unidentified bees were filtered out of the data because they are unidentified.", sep = " "))
+print(paste(nrow(identifiedBees) - nrow(count_bees), "identified bees were filtered out because they had fewer than 3 recorded observations.", sep = " "))
 
+# save for future analyses
+write.csv(count_bees, "../Data/filtData/count_bees.csv")
+write.csv(count_beesLow, "../Data/filtData/count_beesLow.csv")
 
+# filter obs_data to obs_bees for future analyses
+obs_bees <- obs_data %>% subset(nestID %in% count_bees$nestID)
+write.csv(obs_bees, "../Data/filtData/obs_bees.csv")
+```
 
+## filter nests at early and late timepoints
+nests with threshold number of observations at early OR late timepoints
+count_nestsEarly
+count_nestsLate
+```{r}
+# first combine pollen and nectar foraging into a single value
+count_time$allforaging <- count_time$nectarforaging + count_time$pollenforaging
 
+# gather broodfeeding and foraging behaviors into a single column so we can summarize based on number of observations
+counts_gatheredTime <- count_time %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
 
+# summarize the number of observations per nest to enable filtering
+sumNestTime <- ddply(counts_gatheredTime, 
+                c("nestID", "behav", "timepoint"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
 
+# split into early and late
+sumNestEarly <- sumNestTime[sumNestTime$timepoint == "early",]
+sumNestLate <- sumNestTime[sumNestTime$timepoint == "late",]
+
+# remove nests with fewer than threshold number of observations of both foraging and brood feeding
+
+# count how many nests we start with before filtering
+initNestsEarly <- length(unique(sumNestEarly$nestID))
+initNestsLate <- length(unique(sumNestLate$nestID))
+# set the threshold below which we remove data
+obsThres <- 3
+# subset which nests have < threshold brood feeding or foraging
+rmNestsEarly <- sumNestEarly[sumNestEarly$nObs < obsThres,]
+rmNestsLate <- sumNestLate[sumNestLate$nObs < obsThres,]
+# filter out those nests with < threshold
+count_nestsEarly <- count_time[count_time$timepoint == "early",] %>% filter(!nestID %in% rmNestsEarly$nestID)
+count_nestsLate <- count_time[count_time$timepoint == "late",] %>% filter(!nestID %in% rmNestsLate$nestID)
+# count and print how many nests we have after filtering
+filtNestsEarly <- length(unique(count_nestsEarly$nestID))
+filtNestsLate <- length(unique(count_nestsLate$nestID))
+print(paste("the following", initNestsEarly - filtNestsEarly, "early nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
+unique(rmNestsEarly$nestID)
+print(paste("the following", initNestsLate - filtNestsLate, "late nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
+unique(rmNestsLate$nestID)
+
+# save for future analyses
+write.csv(count_nestsEarly, "../Data/filtData/count_nestsEarly.csv")
+write.csv(count_nestsLate, "../Data/filtData/count_nestsLate.csv")
+```
+
+## filter bees at early and late timepoints
+bees with threshold number of observations at early OR late timepoints
+count_beesEarly
+count_beesLate
+```{r}
+# filter out unknown bees (these bees have NA natal colony b/c they are unidentified)
+identifiedBeesTime <- count_time[!is.na(count_time$natal),]
+
+# filter out bees with less than threshold number of behaviors
+
+# set threshold
+obsThres <- 3
+count_beesTime <- identifiedBeesTime[identifiedBeesTime$nBehavs >= obsThres,]
+count_beesEarly <- count_beesTime[count_beesTime$timepoint == "early",]
+count_beesLate <- count_beesTime[count_beesTime$timepoint == "late",]
+
+# make a separate df with bees with less than threshold # observations -- this includes bees with 0 observations, but not unknown workers
+count_beesLowTime <- identifiedBeesTime[identifiedBeesTime$nBehavs < obsThres, ]
+count_beesLowEarly <- count_beesLowTime[count_beesLowTime$timepoint == "early",]
+count_beesLowLate <- count_beesLowTime[count_beesLowTime$timepoint == "late",]
+
+# count and print how many bees we have after filtering
+print(paste(nrow(count_beesEarly), "out of", nrow(count_time[count_time$timepoint == "early",]), "early bees are identified and have at least 3 recorded observations.", sep = " "))
+print(paste(nrow(count_time[count_time$timepoint == "early",]) - nrow(identifiedBeesTime[identifiedBeesTime$timepoint == "early",]), "unidentified early bees were filtered out because they are unidentified.", sep = " "))
+print(paste(nrow(identifiedBeesTime[identifiedBeesTime$timepoint == "early",]) - nrow(count_beesEarly), "identified early bees were filtered out because they had fewer than 3 recorded observations.", sep = " "))
+
+print(paste(nrow(count_beesLate), "out of", nrow(count_time[count_time$timepoint == "late",]), "late bees are identified and have at least 3 recorded observations.", sep = " "))
+print(paste(nrow(count_time[count_time$timepoint == "late",]) - nrow(identifiedBeesTime[identifiedBeesTime$timepoint == "late",]), "unidentified late bees were filtered out because they are unidentified.", sep = " "))
+print(paste(nrow(identifiedBeesTime[identifiedBeesTime$timepoint == "late",]) - nrow(count_beesLate), "identified late bees were filtered out because they had fewer than 3 recorded observations.", sep = " "))
+
+# save for future analyses
+write.csv(count_beesEarly, "../Data/filtData/count_beesEarly.csv")
+write.csv(count_beesLate, "../Data/filtData/count_beesLate.csv")
+write.csv(count_beesLowTime, "../Data/filtData/count_beesLowTime.csv")
+write.csv(count_beesLowEarly, "../Data/filtData/count_beesLowEarly.csv")
+write.csv(count_beesLowLate, "../Data/filtData/count_beesLowLate.csv")
+```
