@@ -4,7 +4,6 @@ count_data.csv
 obs_data.csv
 count_nests.csv
 count_bees.csv
-count_lowBees.csv
 count_nestsEarly.csv
 count_nestsLate.csv
 obs_bees.csv
@@ -15,6 +14,4 @@ count_beesLow.csv
 count_beesLowEarly.csv
 count_beesLowLate.csv
 count_beesLowTime.csv
-count_lowBeesEarly.csv
-count_lowBeesLate.csv
-count_lowBeesTime.csv
+
