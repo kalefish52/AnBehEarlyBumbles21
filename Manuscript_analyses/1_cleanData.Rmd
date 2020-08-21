@@ -1181,7 +1181,7 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
 # Filter and Save Data
 
 ## filter all data based on nest with threshold duration of video watched
-filter to include only nests that have passed a threshold amount of video watched
+    filter to include only nests that have passed a threshold amount of video watched
 ```{r}
 # set threshold for required seconds of foraging video watched
 forThres <- 0
@@ -1197,6 +1197,11 @@ camDur_filt
 print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
 ```
 ### visualize and save duration-filtered data for analyses
+write obs_data
+write obs_time
+write count_data
+write count_time
+write camDur
 ```{r}
 # graph amount of video watched from only fitered nests
 sumsTOTAL <- sumsTOTAL %>% subset(nestID %in% camDur_filt$nestID)
@@ -1244,8 +1249,9 @@ write.csv(camDur_filt, "../Data/filtData/camDur.csv")
 ```
 
 ## filter nest data based on number of observations
-for nest-level analyses: filter out nests below threshold number of observations each of brood feeding and foraging behaviors, includes unknown worker observations
-count_nests.csv
+    for nest-level analyses: filter out nests below threshold number of observations each of brood feeding and foraging behaviors, includes unknown worker observations
+write obs_nests
+write count_nests
 ```{r}
 # first combine pollen and nectar foraging into a single value
 count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
@@ -1314,8 +1320,9 @@ ggplot(statsNestFilt, aes(x = nestID, y = nObs, fill = behav)) +
 ```
 
 ## filter bee data based on number of observations
-for bee-level analyses: filter out bees with below threshold number of behaviors, remove unknown workers
-count_bees.csv
+   for bee-level analyses: filter out bees with below threshold number of behaviors, remove unknown workers
+write obs_bees
+write count_beesLow
 ```{r}
 # filter out unknown bees (these bees have NA natal colony b/c they are unidentified)
 identifiedBees <- count_data[!is.na(count_data$natal),]
@@ -1335,7 +1342,7 @@ print(paste(nrow(count_data)-nrow(identifiedBees), "unidentified bees were filte
 print(paste(nrow(identifiedBees) - nrow(count_bees), "identified bees were filtered out because they had fewer than 3 recorded observations.", sep = " "))
 
 # save for future analyses
-write.csv(count_bees, "../Data/filtData/count_bees.csv")
+# count_bees manipulated in downstream analyses (shannon calculations) --> write count_bees downstream 
 write.csv(count_beesLow, "../Data/filtData/count_beesLow.csv")
 
 # filter obs_data to obs_bees for future analyses
@@ -1344,9 +1351,8 @@ write.csv(obs_bees, "../Data/filtData/obs_bees.csv")
 ```
 
 ## filter nest data at early and late timepoints
-nests with threshold number of observations at early OR late timepoints
-count_nestsEarly
-count_nestsLate
+    nests with threshold number of observations at early OR late timepoints
+write count_nestsTime
 ```{r}
 # first combine pollen and nectar foraging into a single value
 count_time$allforaging <- count_time$nectarforaging + count_time$pollenforaging
@@ -1394,9 +1400,8 @@ write.csv(count_nestsEarly, "../Data/filtData/count_nestsTime.csv")
 ```
 
 ## filter bee data at early and late timepoints
-bees with threshold number of observations at early OR late timepoints
-count_beesEarly
-count_beesLate
+    bees with threshold number of observations at early OR late timepoints
+write count_beesLowTime
 ```{r}
 # filter out unknown bees (these bees have NA natal colony b/c they are unidentified)
 identifiedBeesTime <- count_time[!is.na(count_time$natal),]
@@ -1424,7 +1429,7 @@ print(paste(nrow(count_time[count_time$timepoint == "late",]) - nrow(identifiedB
 print(paste(nrow(identifiedBeesTime[identifiedBeesTime$timepoint == "late",]) - nrow(count_beesLate), "identified late bees were filtered out because they had fewer than 3 recorded observations.", sep = " "))
 
 # save for future analyses
-write.csv(count_beesTime, "../Data/filtData/count_beesTime.csv")
+# count_beesTime manipulated in downstream analyses (shannon calculations) --> write count_beesTime downstream 
 write.csv(count_beesLowTime, "../Data/filtData/count_beesLowTime.csv")
 ```
 
@@ -1461,6 +1466,7 @@ ggplot(count_bees, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
 ggsave("../figures/shannonVSnBehavs.jpg")
 ```
 ### bee shannon over time
+add shannon and shanDist columns to count_beesTime df
 ```{r}
 count_beesTime
 
@@ -1513,18 +1519,19 @@ count_beesTime[!is.na(count_beesTime$shanDist),]
 
 ### bee specialization
 add specBehav and specProp columns to count_bees df
+write count_bees
 ```{r}
 # define shannon threshold under which represents a specialist
 shannonSpecialist <- 0.6
 
 # define number of columns before behaviors in the count_bees df
-skip <- 9
+skip <- 8
 # make a column for behavioral specialization
 count_bees$specBehav <- NA
 count_bees$specProp <- NA
 
 for (i in 1:nrow(count_bees)) {
-  # if the bee is a specialist (i.e. shannon >= threshold)
+  # if the bee is a specialist (i.e. shannon <= threshold)
   if (count_bees$shannon[i] <= shannonSpecialist) {
     # name the behavior that each individual specialized in: column index of max number of behaviors + skip columns
     behavior <- names(count_bees[skip + max.col(count_bees[i, c("nectarforaging", "feedsbrood", "pollenforaging", "egglaying")])])
@@ -1537,13 +1544,19 @@ for (i in 1:nrow(count_bees)) {
   if (count_bees$shannon[i] > shannonSpecialist) {
     # name the behavior as generalist
     count_bees$specBehav[i] <- "generalist"
-    # keep proportion as NA (do nothing)
+    # keep proportion as NA
+    count_bees$specProp[i] <- NA
   }
 }
 
 # check the minimum proportion of behaviors carried out by specialists for this given shannon threshold
+count_bees$specProp <- as.numeric(count_bees$specProp)
 minSpecProp <- min(count_bees$specProp, na.rm = TRUE)
 print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
+
+# save for future analyses
+write.csv(count_bees, "../Data/filtData/count_bees.csv")
+
 
 ####
 
@@ -1589,6 +1602,8 @@ ggplot(nSpec, aes(nBeesPerNest, specBehav)) +
 ggsave("../figures/nSpecialists.jpg")
 ```
 ### bee specialization over time 
+add specBehav and specProp columns to count_beesTime df
+write count_beesTime
 ```{r}
 count_beesTime
 
@@ -1617,8 +1632,12 @@ for (i in 1:nrow(count_beesTime)) {
 }
 
 # check the minimum proportion of behaviors carried out by specialists for this given shannon threshold
+count_beesTime$specProp <- as.numeric(count_beesTime$specProp)
 minSpecProp <- min(count_beesTime$specProp, na.rm = TRUE)
 print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
+
+# write for future analyses
+write.csv(count_beesTime, "../Data/filtData/count_beesTime.csv")
 
 ####
 
@@ -1635,7 +1654,7 @@ colnames(nSpecTime) <- c("nestID", "nestTYPE", "timepoint", "specBehav", "nBeesP
 # repeat the behaviors over in specBehav column
 nSpecTime$specBehav <- c("nectarforaging", "feedsbrood", "pollenforaging", "generalist", "nectarforaging", "feedsbrood", "pollenforaging", "generalist")
 # repeat the timepoints over in timepoint column
-nSpecTime$timepoint <- c("early", "late")
+nSpecTime$timepoint <- c("early", "early", "early", "early", "late", "late", "late", "late")
 # set number of specialists to 0
 nSpecTime$nBeesPerNest <- 0
 # fill nestID with nCat x each nest id (one for each behavior)
@@ -1662,8 +1681,8 @@ for (i in 1:nrow(nSpecTime_missing0)) {
 nSpecTime$nestTYPE <- substr(nSpecTime$nestID, start = 1, stop = 2)
 nSpecTime$nestTYPE <- ordered(nSpecTime$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 nSpecTime$specBehav <- ordered(nSpecTime$specBehav, levels = c("generalist", "pollenforaging", "nectarforaging", "feedsbrood", "egglaying"))
-
-ggplot(nSpecT, aes(nBeesPerNest, specBehav, shape = timepoint)) +
+nSpecTime
+ggplot(nSpecTime, aes(nBeesPerNest, specBehav, shape = timepoint)) +
   geom_point(position = position_jitter(width=0.18, height=0.2), alpha = 0.7, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5)
@@ -1673,6 +1692,7 @@ ggsave("../figures/nSpecialistsTIME.jpg")
 ## task shannon
 add shannon column to count_nests df
  ** do we need to include bees that did not carry out any behaviors here? with a 0 value for count?
+write taskShan
 ```{r}
 count_nests
 
@@ -1707,6 +1727,9 @@ taskShan$nestTYPE <- substr(taskShan$nestID, start = 1, stop = 2)
 # remove na row
 taskShan <- taskShan[!is.na(taskShan$shannon),]
 
+# write the file for future analyses
+write.csv(taskShan, "../Data/filtData/taskShan.csv")
+
 # plot it
 ggplot(taskShan, aes(shannon, behav)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
@@ -1720,6 +1743,7 @@ ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
 ggsave("../figures/taskShanVSnBehavs.jpg")
 ```
 ### task shannon over time
+write taskShanTime
 ```{r}
 count_nestsTime
 
@@ -1805,6 +1829,9 @@ for (i in 1:nrow(taskShanTime)) {                                               
     }
   }
 }
+
+# save the file for future analyses
+write.csv(taskShanTime, "../Data/filtData/taskShanTime.csv")
 
 # plot the change in shannon from early to late
 avgShannDist <- taskShanTime %>% dplyr::summarize(avg = mean(shanDist, na.rm = T)) %>% dplyr::pull(avg)
