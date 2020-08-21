@@ -1,0 +1,41 @@
+---
+title: "dataframeInfo"
+author: "ES"
+date: "8/21/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+LIST OF ALL DATAFRAMES PRODUCED IN THE CLEANDATA FILE AND WHAT THEY CONTAIN
+
+All dataframes produced from the clean data file are filtered with the following steps:
+1. remove all data from "bad sample" nests. these include nests where the queen or several workers died, food was not replaced, or for some other reason are unusable
+2. remove all data from nests that contain less than a threshold duration of total video (threshold defined in the cleanData file)
+
+# camDur
+camDur contains the duration in seconds of video watched for all nests, split out by early, late, nest, and foraging
+  rows: 
+      one row per nestID
+  columns:
+      nestID = nestID
+      forLen = seconds of total foraging video
+      nestLen = seconds of total nest video
+      totalLen = seconds of total video
+      FNratio = ratio of foraging to nest video
+      earlyFor = seconds of early foraging video
+      earlyNest = seconds of early nest video
+      lateFor = seconds of late foraging video
+      lateNest = seconds of late nest video
+      earlyLen = seconds of early video
+      lateLen = seconds of late video
+      
+# obs_data
+
+# count_data
+
+# prop_data
+
+# taskShan
