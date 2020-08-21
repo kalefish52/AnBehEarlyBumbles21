@@ -1178,7 +1178,7 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
 
 
 
-# Filter and Save Data
+# Filter Data
 
 ## filter all data based on nest with threshold duration of video watched
     filter to include only nests that have passed a threshold amount of video watched
@@ -1434,9 +1434,9 @@ write.csv(count_beesLowTime, "../Data/filtData/count_beesLowTime.csv")
 ```
 
 
-# .
-# .
-# .
+#.
+#.
+#.
 
 
 # Calculate Shannon Indices
@@ -1844,3 +1844,47 @@ ggplot(taskShanTime, aes(shanDist, behav)) +
   labs(x = "change in shannon index from early to late timepoint")
 ggsave("../figures/shanDistBehav.jpg")
 ```
+
+
+# .
+# .
+# .
+
+
+# Calculate Proportions
+## convert count_bees to proportions
+write prop_bees
+```{r}
+# rename to reflect manipulations
+prop_bees <- count_bees
+
+# for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
+for (i in 1:nrow(count_bees)) {
+  count_bees$nectarforaging[i] <- count_bees$nectarforaging[i] / count_bees$nBehavs[i]
+  count_bees$pollenforaging[i] <- count_bees$pollenforaging[i] / count_bees$nBehavs[i]
+  count_bees$feedsbrood[i] <- count_bees$feedsbrood[i] / count_bees$nBehavs[i]
+  count_bees$egglaying[i] <- count_bees$egglaying[i] / count_bees$nBehavs[i]
+}
+
+# save for later analyses
+write.csv(prop_bees, "../Data/filtData/prop_bees.csv")
+```
+## convert count_beesTime to proportions
+write prop_beesTime
+```{r}
+# rename to reflect manipulations
+prop_beesTime <- count_beesTime
+
+# for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
+for (i in 1:nrow(count_beesTime)) {
+  count_beesTime$nectarforaging[i] <- count_beesTime$nectarforaging[i] / count_beesTime$nBehavs[i]
+  count_beesTime$pollenforaging[i] <- count_beesTime$pollenforaging[i] / count_beesTime$nBehavs[i]
+  count_beesTime$feedsbrood[i] <- count_beesTime$feedsbrood[i] / count_beesTime$nBehavs[i]
+}
+
+# save for later analyses
+write.csv(prop_beesTime, "../Data/filtData/prop_beesTime.csv")
+```
+
+
+
