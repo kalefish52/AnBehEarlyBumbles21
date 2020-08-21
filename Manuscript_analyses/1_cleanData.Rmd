@@ -1088,7 +1088,7 @@ late_data$timepoint <- "late"
 totalLen_time <- rbind(early_data, late_data)
 totalLen_time
 # create empty dataframe to put length into
-dateDur <- data.frame(nestID = NA,
+camDurTime <- data.frame(nestID = NA,
                       nestTYPE = NA,
                       early_forSum = NA,
                       late_forSum = NA,
@@ -1109,24 +1109,49 @@ for (i in 1:length(unique(totalLen_time$nestID))) {
   nestSum <- sum(nest_data$totalLen)                                           # sum the video duration of all nest videos
   early_nestSum <- sum(early_nest_data$totalLen)                               # sum the video duration of all early nest videos
   late_nestSum <- sum(late_nest_data$totalLen)                                      # sum the video duration of all late nest videos
-  dateDur <- rbind(dateDur, c(sub_data$nestID[1], sub_data$nestTYPE[1], early_forSum, late_forSum, early_nestSum, late_nestSum, totalSum)) # add the sum totals to the dateDur df
+  camDurTime <- rbind(camDurTime, c(sub_data$nestID[1], sub_data$nestTYPE[1], early_forSum, late_forSum, early_nestSum, late_nestSum, totalSum)) # add the sum totals to the camDurTime df
 }
 
 # remove NA row initially created
-dateDur <- dateDur[2:nrow(dateDur),]
-dateDur
+camDurTime <- camDurTime[2:nrow(camDurTime),]
+camDurTime
+
+# combine with camDur df and save for future analyses
+camDur$earlyLen <- NA
+camDur$lateLen <- NA
+camDur$earlyFor <- NA
+camDur$earlyNest <- NA
+camDur$lateFor <- NA
+camDur$lateNest <- NA
+camDurTime$early_nestSum <- as.numeric(camDurTime$early_nestSum)
+camDurTime$early_forSum <- as.numeric(camDurTime$early_forSum)
+camDurTime$late_forSum <- as.numeric(camDurTime$late_forSum)
+camDurTime$late_nestSum <- as.numeric(camDurTime$late_nestSum)
+for (i in (1:nrow(camDur))) {
+  for (j in (1:nrow(camDurTime))) {
+    if (camDur$nestID[i] == camDurTime$nestID[j]) {
+      camDur$earlyLen[i] <- camDurTime$early_forSum[j] + camDurTime$early_nestSum[j]
+      camDur$lateLen[i] <- camDurTime$early_forSum[j] + camDurTime$late_nestSum[j]
+      camDur$earlyFor[i] <- camDurTime$early_forSum[j]
+      camDur$earlyNest[i] <- camDurTime$early_nestSum[j]
+      camDur$lateFor[i] <- camDurTime$late_forSum[j]
+      camDur$lateNest[i] <- camDurTime$late_nestSum[j]
+    }
+  }
+}
+write.csv(camDur, "../Data/filtData/camDur.csv")
 
 # gather sums into a single column to graph together
-dateDur <- dateDur %>%
+camDurTime <- camDurTime %>%
   gather(early_nestSum, late_nestSum, early_forSum, late_forSum, 
          key = "videoType", 
          value = "length")
 
-dateDur$videoType <- factor(dateDur$videoType, levels = c("early_forSum", "late_forSum", "early_nestSum", "late_nestSum"))
-dateDur$length <- as.numeric(dateDur$length)
+camDurTime$videoType <- factor(camDurTime$videoType, levels = c("early_forSum", "late_forSum", "early_nestSum", "late_nestSum"))
+camDurTime$length <- as.numeric(camDurTime$length)
 
 # proportion of early to late for NF
-sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NF")
+sumsTOTAL <- camDurTime %>%  filter(nestTYPE=="NF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
@@ -1134,7 +1159,7 @@ sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) +
   ggtitle("duration of video watched for all NF filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for NT
-sumsTOTAL <- dateDur %>%  filter(nestTYPE=="NT")
+sumsTOTAL <- camDurTime %>%  filter(nestTYPE=="NT")
 sumsTOTAL$length <- as.numeric(sumsTOTAL$length)
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
@@ -1143,7 +1168,7 @@ sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) +
   ggtitle("duration of video watched for all NT filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for QT
-sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QT")
+sumsTOTAL <- camDurTime %>%  filter(nestTYPE=="QT")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
@@ -1151,7 +1176,7 @@ sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) +
   ggtitle("duration of video watched for all QT filtered nests, regardless of video duration threshold")
 
 # proportion of early to late for QF
-sumsTOTAL <- dateDur %>%  filter(nestTYPE=="QF")
+sumsTOTAL <- camDurTime %>%  filter(nestTYPE=="QF")
 sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) + 
               geom_bar(stat="identity", position = position_dodge()) + 
               scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
@@ -1159,7 +1184,7 @@ sumsTOTAL %>% ggplot(aes(x=nestID, y=length, fill=videoType)) +
   ggtitle("duration of video watched for all QF filtered nests, regardless of video duration threshold")
 
 # all nests individually
-sumsTOTAL <- dateDur %>% group_by(nestID, videoType)
+sumsTOTAL <- camDurTime %>% group_by(nestID, videoType)
 ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   geom_bar(stat ="identity") + 
   scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
@@ -1167,7 +1192,7 @@ ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
   ggtitle("duration of video watched for all filtered nests, regardless of video duration threshold")
 
 # all nests by group
-sumsTYPE <- dateDur %>% group_by(nestTYPE)
+sumsTYPE <- camDurTime %>% group_by(nestTYPE)
 ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
