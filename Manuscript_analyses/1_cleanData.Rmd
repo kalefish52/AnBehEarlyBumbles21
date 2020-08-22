@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load Packages
 ```{r}
 library(tidyverse)# piping, subset and filtering
+library(plyr)
 library(dplyr)    # subset, summarize, and filter
 library(ggplot2)  # graphs
 library(vegan)    # shannon diversity function
