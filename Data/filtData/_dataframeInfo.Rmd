@@ -9,15 +9,24 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-LIST OF ALL DATAFRAMES PRODUCED IN THE CLEANDATA FILE AND WHAT THEY CONTAIN
+All dataframes produced from the clean data file are filtered with the following minimum steps:
 
-All dataframes produced from the clean data file are filtered with the following steps:
-1. remove all data from "bad sample" nests. these include nests where the queen or several workers died, food was not replaced, or for some other reason are unusable
-2. remove all data from nests that contain less than a threshold duration of total video (threshold defined in the cleanData file)
+1. removed all data from "bad sample" nests. these include nests where the queen 
+   or several workers died, food was not replaced, or for some other reason are 
+   unusable
+2. removed all data from nests that contain less than a threshold duration of 
+   total video (threshold defined in the cleanData file)
+3. removed all foraging events <10 seconds long (poop trips)
+4. removed all nest observations past the 5 minute mark
+
+Any additional filtering is noted below
 
 # camDur
-camDur contains the duration in seconds of video watched for all nests, split out by early, late, nest, and foraging
-  rows: 
+--no additional filtering
+camDur contains the duration in seconds of video watched for all nests, split 
+out by early, late, nest, and foraging
+  
+  rows: rows represent individual nests
       one row per nestID
   columns:
       nestID = nestID
@@ -33,8 +42,96 @@ camDur contains the duration in seconds of video watched for all nests, split ou
       lateLen = seconds of late video
       
 # obs_data
+--no additional filtering
+obs_data contains observation information in the format of boris downloads, with bees with 0 observations added on. it includes all bees in the experiment -- including identified bees with observations, unidentified bees with observations, and bees without observations, including bees that died at some point or were replaced throughout the experiment
 
+  rows: rows represent individual observations of individual bees
+      one or more rows per bee (at least 1 row for EVERY bee). bees with 0-1 
+      observations have a single row in the df, bees with >1 observations have 
+      the same number of rows as observations
+  columns:
+      obsID = observation ID (boris output, eg., "nest NF12 20180627 20")
+      obsDate = date and of camera observation
+      totalLen = seconds in that video observation (eg., 300)
+      beeID = combined nestID and beeID for the bee (eg., NF0182), unidentified
+              bees are in the format "NF01unknown"
+      behav = behavior observed (eg., feedsbrood)
+      start = time relative to the beginning of the video that the behavior
+              began
+      stop = time relative to the beginning of the video that the behavior ends
+      dur = duration of the behavior (feedsbrood duration = 1)
+      camID = nest or foraging camera, "non" if unknown
+      nestID = nestID
+      dateID = date of camera observation in the format YYYYmmdd
+      hourID = time of the camera observation (hour only, eg., "3", "17")
+      caste = caste of bee, W or Q. all unidentified bees marked W
+      nestTYPE = nest type
+      natal = natal colony for that bee (unknown bees marked NA)
+      beeType = original bee ("orig") or replacement bee ("replac") if added 
+                later (unknown bees marked NA)
+      addDate = date of addition to the nest, if replacement bee, YYYYmmdd
+      diedDate = date of death, if the bee died during the experiment, YYYYmmdd
+
+## obs_time
+--filtered to remove bees with 0 recorded behaviors
+obs_time is in the same format as obs_data, but only includes bees with recorded observations, including unidentified bees (*bees with 0 observations are not included in this df). for each observation, timepoint information (early or late) is included as a column
+
+  rows: rows represent individual observations of individual bees
+      one or more rows per bee, # rows per bee = # observations per bee
+  columns: columns are identical to obs_data, with the addition of timepoint
+      timepoint = whether the observatiton occured in the first ("early") or
+                  second ("late") bout of video watching
+                  
 # count_data
+--no additional filtering
+count_data summarizes (counts) the number of observations of each behavior per bee and includes all known information about the bees (eg., ovary data and body size as well - note that we do not have ovary data for queens). it includes all bees in the experiment -- including identified bees with observations, unidentified bees with observations, and bees without observations, including bees that died at some point or were replaced throughout the experiment
+
+  rows: rows represent individual bees
+      one row per bee
+  columns: columns summarize all known information about each bee
+      nestID = nestID
+      nestTYPE = nest type
+      beeID = combined nestID and beeID for the bee (eg., NF0182), unidentified
+              bees are in the format "NF01unknown"
+      caste = caste of bee, W or Q. all unidentified bees marked W
+      natal = natal colony for that bee (unknown bees marked NA)
+      addDate = date of addition to the nest, if replacement bee, YYYYmmdd
+      diedDate = date of death, if the bee died during the experiment, YYYYmmdd
+      nectarforaging = number of observed instances of nectar foraging by this
+                       bee
+      feedsbrood = number of observed instances of brood feeding by this bee
+      pollenforaging = number of observed instances of pollen foraging by this 
+                       bee
+      egglayinng = number of observed instances of egg laying by this bee
+      nBehavs = total number of observed behaviors by this bee
+      size = average marginal wing cell size for this bee
+      ovL1 = length of the longest oocyte on the first ovary
+      ovL2 = length of the longest oocyte on the second ovary
+      ovR1 = resorption status of the longest oocyte on the first ovary 
+             (1 = resorbed, 0 = not resorbed)
+      ovR2 = resorption status of the longest oocyte on the second ovary 
+             (1 = resorbed, 0 = not resorbed)
+      ovS1 = developmental stage of the longest oocyte on the first ovary 
+             (resorbed oocytes are entered as stage 4)
+      ovS2 = developmental stage of the longest oocyte on the second ovary
+             (resorbed oocytes are entered as stage 4)
+             
+## count_time
+-- filtered to remove bees with 0 recorded behaviors
+count_time is made from obs_time, and put into the same format as count_data, split out by timepoint.
+
+  rows: rows represent individual bees
+      one row per bee per timepoint that it has recorded behaviors (eg., if 
+      bee NF0284 has 8 observations at the early timepoint and 0 observations
+      at the late timepoint, there will only be a single row for this bee)
+  columns: same as count_data with the addition of timepoint
+      timepoint = whether the observatitons occured in the first ("early") or
+                  second ("late") bout of video watching
+
+
+## count_bees
+--filtered to remove bees with < 3 total recorded  behaviors
+
 
 # prop_data
 
