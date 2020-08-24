@@ -1,0 +1,145 @@
+---
+title: "nmds"
+author: "ES"
+date: "7/30/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(cluster)  # clustering algorithms
+library(factoextra)
+library(vegan) 
+library(lme4)
+library(plotly)
+library(effects)  # plot output of glmm
+library(MuMIn)    # model.sel
+```
+
+# load data
+```{r}
+# pooled data across timepoints, values are counts
+# includes all bees, but only known bees with >=3 observations have shannon values
+count_data <- read.csv("../Data/filtData/count_data.csv") 
+```
+
+# NMDS on all pooled data
+```{r}
+# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
+nmds_data <- count_data[!is.na(count_data$shannon),]
+
+# make matrix of only behavior counts for all timepoints
+nmds_m <- as.matrix(nmds_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+
+# Run NMDS with euclidean distance
+nmds_scores <- metaMDS(nmds_m)
+plot(nmds_scores)
+
+# Gets NMDS info for each behavior
+behav_scores <- as.data.frame(scores(nmds_scores, "species"))
+behav_scores$behav <- rownames(behav_scores)
+behav_scores
+
+# merge bee NMDS info into nmds_data
+nmds_scores <- as.data.frame(scores(nmds_scores))
+nmds_data <- cbind(nmds_data, nmds_scores)
+
+nmds_data$nestTYPE <- ordered(nmds_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_data
+
+# Plot it using ggplot
+ggplot() + 
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = caste, color = nestTYPE), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_shape_manual(values = c(21, 16)) +
+  geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsAll.jpg")
+```
+
+# plot specialists onto nmds plot
+```{r}
+nmds_data$specBehav <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+
+# Plot it using ggplot
+ggplot() + 
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = caste, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  scale_shape_manual(values = c(21, 16)) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
+  geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2)) +
+  labs(color = "specialist")
+ggsave("../figures/nmdsSpec.jpg")
+```
+
+
+# plot nmds with heat map of ovary stage WORKERS ONLY
+```{r}
+# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
+nmds_worker <- count_data[!is.na(count_data$shannon),]
+nmds_worker <- nmds_worker[nmds_worker$caste == "W",]
+
+# make matrix of only behavior counts for all timepoints
+nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+
+# Run NMDS with euclidean distance
+nmds_Wscores <- metaMDS(nmds_wM)
+plot(nmds_Wscores)
+
+# Gets NMDS info for each behavior
+behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
+behav_Wscores$behav <- rownames(behav_Wscores)
+behav_Wscores
+
+# merge bee NMDS info into nmds_worker
+nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
+nmds_worker <- cbind(nmds_worker, nmds_Wscores)
+
+nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_worker
+
+# plot ovary stage onto nmds
+ggplot() + 
+  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = avgStage), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "blue") + 
+  geom_text(data=behav_Wscores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsOVARY.jpg")
+
+# plot ovary stage by egg laying
+ggplot() +
+  geom_point(data = nmds_worker, aes(x = egglaying, y = avgStage, color = avgStage), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.5) +
+    scale_colour_gradient(low = "yellow", high = "blue") 
+ggsave("../figures/eggOVARY.jpg")
+
+# plot body size onto nmds
+ggplot() + 
+  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = size), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "red") + 
+  geom_text(data=behav_Wscores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsSIZE.jpg")
+
+# plot body size by egg laying
+ggplot() +
+  geom_point(data = nmds_worker, aes(x = egglaying, y = size, color = size), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.2) + 
+    scale_colour_gradient(low = "yellow", high = "red")
+ggsave("../figures/eggSIZE.jpg")
+```
+
+
+
+
+
+
+

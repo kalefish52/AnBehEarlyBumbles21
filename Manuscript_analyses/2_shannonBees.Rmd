@@ -1,5 +1,5 @@
 ---
-title: "count_bees"
+title: "shannonBees"
 author: "ES"
 date: "7/17/2020"
 output: pdf_document
@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # load packages
 ```{r, echo = FALSE}
-library(vegan)    # shannon diversity function
 library(ggplot2)  # plots
 library(ggpubr)   # ggdensity plots
 library(lme4)     # glmms
@@ -24,16 +23,18 @@ library(MuMIn)    # model.sel
 # load data
 ```{r}
 # pooled data across timepoints, values are counts
-# only includes bees with >=3 observations, regardless of # observations per nest
-count_bees <- read.csv("../Data/filtData/count_bees.csv")
+# includes all bees, but only known bees with >=3 observations have shannon values
+count_data <- read.csv("../Data/filtData/count_data.csv")
 
-# split across timepoints, bees with >=3 observations, regardless of # observations per nest
-# some bees are only included in early (and not late) and vice versa 
-count_beesTime <- ("../Data/filtData/count_beesTime.csv")
+# split across timepoints, includes all bees, but only known bees with >=3 observations have shannon values
+count_time <- read.csv("../Data/filtData/count_time.csv")
 ```
 
 # two part model on pooled shannon across nestTYPES
 ```{r}
+# remove NA shannon values
+count_bees <- count_data[!is.na(count_data$shannon),]
+
 # make a new column for over or under 0
 count_bees$shan0 <- NA
 # if shannon = 0, shan0 = 1
@@ -110,6 +111,9 @@ hist(modelResiduals)
 
 # glmms on early vs. late shannons
 ```{r}
+# remove NA shannon values
+count_beesTime <- count_time[!is.na(count_time$shannon),]
+
 # two part model
 # make a new column for over or under 0
 count_beesTime$shan0 <- NA
@@ -251,11 +255,14 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 # tally specialists switching across timepoints
 ```{r}
 # condense df so each bee is one row with early/late specializations as separate columns
-specSwitch <- pivot_wider(data = count_beesTime, 
+specSwitch <- pivot_wider(data = count_time, 
                           id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal"),
                           names_from = timepoint,
                           values_from = specBehav)
+# remove unknown bees, which we don't want to include in this analysis
+specSwitch <- specSwitch[!grepl("unknown", specSwitch$beeID),]
 specSwitch
+
 # tally switches
 ## rename NA to "lazy"
 specSwitch[is.na(specSwitch$early), "early"] <- "lazy"
@@ -357,17 +364,4 @@ for(i in 1:nrow(specSwitch)) {
   }
 }
 tallySwitches
-
-## add bees who were lazy at both timepoints
-allBees <- read.csv("../Data/allBees.csv")
-## remove unknown bees
-allBees <- allBees[allBees$beeID != "unknown",]
-## combine beeID and nestID to use unique identifier
-allBees$beeID <- paste0(allBees$nestID, allBees$beeID)
-## filter allBees to look only at bees not included in specSwitch df (these are the bees w/o obs at either timepoint -- i.e.-- lazy-lazy)
-lazylazy <- allBees %>% filter(!beeID %in% specSwitch$beeID)
-## add the number of lazylazy bees to the tallySwitches df
-tallySwitches["lazy","lazy"] <- nrow(lazylazy)
-tallySwitches
-write.csv(tallySwitches, "../Data/tallySwitches.csv")
 ```
