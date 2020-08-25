@@ -1,0 +1,146 @@
+---
+title: "shannonTasks"
+author: "ES"
+date: "7/27/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# load packages
+```{r, echo = FALSE}
+library(ggplot2)  # plots
+library(ggpubr)   # ggdensity plots
+library(lme4)     # glmms
+library(sjPlot)   # model summary
+library(multcomp) # tukey tests
+library(lsmeans)  # ls means posthoc tests
+```
+
+# load data
+```{r}
+taskShan <- read.csv("../Data/filtData/taskShan.csv")
+taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
+```
+
+# glmms on pooled shannon across nestTYPEs
+```{r}
+# much closer to normal than bee shannons, maybe okay to do a single model rather than two-part?
+ggdensity(taskShan$shannon)
+qqp(taskShan$shannon, "norm")
+taskShan
+
+# need to add natal colony as random effect
+ps0 <- glmer(shannon ~1 + (1|nestID),
+              data = taskShan)
+ps1 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID),
+              data = taskShan)
+ps2 <- glmer(shannon ~ behav + nestTYPE + (1|nestID),
+              data = taskShan)
+ps3 <- glmer(shannon ~ behav + nBehav + (1|nestID),
+              data = taskShan)
+ps4 <- glmer(shannon ~ nestTYPE + nBehav + (1|nestID),
+              data = taskShan)
+ps5 <- glmer(shannon ~ behav + (1|nestID),
+              data = taskShan)
+ps6 <- glmer(shannon ~ nestTYPE + (1|nestID),
+              data = taskShan)
+ps7 <- glmer(shannon ~ nBehav + (1|nestID),
+              data = taskShan)
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
+
+mymodel <- ps3
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+# glmms on early vs. late shannons
+```{r}
+# it's not really normal... not sure what distribution to use
+ggdensity(taskShanTime$shannon)
+qqp(taskShanTime$shannon, "norm")
+
+# need to add natal colony as random effect
+ts0 <- glmer(shannon ~ 1 + (1|nestID),
+              data = taskShanTime)
+ts1 <- glmer(shannon ~ timepoint*behav + nBehav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts2 <- glmer(shannon ~ timepoint*behav + nBehav + (1|nestID),
+              data = taskShanTime)
+ts3 <- glmer(shannon ~ timepoint*behav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts4 <- glmer(shannon ~ timepoint + nBehav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts5 <- glmer(shannon ~ behav + nBehav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts6 <- glmer(shannon ~ timepoint*behav + (1|nestID),
+              data = taskShanTime)
+ts7 <- glmer(shannon ~ timepoint + nBehav + (1|nestID),
+              data = taskShanTime)
+ts8 <- glmer(shannon ~ behav + nBehav + (1|nestID),
+              data = taskShanTime)
+ts9 <- glmer(shannon ~ timepoint + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts10 <- glmer(shannon ~ behav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts11 <- glmer(shannon ~ nBehav + nestTYPE + (1|nestID),
+              data = taskShanTime)
+ts12 <- glmer(shannon ~ timepoint + (1|nestID),
+              data = taskShanTime)
+ts13 <- glmer(shannon ~ behav + (1|nestID),
+              data = taskShanTime)
+ts14 <- glmer(shannon ~ nBehav + (1|nestID),
+              data = taskShanTime)
+ts15 <- glmer(shannon ~ nestTYPE + (1|nestID),
+              data = taskShanTime)
+model.sel(ts1, ts2, ts3, ts4, ts5, ts6, ts7, ts8, ts9, ts10, ts11, ts12, ts13, ts14, ts15)
+
+mymodel <- ts8
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+# glmms on change in shannon across timepoints
+```{r}
+# pretty normal
+ggdensity(taskShanTime$shanDist)
+qqp(taskShanTime$shanDist, "norm")
+taskShanTime
+# need to add natal colony as random effect
+cs0 <- glmer(shanDist ~ 1 + (1|nestID),
+              data = taskShanTime)
+cs1 <- glmer(shanDist ~ nestTYPE + behav + (1|nestID),
+              data = taskShanTime)
+cs2 <- glmer(shanDist ~ nestTYPE + (1|nestID),
+              data = taskShanTime)
+cs3 <- glmer(shanDist ~ behav + (1|nestID),
+              data = taskShanTime)
+model.sel(cs0, cs1, cs2, cs3)
+mymodel <- cs3
+
+tab_model(mymodel)
+
+posthoc2 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc2)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```

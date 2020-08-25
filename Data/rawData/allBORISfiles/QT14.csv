@@ -1,0 +1,26 @@
+,,Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 1 (5),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 2 (17),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42),Worker 3 (42)
+,,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,nectarforaging,nectarforaging,nectarforaging,nectarforaging,nectarforaging,other,other,other,other,other,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,nectarforaging,nectarforaging,nectarforaging,nectarforaging,nectarforaging,other,other,other,other,other,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,nectarforaging,nectarforaging,nectarforaging,nectarforaging,nectarforaging,other,other,other,other,other
+,Total length (s),Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time
+for	QT14	20181110	11,61.800,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181110	8,45.880,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181110	9,62.440,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181111	11,57.760,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181111	3,44.760,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181112	21,56.480,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181116	23	0.1075638197	,57.040,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181117	21,63.920,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181117	6,61.680,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22.674,1,22.674,0,0.368,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT14	20181118	1,85.400,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21.872,1,21.872,0,0.256,0,0,0,0,0
+for	QT14	20181118	10,61.040,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181110	11,63.730,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181110	8,63.230,0,0,0,0,0,0,0,0,0,0,24.253,1,24.253,0,0.384,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181111	0,67.680,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181111	3,65.450,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181111	4,61.640,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181112	21,73.360,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181117	1,66.590,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181117	21,71.770,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181117	6,67.050,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181118	1,86.820,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.000,1,0.000,0,0.000,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181118	10,69.500,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT14	20181118	21,70.140,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

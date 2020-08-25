@@ -17,11 +17,12 @@ Load in the cleaned data after running the CleanData file
 ```{r}
 ## set working directory to the git folder
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to where this doc lives (Manuscript_analyses)
+getwd()
 ```
 
 ```{r}
 ## assumes the working directory is the project folder ./SarroFisher
-count_data <- read.csv("./Data/countsanalysis.csv", sep = ",")
+count_data <- read.csv("../Data/countsanalysis.csv", sep = ",")
 count_data
 ```
 
@@ -53,7 +54,7 @@ run k means analysis
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 3
+k <- 4
 
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
