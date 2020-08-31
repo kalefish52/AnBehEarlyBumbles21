@@ -29,14 +29,24 @@ library(lsmeans)
 
 # load data
 ```{r}
-rptdata<-read.csv("../Data/filtData/prop_beesTime.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging)
+rptdata<-read.csv("../Data/filtData/count_time.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging)
 head(rptdata)
-obsdata<-read.csv("../Data/filtData/obs_time.csv") %>% select(beeID, camID)
 
-#How many observations (nest and for) did we do for each beeID? 
-obsdatascale<-obsdata %>% mutate(count=1) %>% group_by(beeID, camID) 
-obsdatascale %>% mutate(obsnum=sum(count))
+obsdata<-read.csv("../Data/filtData/obs_time.csv")%>% select(camID, nestID, dateID, hourID, timepoint)
 
+%>% distinct(camID,  nestID, dateID, hourID, timepoint)
+
+obsdata %>% filter(nestID=="QT15")
+
+unfilteredobs<-read.csv("../Data/obs_data.csv")
+unfilteredobs %>% filter(nestID=="NF03")
+#How many observations (nest and for) did we do for each nest? 
+obsdatascale<-obsdata %>% mutate(count=1) %>% group_by(nestID, camID) %>%mutate(obsnum=sum(count)) %>% select(!c(count, dateID, hourID)) %>% unique()
+obsdatascale 
+obsdata%>% filter(nestID=="QT15")
+fors<-obsdatascale %>% filter(camID=="for")
+fors
+full_join(rptdata, fors, by="nestID") %>% arrange(nestID) %>% select(nestID, beeID, timepoint, camID, obsnum)
 
 
 #How many observations do we have? (all, early, late)
