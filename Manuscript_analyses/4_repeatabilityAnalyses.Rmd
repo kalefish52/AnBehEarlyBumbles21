@@ -29,52 +29,58 @@ library(lsmeans)
 
 # load data
 ```{r}
-read.csv("../Data/filtData/count_time.csv")
+rptdata<-read.csv("../Data/filtData/prop_beesTime.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging)
+head(rptdata)
+obsdata<-read.csv("../Data/filtData/obs_time.csv") %>% select(beeID, camID)
+
+#How many observations (nest and for) did we do for each beeID? 
+obsdatascale<-obsdata %>% mutate(count=1) %>% group_by(beeID, camID) 
+obsdatascale %>% mutate(obsnum=sum(count))
+
 
 
 #How many observations do we have? (all, early, late)
-print(paste("There are", nrow(Allspecrpt), "rows"))
-Earlies<-Allspecrpt %>% filter(timepoint=="early") 
-Earlies
+print(paste("There are", nrow(rptdata), "rows"))
+Earlies<-rptdata %>% filter(timepoint=="early") 
 print(paste("There are", nrow(Earlies), "early rows"))
-Laties<-Allspecrpt%>% filter(timepoint=="late") 
+Laties<-rptdata%>% filter(timepoint=="late") 
 print(paste("There are", nrow(Laties), "late rows"))
 
-#Find rows that have only early or only late observations
-onlyearly<-anti_join(Earlies, Laties, by="beeID") %>% arrange(beeID)  
-
-
-earlyexclude<-as.vector(onlyearly$beeID) 
-onlylate<-anti_join(Laties,  Earlies, by="beeID") %>% arrange(beeID)
-lateexclude<-as.vector(onlylate$beeID)
-
-#Filter our rows that only have one timepoint
-Filteredrpt<-Allspecrpt %>% filter(!beeID %in% earlyexclude) %>% filter(!beeID %in% lateexclude)
-print(paste("There are", (nrow(Filteredrpt)/2), "individuals for repeatability analyses"))
-
 ```
-
-
-
+# Repeatability measurements and interpretation instructions 
 https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
+If 95% confidence intervals of random effect does not reach 0, this suggests that the behavior is repeatable 
+Individuals=grouping factor in our case 
+R^2 quantifies the proportion of variance explained by fixed effects 
+R=0 no variation is explained by the fixed effect 
+Adjusted repeatability: controls for fixed effects - any variance that is explained by the fixed effect is excluded from the denominator 
 ```{r}
 library(rptR)
 ```
 
-
-
-
-## Repeatability for proportion of behaviors (out of all behaviors except for egglaying)
+#Alternative to rptR 
+rptR is not working because the package supports a limited type of data distributions
+Instead, we will try to use the theory behind this package but with a more versatile package
 ```{r}
+library(lme4)
+head(rptdata)
 
-# Make nBehavs for all behaviors but excluding egglaying nFeedFor
-rpt_time<-rpt_time %>% mutate(nFeedFor=(feedsbrood+total_for))
-# Make proportion columns for each behavior
-rpt_prop<-rpt_time %>% mutate(propfb=(feedsbrood/nFeedFor)) %>% 
-  mutate(propn=(nectarforaging/nFeedFor)) %>% 
-  mutate(propp=pollenforaging/nFeedFor) %>% 
-  mutate(propt=total_for/nFeedFor)
+lmer_nectar<-glmer(nectarforaging~timepoint+(1|beeID), data=rptdata, family = binomial(link = "logit"))
+plot(lmer_nectar)
 
+hist(residuals(lmer_nectar))
+summary(lmer_nectar)
+
+rep_nectar<-tidy(lmer_nectar, effects="ran_pars", scales="vcov") %>% 
+  select(group, estimate) %>% 
+  spread(group, estimate) %>% 
+  mutate(repeatability=ID/(ID+Residual))
+```
+
+#Repeatability analyses for scaled proportions - poisson data type
+
+#Repeatability analyses for proportions with no scaling - proportion data type
+```{r}
 #Repeatability proportion brood feeding 
 hist(rpt_prop$propfb) # proportion distribution
 reppfb<- rpt(propfb ~ timepoint+(1|beeID)+(1|nestID),
@@ -107,25 +113,18 @@ reppf<- rpt(propp ~ timepoint+(1|beeID)+(1|nestID),
 summary(reppf)
 print(reppf)
 plot(reppf, cex.main = 1)
+```
+# Try with MCMM package as in Jolles et al.  2017
+```{r}
+
+library(MCMCglmm)
+library(rptR)
+
 
 
 
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
