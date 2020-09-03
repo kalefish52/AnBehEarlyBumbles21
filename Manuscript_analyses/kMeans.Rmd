@@ -12,18 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(plotly)
 ```
-## Load Data
-Load in the cleaned data after running the CleanData file
-```{r}
-## set working directory to the git folder
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # first set it to where this doc lives (Manuscript_analyses)
-getwd()
-```
 
+## Load Data
 ```{r}
-## assumes the working directory is the project folder ./SarroFisher
-count_data <- read.csv("../Data/countsanalysis.csv", sep = ",")
-count_data
+# pooled data across timepoints, values are counts
+# includes all bees, but only known bees with >=3 observations have shannon values
+count_data <- read.csv("../Data/filtData/count_data.csv")
+head(count_data)
 ```
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
@@ -35,8 +30,7 @@ set.seed(123)
 ## compute and plot total within sum of squares for 2-10 clusters
 k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
-count_data$totalForaging <- count_data$pollenforaging + count_data$nectarforaging
-data <- count_data[, c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging")]
+data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging")]
 
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
@@ -48,13 +42,14 @@ elbow <- plot(1:k.max, wss,
      ylab="Total within-clusters sum of squares")
 elbow
 ```
+
 run k means analysis
 ```{r}
 ## set random number generator seed for reproducibility
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 4
+k <- 2
 
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
@@ -65,22 +60,22 @@ test
 ```{r} 
 ## make cluster a factor so we can graph with it
 count_data$cluster <- as.factor(test$cluster)
-
+count_data
 ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
 ## make egg laying workers x 
 plot_ly(x = count_data$feedsbrood, 
-        y = count_data$egglaying, 
-        z = count_data$totalForaging, 
+        y = count_data$pollenforaging, 
+        z = count_data$nectarforaging, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_data$beeType, symbols = c('square', 'circle','o'),
+        symbol = count_data$caste, symbols = c('square', 'circle','o'),
         color = count_data$cluster) %>%
   layout(
     title = "k means clustering",
     scene = list(
       xaxis = list(title = "feedsbrood"),
-      yaxis = list(title = "egglaying"),
-      zaxis = list(title = "totalForaging"))
+      yaxis = list(title = "pollenforaging"),
+      zaxis = list(title = "nectarforaging"))
   )
 ```
                      
