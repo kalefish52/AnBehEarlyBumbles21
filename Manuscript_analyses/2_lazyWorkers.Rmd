@@ -42,6 +42,11 @@ nLaz$totalBees[nLaz$nestTYPE == "NF"] <- 5
 nLaz$totalBees[nLaz$nestTYPE == "QT"] <- 4
 nLaz$totalBees[nLaz$nestTYPE == "NT"] <- 3
 
+
+# add natal colony info 
+nataladd<-read.csv("../Data/nataladd.csv")
+nLaz<-left_join(nLaz, nataladd, by="nestID") %>% select(!c(X.x, X.y))
+
 nLaz
 ```
 
