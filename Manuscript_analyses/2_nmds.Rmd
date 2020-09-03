@@ -29,13 +29,14 @@ library(MuMIn)    # model.sel
 # pooled data across timepoints, values are counts
 # includes all bees, but only known bees with >=3 observations have shannon values
 count_data <- read.csv("../Data/filtData/count_data.csv") 
+
 ```
 
 # NMDS on all pooled data
 ```{r}
 # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
 nmds_data <- count_data[!is.na(count_data$shannon),]
-
+nmds_data
 # make matrix of only behavior counts for all timepoints
 nmds_m <- as.matrix(nmds_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
 
@@ -63,6 +64,63 @@ ggplot() +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
 ggsave("../figures/nmdsAll.jpg")
 ```
+
+# Does clustering change with time? 
+Look at NMDS at two time points and then 
+```{r}
+# Look at NMDS at two points
+nmds_time<-read.csv("../Data/filtData/count_time.csv") %>% 
+  select(nestID, nestTYPE, beeID, caste,  
+         shannon, specBehav, timepoint, nectarforaging, feedsbrood, pollenforaging)
+
+# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
+nmds_time<- nmds_time[!is.na(nmds_time$shannon),]
+nmds_time
+
+# make matrix of all behaviors except egg laying counts for all timepoints
+nmds_mT <- as.matrix(nmds_time[, c("feedsbrood", "nectarforaging", "pollenforaging")])
+nmds_mT
+
+# Run NMDS with euclidean distance
+nmds_scoresT <- metaMDS(nmds_mT)
+plot(nmds_scoresT)
+
+# Gets NMDS info for each behavior
+behav_scoresT <- as.data.frame(scores(nmds_scoresT, "species"))
+behav_scoresT$behav <- rownames(behav_scoresT)
+
+
+# merge bee NMDS info into nmds_data
+nmds_scoresT <- as.data.frame(scores(nmds_scoresT))
+nmds_dataT <- cbind(nmds_time, nmds_scoresT)
+
+nmds_dataT$nestTYPE <- ordered(nmds_dataT$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_dataT
+
+#Run analysis of similarity to see if variation is greater between time points than within time points
+anotime = anosim(nmds_mT, nmds_dataT$timepoint, distance = "euclidean", permutations = 9999)
+#ANOSIM is significant - to see where run anosims between different groups 
+anotime
+
+#################################
+#Remove nectar foraging 
+
+
+
+#################################
+# Plot it using ggplot
+ggplot() + 
+  geom_point(data=nmds_dataT, aes(x=NMDS1, y=NMDS2, shape = timepoint, color = nestTYPE), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_shape_manual(values = c(21, 16)) +
+  geom_text(data=behav_scoresT, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdstime.jpg")
+
+
+
+```
+
+
 
 # plot specialists onto nmds plot
 ```{r}
@@ -104,8 +162,8 @@ nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
 nmds_worker <- cbind(nmds_worker, nmds_Wscores)
 
 nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_worker <- nmds_worker %>% mutate(avgStage=((ovS1+ovS2)/2))
 nmds_worker
-
 # plot ovary stage onto nmds
 ggplot() + 
   geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = avgStage), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
