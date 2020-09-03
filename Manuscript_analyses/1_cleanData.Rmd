@@ -1848,6 +1848,11 @@ taskShanTime$nestTYPE <- substr(taskShanTime$nestID, start = 1, stop = 2)
 # remove na row
 taskShanTime <- taskShanTime[!is.na(taskShanTime$shannon),]
 
+#add natalcolony column 
+nataladd<-count_nests %>% select(nestID, natal)
+taskShanTime<-left_join(taskShanTime, nataladd,  by="nestID")
+
+
 # plot it
 ggplot(taskShanTime, aes(shannon, behav, shape = timepoint)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
