@@ -30,7 +30,8 @@ count_data <- read.csv("../Data/filtData/count_data.csv")
 count_time <- read.csv("../Data/filtData/count_time.csv")
 ```
 
-# two part model on pooled shannon across nestTYPES
+# How specialized are individuals? 
+## two part model on pooled shannon across nestTYPES
 ```{r}
 # remove NA shannon values
 count_bees <- count_data[!is.na(count_data$shannon),]
@@ -64,7 +65,7 @@ ps7 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
 ps8 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
               data = count_bees, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8)
-
+#Best model is ps5: AIC==117.1
 mymodel <- ps5
 tab_model(mymodel)
 # plot model residuals
@@ -107,9 +108,13 @@ tab_model(mymodel)
 # plot model residuals
 modelResiduals <- resid(mymodel, type = "pearson") # Extract standardized residuals 
 hist(modelResiduals)
+
+## Graph 
+
 ```
 
-# glmms on early vs. late shannons
+# How does average specialization change with time point?
+## glmms on early vs. late shannons
 ```{r}
 # remove NA shannon values
 count_beesTime <- count_time[!is.na(count_time$shannon),]
@@ -124,7 +129,6 @@ count_beesTime$shan0[count_beesTime$shannon > 0] <- 0
 
 
 # model 0 vs. >0 shannon values
-# need to add natal colony as random effect
 ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
               data = count_beesTime, family = binomial(link = "logit"))
 ps1 <- glmer(shan0 ~ timepoint + nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
@@ -161,24 +165,27 @@ ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
               data = count_beesTime, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
-mymodel <- ps15
+mymodel <- ps12
 tab_model(mymodel)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
 
 ################
 
 # make a new column that contains only shannon for bees with shannon > 0
 count_beesTime$shan1 <- NA
 count_beesTime$shan1[count_beesTime$shannon > 0] <- count_beesTime$shannon[count_beesTime$shannon > 0]
-# it's mostly normal
+# it's mostly normal  - i think so!
 hist(count_beesTime$shan1)
 qqp(count_beesTime$shan1, "norm")
 
 # model 0 vs. >0 shannon values
 # need to add natal colony as random effect
+#Run interactions?
 ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|natal),
               data = count_beesTime)
 ps1 <- glmer(shan1 ~ timepoint + nestTYPE + nBehavs + caste + (1|nestID) + (1|natal),
@@ -224,7 +231,8 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# glmms on change in shannon across timepoints
+# Does an individual's specialization change with time point? 
+## glmms on change in shannon across timepoints
 ```{r}
 # pretty normal
 ggdensity(count_beesTime$shanDist)
@@ -241,7 +249,7 @@ cs3 <- glmer(shanDist ~ caste + (1|nestID) + (1|natal),
               data = count_beesTime)
 model.sel(cs0, cs1, cs2, cs3)
 
-mymodel <- cs2
+mymodel <- cs0
 tab_model(mymodel)
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
