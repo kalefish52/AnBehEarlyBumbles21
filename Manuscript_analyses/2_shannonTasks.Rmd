@@ -23,31 +23,31 @@ library(lsmeans)  # ls means posthoc tests
 ```{r}
 taskShan <- read.csv("../Data/filtData/taskShan.csv")
 taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
+
 ```
 
 # glmms on pooled shannon across nestTYPEs
 ```{r}
-# much closer to normal than bee shannons, maybe okay to do a single model rather than two-part?
+# much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 
 ggdensity(taskShan$shannon)
 qqp(taskShan$shannon, "norm")
 taskShan
 
-# need to add natal colony as random effect
-ps0 <- glmer(shannon ~1 + (1|nestID),
+ps0 <- glmer(shannon ~1 + (1|nestID) + (1|natal),
               data = taskShan)
-ps1 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID),
+ps1 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID) + (1|natal),
               data = taskShan)
-ps2 <- glmer(shannon ~ behav + nestTYPE + (1|nestID),
+ps2 <- glmer(shannon ~ behav + nestTYPE + (1|nestID) + (1|natal),
               data = taskShan)
-ps3 <- glmer(shannon ~ behav + nBehav + (1|nestID),
+ps3 <- glmer(shannon ~ behav + nBehav + (1|nestID) + (1|natal),
               data = taskShan)
-ps4 <- glmer(shannon ~ nestTYPE + nBehav + (1|nestID),
+ps4 <- glmer(shannon ~ nestTYPE + nBehav + (1|nestID) + (1|natal),
               data = taskShan)
-ps5 <- glmer(shannon ~ behav + (1|nestID),
+ps5 <- glmer(shannon ~ behav + (1|nestID) + (1|natal),
               data = taskShan)
-ps6 <- glmer(shannon ~ nestTYPE + (1|nestID),
+ps6 <- glmer(shannon ~ nestTYPE + (1|nestID) + (1|natal),
               data = taskShan)
-ps7 <- glmer(shannon ~ nBehav + (1|nestID),
+ps7 <- glmer(shannon ~ nBehav + (1|nestID) + (1|natal),
               data = taskShan)
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
 
