@@ -1781,6 +1781,8 @@ ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.9, size = 1.8) +
   scale_shape_manual(values = c(16, 15, 21, 22))
 ggsave("../figures/taskShanVSnBehavs.jpg")
+
+
 ```
 ### task shannon over time
 write taskShanTime

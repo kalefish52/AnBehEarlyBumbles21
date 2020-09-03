@@ -26,7 +26,8 @@ taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
 
 ```
 
-# glmms on pooled shannon across nestTYPEs
+# How specialized are tasks? 
+## glmms on pooled shannon across nestTYPEs
 ```{r}
 # much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 
 ggdensity(taskShan$shannon)
@@ -63,7 +64,8 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# glmms on early vs. late shannons
+# How does average specialization change with time point? 
+## glmms on early vs. late shannons
 ```{r}
 # it's not really normal... not sure what distribution to use
 ggdensity(taskShanTime$shannon)
