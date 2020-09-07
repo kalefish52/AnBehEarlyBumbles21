@@ -19,6 +19,7 @@ library(plotly)
 # includes all bees, but only known bees with >=3 observations have shannon values
 count_data <- read.csv("../Data/filtData/count_data.csv")
 head(count_data)
+
 ```
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
@@ -77,5 +78,15 @@ plot_ly(x = count_data$feedsbrood,
       yaxis = list(title = "pollenforaging"),
       zaxis = list(title = "nectarforaging"))
   )
+
+#Plot counts of each cluster for each specBehav
+kcounts<-count_data %>% select(nestID, beeID, specBehav, cluster)
+head(kcounts)
+
+kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% select(specBehav, cluster, frequency) %>% unique()
+
+ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black")
+
 ```
                      
