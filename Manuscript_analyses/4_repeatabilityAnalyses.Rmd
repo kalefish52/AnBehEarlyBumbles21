@@ -27,16 +27,121 @@ library(MuMIn)
 library(lsmeans)
 ```
 
+# Repeatability measurements and interpretation instructions 
+https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
+If 95% confidence intervals of random effect does not reach 0, this suggests that the behavior is repeatable 
+Individuals=grouping factor in our case 
+R^2 quantifies the proportion of variance explained by fixed effects 
+R=0 no variation is explained by the fixed effect 
+Adjusted repeatability: controls for fixed effects - any variance that is explained by the fixed effect is excluded from the denominator 
+
+```{r}
+library(rptR)
+```
+
+
 # load data
 ```{r}
-rptdata<-read.csv("../Data/filtData/count_time.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging)
+rptdata<-read.csv("../Data/filtData/count_time.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav)
 head(rptdata)
 
-obsdata<-read.csv("../Data/filtData/obs_time.csv")%>% select(camID, nestID, dateID, hourID, timepoint)
+obsdata<-read.csv("../Data/filtData/obs_time.csv")%>% select(camID, nestID, dateID, hourID, timepoint)%>% distinct(camID,  nestID, dateID, hourID, timepoint)
 
-%>% distinct(camID,  nestID, dateID, hourID, timepoint)
 
-obsdata %>% filter(nestID=="QT15")
+```
+
+#Repeatability analyses for proportions - proportion data type
+```{r}
+# Add proportion columns 
+rpt_prop <- rptdata %>% 
+  mutate(propfb=feedsbrood/nBehavs) %>% 
+  mutate(propn=nectarforaging/nBehavs) %>% 
+  mutate(propp=pollenforaging/nBehavs) %>% 
+  mutate(propt=(pollenforaging+nectarforaging)/nBehavs)
+
+# Repeatability proportion brood feeding 
+hist(rpt_prop$propfb) # try gaussian
+reppfb<- rpt(propfb ~ timepoint+(1|beeID)+(1|nestID),
+            grname = c("beeID", "nestID"), data = rpt_prop, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(reppfb)
+print(reppfb)
+plot(reppfb, cex.main = 1)
+
+#Check model fit - residuals looks ok 
+lmfb<-lmer(propfb~timepoint+(1|beeID)+(1|nestID),  
+           data=rpt_prop)
+
+summary(lmfb)
+hist(residuals(lmfb))
+plot(fitted(lmfb), residuals(lmfb), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
+
+#Repeatability proportion nectar foraging
+reppnf<- rpt(propn ~ timepoint+(1|beeID)+(1|nestID),
+            grname = c("beeID", "nestID"), data = rpt_prop, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(reppnf)
+print(reppnf)
+plot(reppnf, cex.main = 1)
+
+#Check model fit - nectar foraging
+lmnf<-lmer(propn~timepoint+(1|beeID)+(1|nestID),  
+           data=rpt_prop)
+
+summary(lmnf)
+hist(residuals(lmnf))
+plot(fitted(lmnf), residuals(lmnf), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmnf), residuals(lmnf)))
+
+
+#Repeatability proportion pollen foraging 
+reppf<- rpt(propp ~ timepoint+(1|beeID)+(1|nestID),
+            grname = c("beeID", "nestID"), data = rpt_prop, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(reppf)
+print(reppf)
+plot(reppf, cex.main = 1)
+
+
+#Check model fit - pollen foraging - these look pretty off 
+lmpf<-lmer(propp~timepoint+(1|beeID)+(1|nestID),  
+           data=rpt_prop)
+
+summary(lmpf)
+hist(residuals(lmpf))
+plot(fitted(lmpf), residuals(lmpf), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
+
+head(rpt_prop)
+#Repeatability proportion total foraging 
+reptf<- rpt(propt ~ timepoint+(1|beeID)+(1|nestID),
+            grname = c("beeID", "nestID"), data = rpt_prop, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(reptf)
+print(reptf)
+plot(reptf, cex.main = 1)
+
+
+#Check model fit - pollen foraging - these look pretty off 
+lmt<-lmer(propt~timepoint+(1|beeID)+(1|nestID),  
+           data=rpt_prop)
+
+summary(lmt)
+hist(residuals(lmt))
+plot(fitted(lmt), residuals(lmt), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmt), residuals(lmt)))
+
+```
+
+
+
+# Scale by amount of nest video observed
+```{r}
 
 unfilteredobs<-read.csv("../Data/obs_data.csv")
 unfilteredobs %>% filter(nestID=="NF03")
@@ -57,81 +162,12 @@ Laties<-rptdata%>% filter(timepoint=="late")
 print(paste("There are", nrow(Laties), "late rows"))
 
 ```
-# Repeatability measurements and interpretation instructions 
-https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
-If 95% confidence intervals of random effect does not reach 0, this suggests that the behavior is repeatable 
-Individuals=grouping factor in our case 
-R^2 quantifies the proportion of variance explained by fixed effects 
-R=0 no variation is explained by the fixed effect 
-Adjusted repeatability: controls for fixed effects - any variance that is explained by the fixed effect is excluded from the denominator 
+
+#Separate specialists and generalists and look at repeatability 
 ```{r}
-library(rptR)
-```
+nectar <- rptdata %>% filter(specBehav=="generalist")
 
-#Alternative to rptR 
-rptR is not working because the package supports a limited type of data distributions
-Instead, we will try to use the theory behind this package but with a more versatile package
-```{r}
-library(lme4)
-head(rptdata)
-
-lmer_nectar<-glmer(nectarforaging~timepoint+(1|beeID), data=rptdata, family = binomial(link = "logit"))
-plot(lmer_nectar)
-
-hist(residuals(lmer_nectar))
-summary(lmer_nectar)
-
-rep_nectar<-tidy(lmer_nectar, effects="ran_pars", scales="vcov") %>% 
-  select(group, estimate) %>% 
-  spread(group, estimate) %>% 
-  mutate(repeatability=ID/(ID+Residual))
-```
-
-#Repeatability analyses for scaled proportions - poisson data type
-
-#Repeatability analyses for proportions with no scaling - proportion data type
-```{r}
-#Repeatability proportion brood feeding 
-hist(rpt_prop$propfb) # proportion distribution
-reppfb<- rpt(propfb ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_prop, 
-            datatype = "Proportion", nboot = 1000, npermut = 0)
-summary(reppfb)
-print(reppfb)
-plot(reppfb, cex.main = 1)
-
-#Repeatability proportion nectar foraging
-reppnf<- rpt(propn ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_prop, 
-            datatype = "Proportion", nboot = 1000, npermut = 0)
-summary(reppnf)
-print(reppnf)
-plot(reppnf, cex.main = 1)
-
-#Repeatability proportion pollen foraging 
-reppf<- rpt(propp ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_prop, 
-            datatype = "Proportion", nboot = 1000, npermut = 0)
-summary(reppf)
-print(reppf)
-plot(reppf, cex.main = 1)
-
-#Repeatability proportion total foraging
-reppf<- rpt(propp ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_prop, 
-            datatype = "Proportion", nboot = 1000, npermut = 0)
-summary(reppf)
-print(reppf)
-plot(reppf, cex.main = 1)
-```
-# Try with MCMM package as in Jolles et al.  2017
-```{r}
-
-library(MCMCglmm)
-library(rptR)
-
-
-
+nectar
 
 
 ```
