@@ -89,4 +89,25 @@ ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
     geom_bar(stat="identity", position=position_dodge(), colour="black")
 
 ```
-                     
+# Do groups correspond to ovary/body size data?  
+```{r}
+kmeanstrends<-count_data %>% select(size, ovS1, ovS2, cluster) %>%mutate(avgov=(ovS1+ovS2)/2) %>% na.omit()
+
+graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
+  mutate(asize=mean(size)) %>%  
+  mutate(sdsize=sd(size)) %>% 
+  mutate(aov=mean(avgov))  %>% 
+  mutate(sdov=sd(avgov)) %>% 
+  select(cluster, asize, sdsize, aov, sdov) %>% unique()
+
+BSk<-ggplot(graphkmeans, aes(x=cluster, y=asize)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") + 
+  geom_errorbar(aes(ymin=asize-sdsize,  ymax=asize+sdsize))
+BSk
+
+OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") + 
+  geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
+OVk
+
+```
