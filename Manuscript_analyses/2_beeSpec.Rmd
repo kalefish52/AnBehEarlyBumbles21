@@ -30,12 +30,13 @@ count_data <- read.csv("../Data/filtData/count_data.csv")
 
 # visualize body size in relation to behavioral specialization
 ```{r}
-ggplot(data = count_data, aes(size, specBehav, color = specBehav, shape = caste)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+ggplot(data = count_data, aes(size, specBehav, color = shannon, shape = caste)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_shape_manual(values = c(1, 16)) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
-  labs(x = "body size", y = "behavioral specialization", color = "behavioral specialization")
+  scale_color_gradient(low="dark blue", high="yellow") +
+  # scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "body size", y = "behavioral specialization", color = "shannon")
 ggsave("../figures/bodySize.jpg")
 ```
 
@@ -46,10 +47,11 @@ ggsave("../figures/bodySize.jpg")
 # calculate mean for each bee
 count_data$avgLen <- rowMeans(count_data[,c("ovL1", "ovL2")], na.rm = TRUE)
 
-ggplot(data = count_data, aes(avgLen, specBehav, color = specBehav)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+ggplot(data = count_data, aes(avgLen, specBehav, color = shannon)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey", "black")) +
+  scale_color_gradient(low="dark blue", high="yellow") +
+  # scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey", "black")) +
   labs(x = "ovary length", y = "behavioral specialization", color = "behavioral specialization")
 ggsave("../figures/ovaryLength.jpg")
 
@@ -59,10 +61,11 @@ ggsave("../figures/ovaryLength.jpg")
 # calculate mean for each bee
 count_data$avgStage <- rowMeans(count_data[,c("ovS1", "ovS2")], na.rm = TRUE)
 
-ggplot(data = count_data, aes(avgStage, specBehav, color = specBehav)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+ggplot(data = count_data, aes(avgStage, specBehav, color = shannon)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  scale_color_gradient(low="dark blue", high="yellow") +
+  # scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "ovary stage", y = "behavioral specialization", color = "behavioral specialization")
 ggsave("../figures/ovaryStage.jpg")
 
@@ -72,10 +75,11 @@ ggsave("../figures/ovaryStage.jpg")
 # calculate mean for each bee
 count_data$avgRes <- rowMeans(count_data[,c("ovR1", "ovR2")], na.rm = TRUE)
 
-ggplot(data = count_data, aes(avgRes, specBehav, color = specBehav)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.4) +
+ggplot(data = count_data, aes(avgRes, specBehav, color = shannon)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  scale_color_gradient(low="dark blue", high="yellow") +
+  # scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "resorption status", y = "behavioral specialization", color = "behavioral specialization")
 ggsave("../figures/ovarResorb.jpg")
 ```
