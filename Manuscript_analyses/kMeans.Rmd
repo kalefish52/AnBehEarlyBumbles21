@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(plotly)
+library(dplyr)
 ```
 
 ## Load Data
@@ -55,14 +56,16 @@ k <- 2
 ## run k means test
 ## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
 test <- kmeans(data, k, nstart = 20)
-test
+length(as.factor(test$cluster))
 ```
  graph k means analysis
 ```{r} 
 ## make cluster a factor so we can graph with it
 count_data$cluster <- as.factor(test$cluster)
 count_data
+
 ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
+
 ## make egg laying workers x 
 plot_ly(x = count_data$feedsbrood, 
         y = count_data$pollenforaging, 
@@ -80,10 +83,12 @@ plot_ly(x = count_data$feedsbrood,
   )
 
 #Plot counts of each cluster for each specBehav
-kcounts<-count_data %>% select(nestID, beeID, specBehav, cluster)
+count_data
+kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster)
+
 head(kcounts)
 
-kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% select(specBehav, cluster, frequency) %>% unique()
+kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% dplyr::select(specBehav, cluster, frequency) %>% unique()
 
 ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
     geom_bar(stat="identity", position=position_dodge(), colour="black")

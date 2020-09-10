@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # load packages
 ```{r}
 library(tidyverse)
-library(dplyr)
 library(plyr)
 library(ggplot2)
 library(cluster) # clustering algorithms
@@ -25,6 +24,7 @@ library(car)
 library(MASS)
 library(MuMIn)
 library(lsmeans)
+library(dplyr)
 ```
 
 # Repeatability measurements and interpretation instructions 
@@ -42,7 +42,7 @@ library(rptR)
 
 # load data
 ```{r}
-rptdata<-read.csv("../Data/filtData/count_time.csv") %>% select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav)
+rptdata<-read.csv("../Data/filtData/count_time.csv") %>% dplyr::select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav)
 head(rptdata)
 
 obsdata<-read.csv("../Data/filtData/obs_time.csv")%>% select(camID, nestID, dateID, hourID, timepoint)%>% distinct(camID,  nestID, dateID, hourID, timepoint)
