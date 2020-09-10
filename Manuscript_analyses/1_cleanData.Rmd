@@ -452,6 +452,7 @@ print(paste("There are now", clean_obs, "observations remaining in the fully cle
 print(paste("There are now", clean_videos, "out of", init_videos, "remaining videos in fully cleaned videos_data", sep = " "))
 ```
 
+
 #.
 
 # Combine Data
@@ -550,7 +551,32 @@ for (i in 1:nrow(obs_data)) {
 diedEarly <- c("NF0328", "QT0240", "QT022")
 # remove those bees from obs_data - they will not be included an any analyses
 obs_data <- obs_data[!obs_data$beeID %in% diedEarly,]
+
+
+# rename dead and replacement bees with the same number to ad a and b
+
+# make dateID an integer to enable comparisons among dates
+obs_data$dateID <- as.integer(obs_data$dateID)
+
+# go through every observation in obs_data. if the bee has both a died and added date (indicating it was replaced with the same number tag):
+# if the died date is after the observation, add an "a" to the ID number. 
+# if the was replaced before before the observation, add a "b" to the ID number
+for (i in 1:nrow(obs_data)) {
+  if (!is.na(obs_data$diedDate[i]) && !is.na(obs_data$addDate[i]) && !is.na(obs_data$dateID[i])) {
+    if (obs_data$diedDate[i] > obs_data$dateID[i]) {
+      obs_data$beeID[i] <- paste0(obs_data$beeID[i], "a")
+      obs_data$beeType[i] <- "orig"
+      obs_data$addDate[i] <- NA
+    }
+    if (obs_data$addDate[i] < obs_data$dateID[i]) {
+      obs_data$beeType[i] <- "replac"
+      obs_data$diedDate[i] <- NA
+    }
+  }
+  
+}
 ```
+
 ## make count_data df with counts of each behavior observed for each bee
 output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values - all bees
 ```{r}
@@ -1076,6 +1102,7 @@ obs_time and count_time have same format as obs_data and count_data but data spl
 obs_time <- obs_data
 
 # format dateID as a date
+obs_time$dateID <- as.character(obs_time$dateID)
 obs_time$dateID <- as.Date(obs_time$dateID, "%Y%m%d")
 
 # add column for timepoint filled with NA values
