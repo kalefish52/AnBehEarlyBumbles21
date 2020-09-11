@@ -1311,9 +1311,12 @@ write.csv(obs_data, "../Data/filtData/obs_data.csv")
 
 # filter count_data and save for future analyses
 count_data <- count_data %>% subset(nestID %in% camDur_filt$nestID)
+# make nestTYPE a factor
+count_data$nestTYPE <- ordered(count_data$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 
 # filter count_time
 count_time <- count_time %>% subset(nestID %in% camDur_filt$nestID)
+count_time$nestTYPE <- ordered(count_time$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 
 # filter obs_time
 obs_time <- obs_time %>% subset(nestID %in% camDur_filt$nestID)
