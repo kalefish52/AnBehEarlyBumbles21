@@ -1490,6 +1490,9 @@ ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8, size = 2) +
   scale_shape_manual(values = c(21, 16))
 ggsave("../figures/shannonVSnBehavs.jpg")
+
+# print the number of bees that meet the shannon threshold
+print(paste(nrow(count_data[!is.na(count_data$shannon),]), "known bees have over the threshold number of behaviors and will therefore be included in shannon analyses", sep = " "))
 ```
 ### bee shannon over time
 add shannon and shanDist columns to count_time df for bees with > threshold number of behaviors
@@ -1556,7 +1559,7 @@ ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
 ggsave("../figures/shanDist.jpg")
 
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
-print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
+print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "known bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
 count_time[!is.na(count_time$shanDist),]
 ```
 
@@ -1813,7 +1816,8 @@ ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
   scale_shape_manual(values = c(16, 15, 21, 22))
 ggsave("../figures/taskShanVSnBehavs.jpg")
 
-
+# print the number of nests that meet the shannon threshold
+print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
 ```
 ### task shannon over time
 write taskShanTime
