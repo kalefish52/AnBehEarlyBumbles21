@@ -33,8 +33,8 @@ set.seed(123)
 
 ## compute and plot total within sum of squares for 2-10 clusters
 k.max <- 10
-## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglay
-data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging")]
+## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglaying
+data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]
 
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
@@ -56,7 +56,6 @@ set.seed(124)
 k <- 2
 
 ## run k means test
-## in this case, columns 4:6 includes broodfeed, nectarforage, pollenforage
 test <- kmeans(data, k, nstart = 20)
 length(as.factor(test$cluster))
 ```
@@ -72,8 +71,8 @@ write.csv(count_data, "../Data/filtData/count_kmeans.csv")
 
 ## make egg laying workers x 
 plot_ly(x = count_data$feedsbrood, 
-        y = count_data$pollenforaging, 
-        z = count_data$nectarforaging, 
+        y = count_data$allforaging, 
+        z = count_data$egglaying, 
         type="scatter3d", 
         mode="markers",
         symbol = count_data$caste, symbols = c('square', 'circle','o'),
@@ -82,8 +81,8 @@ plot_ly(x = count_data$feedsbrood,
     title = "k means clustering",
     scene = list(
       xaxis = list(title = "feedsbrood"),
-      yaxis = list(title = "pollenforaging"),
-      zaxis = list(title = "nectarforaging"))
+      yaxis = list(title = "allforaging"),
+      zaxis = list(title = "egglaying"))
   )
 
 #Plot counts of each cluster for each specBehav
