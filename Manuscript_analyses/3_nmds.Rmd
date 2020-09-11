@@ -135,7 +135,7 @@ ggplot() +
   scale_shape_manual(values = c(16, 21)) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
-  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.2, 1.1)) +
   labs(color = "specialist")
 ggsave("../figures/nmdsSpec.jpg")
 
