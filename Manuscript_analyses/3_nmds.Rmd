@@ -27,15 +27,15 @@ library(MuMIn)    # model.sel
 # load data
 ```{r}
 # pooled data across timepoints, values are counts
-# includes all bees, but only known bees with >=3 observations have shannon values
-count_data <- read.csv("../Data/filtData/count_data.csv") 
+# includes only known bees
+count_kmeans <- read.csv("../Data/filtData/count_kmeans.csv") 
 
 ```
 
 # NMDS on all pooled data
 ```{r}
 # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_data <- count_data[!is.na(count_data$shannon),]
+nmds_data <- count_kmeans[!is.na(count_kmeans$shannon),]
 nmds_data
 # make matrix of only behavior counts for all timepoints
 nmds_m <- as.matrix(nmds_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
@@ -122,20 +122,24 @@ ggsave("../figures/nmdstime.jpg")
 
 
 
-# plot specialists onto nmds plot
+# plot specialists and kmeans clusters onto nmds plot
 ```{r}
 nmds_data$specBehav <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+nmds_data$cluster <- as.factor(nmds_data$cluster)
 behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+
 
 # Plot it using ggplot
 ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = caste, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
-  scale_shape_manual(values = c(21, 16)) +
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  scale_shape_manual(values = c(16, 21)) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 2)) +
   labs(color = "specialist")
 ggsave("../figures/nmdsSpec.jpg")
+
+nmds_data
 ```
 
 

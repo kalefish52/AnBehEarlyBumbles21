@@ -19,7 +19,9 @@ library(dplyr)
 # pooled data across timepoints, values are counts
 # includes all bees, but only known bees with >=3 observations have shannon values
 count_data <- read.csv("../Data/filtData/count_data.csv")
-head(count_data)
+
+# remove unknown bees
+count_data <- count_data[!grepl("unknown", count_data$beeID), ]
 
 ```
 
@@ -62,7 +64,9 @@ length(as.factor(test$cluster))
 ```{r} 
 ## make cluster a factor so we can graph with it
 count_data$cluster <- as.factor(test$cluster)
-count_data
+
+## export as count_kmeans
+write.csv(count_data, "../Data/filtData/count_kmeans.csv")
 
 ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
 
