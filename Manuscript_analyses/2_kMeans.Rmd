@@ -75,7 +75,7 @@ plot_ly(x = count_data$feedsbrood,
         z = count_data$egglaying, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_data$caste, symbols = c('square', 'circle','o'),
+        symbol = count_data$caste, symbols = c('square', 'circle'),
         color = count_data$cluster) %>%
   layout(
     title = "k means clustering",
@@ -96,10 +96,28 @@ kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(fr
 ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
     geom_bar(stat="identity", position=position_dodge(), colour="black")
 
+ggplot(count_data, aes(x = allforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = nectarforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = pollenforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = feedsbrood, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = egglaying, y = cluster)) +
+  geom_point()
+min(count_data[count_data$cluster == 2, "nectarforaging"])
+max(count_data[count_data$cluster == 1, "nectarforaging"])
+
 ```
 # Do groups correspond to ovary/body size data?  
 ```{r}
 kmeanstrends<-count_data %>% select(size, ovS1, ovS2, cluster) %>%mutate(avgov=(ovS1+ovS2)/2) %>% na.omit()
+count_data
+count_data$avgOvS <- NA
+for (i in 1:nrow(count_data)) {
+  count_data$avgOvS[i] <- (count_data$ovS1[i] + count_data$ovS2[i]) / 2
+}
 
 graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
   mutate(asize=mean(size)) %>%  
@@ -118,4 +136,27 @@ OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +
   geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
 OVk
 
+library(lme4)
+library(sjPlot)  # tab_model
+library(MuMIn)    # model.sel
+
+count_data$cluster <- as.factor(count_data$cluster)
+
+k0 <- glmer(cluster ~ 1 + (1|nestTYPE) + (1|natal),
+            family = binomial,
+            data = count_data)
+k1 <- glmer(cluster ~ avgOvS + (1|nestTYPE) + (1|natal),
+            family = binomial,
+            data = count_data)
+k2 <- glmer(cluster ~ size + (1|nestTYPE) + (1|natal) + (1|caste),
+            family = binomial,
+            data = count_data)
+
+
+tab_model(k1)
+tab_model(k2)
+
+ggplot(count_data, aes(cluster, size, color = caste, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
 ```
