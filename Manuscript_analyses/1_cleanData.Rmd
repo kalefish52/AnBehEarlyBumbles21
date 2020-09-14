@@ -1637,7 +1637,7 @@ for (i in 1:nrow(count_data)) {
     # calculate proportion of total behaviors comprised by specialized behavior
     count_data$specProp[i] <- count_data[i, behavior] / count_data$nBehavs[i]
   }
-  # if the bee is not a specialist (i.e. shannon < threshold)
+  # if the bee is not a specialist (i.e. shannon > threshold)
   else if (count_data$shannon[i] > shannonSpecialist) {
     # name the behavior as generalist
     count_data$specBehav[i] <- "generalist"
@@ -1651,6 +1651,10 @@ count_data$specProp <- as.numeric(count_data$specProp)
 minSpecProp <- min(count_data$specProp, na.rm = TRUE)
 print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
 
+# count the number of bees that categorize as specialists
+count_notNA <- count_data[!is.na(count_data$shannon),]
+print(paste("there are", nrow(count_notNA[count_notNA$shannon <= shannonSpecialist, ]), "specialists", sep = " "))
+nrow(count_data)
 # save for future analyses
 write.csv(count_data, "../Data/filtData/count_data.csv")
 
