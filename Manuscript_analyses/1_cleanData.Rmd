@@ -1488,6 +1488,13 @@ count_data[grepl("unknown", count_data$beeID), "shannon"] <- NA
 print(paste(nrow(count_data[is.na(count_data$shannon),]), "bees are unknown or have fewer than the threshold number of recorded behaviors and therefore have an NA shannon value", sep = " "))
 print(paste(nrow(count_data[!is.na(count_data$shannon),]), "bees have equal or greater than the threshold number of recorded behaviors and will be included in shannon analyses"))
 
+# plot density of shannons vs nestTYPE and as sum total together
+ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
+  geom_density(alpha = 0.3)
+
+ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
+  geom_histogram(color = "black", alpha = 0.4)
+
 # plot nestTYPE vs. shannon scatterplot
 ggplot(count_data, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
@@ -1501,8 +1508,27 @@ ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
   scale_shape_manual(values = c(21, 16))
 ggsave("../figures/shannonVSnBehavs.jpg")
 
-# print the number of bees that meet the shannon threshold
-print(paste(nrow(count_data[!is.na(count_data$shannon),]), "known bees have over the threshold number of behaviors and will therefore be included in shannon analyses", sep = " "))
+# separate out known bees to get summary data
+count_known <- count_data[!grepl("unknown", count_data$beeID), ]
+
+# print the number of bees that meet the shannon threshold as well as the bees that do not
+print(paste(nrow(count_known[!is.na(count_known$shannon),]), "out of", nrow(count_known), "known bees have over the threshold number of behaviors and will therefore be included in shannon analyses", sep = " "))
+
+print(paste(nrow(count_known[count_known$nBehav == 0,]), "out of", nrow(count_known), "known bees 0 recorded behaviors", sep = " "))
+
+print(paste(nrow(count_known[count_known$nBehav == 1,]), "out of", nrow(count_known), "known bees 1 recorded behaviors", sep = " "))
+
+print(paste(nrow(count_known[count_known$nBehav == 2,]), "out of", nrow(count_known), "known bees 2 recorded behaviors", sep = " "))
+
+count_known[count_known$shannon > 1.24, ]
+# print the max shannon value
+print(paste("the max shannon value for all bees with over the threshold number of behaviors is", max(count_known$shannon, na.rm = TRUE), sep = " "))
+count_known[count_known$shannon > 1.24, ]
+
+# print the number of perfect specialists (shannon = 0)
+print(paste("there are", nrow(count_known[count_known$shannon == 0, ]) - nrow(count_known[is.na(count_known$shannon),]), "perfectly specialized bees with a shannon value of 0 out of", nrow(count_known), "total bees", sep = " "))
+
+count_known[count_known$shannon == 0,]
 ```
 ### bee shannon over time
 add shannon and shanDist columns to count_time df for bees with > threshold number of behaviors
@@ -1811,7 +1837,8 @@ for(index in 1:length(unique(count_nests$nestID))) {            # for each uniqu
 taskShan$nestTYPE <- substr(taskShan$nestID, start = 1, stop = 2)
 # remove na row
 taskShan <- taskShan[!is.na(taskShan$shannon),]
-
+max(taskShan$shannon)
+count_data[count_data$nestID == "QF06",]
 #add natalcolony column 
 nataladd<-count_nests %>% select(nestID, natal)
 write.csv(nataladd, "../Data/nataladd.csv")
@@ -1834,6 +1861,10 @@ ggsave("../figures/taskShanVSnBehavs.jpg")
 
 # print the number of nests that meet the shannon threshold
 print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
+
+# print the number of perfectly specialized tasks (shannon = 0)
+print(paste("there are", nrow(taskShan[taskShan$shannon == 0, ]), "perfectly specialized tasks with a shannon value of 0 out of", nrow(taskShan), "total task-nest combinations", sep = " "))
+taskShan
 ```
 ### task shannon over time
 write taskShanTime
