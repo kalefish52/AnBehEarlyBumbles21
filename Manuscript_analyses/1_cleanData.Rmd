@@ -1264,6 +1264,16 @@ noVidLate <- camDur$nestID[camDur$lateLen == 0]
 count_time <- subset(count_time, !(nestID %in% noVidEarly && timepoint == "early"))
 count_time <- subset(count_time, !(nestID %in% noVidLate && timepoint == "late"))
 
+# count how many total observations at each timepoint
+print(paste(sum(count_time[count_time$timepoint == "early", "nBehavs"]), "total early observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "late", "nBehavs"]), "total late observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "early", "nectarforaging"]), "early nectar foraging observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "early", "pollenforaging"]), "early pollen foraging observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "early", "feedsbrood"]), "early brood feeding observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "late", "nectarforaging"]), "late nectar foraging observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "late", "pollenforaging"]), "late pollen foraging observations", sep = " "))
+print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late brood feeding observations", sep = " "))
+
 ```
 
 #.
@@ -1560,7 +1570,13 @@ ggsave("../figures/shanDist.jpg")
 
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
 print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "known bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
+
+nonNA_time <- count_time[!is.na(count_time$shannon),] 
+print(paste(nrow(nonNA_time[nonNA_time$timepoint == "early",]), "early bees that meet the shannon threshold", sep = " "))
+print(paste(nrow(nonNA_time[nonNA_time$timepoint == "late",]), "late bees that meet the shannon threshold", sep = " "))
+
 count_time[!is.na(count_time$shanDist),]
+nonNA_time
 ```
 
 ## bee specialization
