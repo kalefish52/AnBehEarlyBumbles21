@@ -159,4 +159,5 @@ tab_model(k2)
 ggplot(count_data, aes(cluster, size, color = caste, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
+ggsave("../figures/kmeansBS.jpg")
 ```
