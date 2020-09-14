@@ -37,6 +37,7 @@ Adjusted repeatability: controls for fixed effects - any variance that is explai
 
 ```{r}
 library(rptR)
+library(dplyr)
 ```
 
 
@@ -44,21 +45,26 @@ library(rptR)
 ```{r}
 rptdata<-read.csv("../Data/filtData/count_time.csv") %>% dplyr::select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav)
 head(rptdata)
-
-obsdata<-read.csv("../Data/filtData/obs_time.csv")%>% select(camID, nestID, dateID, hourID, timepoint)%>% distinct(camID,  nestID, dateID, hourID, timepoint)
-
-
 ```
 
 #Repeatability analyses for proportions - proportion data type
 ```{r}
 # Add proportion columns 
+nrow(rptdata)
 rpt_prop <- rptdata %>% 
   mutate(propfb=feedsbrood/nBehavs) %>% 
   mutate(propn=nectarforaging/nBehavs) %>% 
   mutate(propp=pollenforaging/nBehavs) %>% 
-  mutate(propt=(pollenforaging+nectarforaging)/nBehavs)
+  mutate(propt=(pollenforaging+nectarforaging)/nBehavs) 
 
+
+#Remove workers with 0 behavioral observations 
+rpt_prop<-rpt_prop[complete.cases(rpt_prop),]
+nrow(rpt_prop)
+```
+
+
+```{r}
 # Repeatability proportion brood feeding 
 hist(rpt_prop$propfb) # try gaussian
 reppfb<- rpt(propfb ~ timepoint+(1|beeID)+(1|nestID),
@@ -139,38 +145,94 @@ lines(smooth.spline(fitted(lmt), residuals(lmt)))
 ```
 
 
-
-# Scale by amount of nest video observed
+# Plot nest data for rpt proportions
 ```{r}
+read.csv("../Data/filtData/taskShanTime.csv")
+head(rpt_prop)
 
-unfilteredobs<-read.csv("../Data/obs_data.csv")
-unfilteredobs %>% filter(nestID=="NF03")
-#How many observations (nest and for) did we do for each nest? 
-obsdatascale<-obsdata %>% mutate(count=1) %>% group_by(nestID, camID) %>%mutate(obsnum=sum(count)) %>% select(!c(count, dateID, hourID)) %>% unique()
-obsdatascale 
-obsdata%>% filter(nestID=="QT15")
-fors<-obsdatascale %>% filter(camID=="for")
-fors
-full_join(rptdata, fors, by="nestID") %>% arrange(nestID) %>% select(nestID, beeID, timepoint, camID, obsnum)
+rpttime<-rpt_prop %>% 
+  dplyr::select(timepoint, nestTYPE, beeID, propfb, propn, propp) %>% 
+  rename('Pollen Foraging'= propp) %>% 
+  rename('Nectar Foraging'=propn) %>% 
+  rename('Brood Feeding'=propfb) %>%
+  pivot_longer(!c(timepoint, beeID, nestTYPE), names_to="Behavior", values_to="Proportion")  
+
+rpttime$nestTYPE <- as.factor(rpttime$nestTYPE)
 
 
-#How many observations do we have? (all, early, late)
-print(paste("There are", nrow(rptdata), "rows"))
-Earlies<-rptdata %>% filter(timepoint=="early") 
-print(paste("There are", nrow(Earlies), "early rows"))
-Laties<-rptdata%>% filter(timepoint=="late") 
-print(paste("There are", nrow(Laties), "late rows"))
+
+ggplot(rpttime, aes(Proportion, Behavior, shape=timepoint)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
+             aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(17, 25)) +
+  stat_summary(fun = mean, geom = "point", size = 5) + 
+  labs(x="Proportion Total Behavioral Observations on a Particular Behavior")
+
+
+
+
+
 
 ```
 
-#Separate specialists and generalists and look at repeatability 
+
+# Plot difference in distance between individuals from timepoint one to timepoint two 
 ```{r}
-nectar <- rptdata %>% filter(specBehav=="generalist")
+# add column for propDist
 
-nectar
+rpttime$propDist <- NA
+# calculate change in proportion over time and add to propDist column
+for (i in 1:nrow(rpttime)) {              # for each row in the dataset
+  if(rpttime$timepoint[i] == "late") {                # look at the the late bees only
+    for (j in 1:nrow(rpttime)) {                     # then iterate back through the dataset
+      if(rpttime$timepoint[j] == "early" & 
+         rpttime$beeID[j] == rpttime$beeID[i]
+         & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
+        # and find the early entry with the same behav
+        rpttime$propDist[i] <- rpttime$Proportion[i] - rpttime$Proportion[j] 
+        # calculate the difference in proportion across time
+      }
+    }
+  }
+}
 
+rpttime %>% filter(beeID=="NF0182")
+
+# plot the change in proportion from early to late
+avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(propDist, na.rm = T)) %>% dplyr::pull(avg)
+
+ggplot(rpttime, aes(propDist, Behavior)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(17, 25)) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
+  labs(x = "change in proportion from early to late timepoint")
+ggsave("../figures/propDistBehav.jpg")
+
+#Graph average nest but only include bees that are in distance graph by removing observations that only have one timepoint 
+# Make a dataframe of all bees that have observations at both time points
+
+rpt_filt<-rpttime[complete.cases(rpttime),]
+
+# Make a list of bee id at both time points
+beestime<-rpt_filt %>% dplyr::select(beeID) %>% unique()
+nrow(rpttime)
+namesbeesfilt<-as.list(beestime)
+rpt_filt_graph<-rpttime %>% filter(beeID %in% namesbeesfilt$beeID)
+
+nrow(rpt_filt_graph)
+nrow(rpttime)
+
+ggplot(rpt_filt_graph, aes(Proportion, Behavior, shape=timepoint)) +
+  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
+             aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(17, 25)) +
+  stat_summary(fun = mean, geom = "point", size = 5) + 
+  labs(x="Proportion Total Behavioral Observations on a Particular Behavior")
+ggsave("../figures/rptNEST.jpg")
 
 ```
+
 
 
 
