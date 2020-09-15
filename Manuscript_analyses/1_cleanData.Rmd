@@ -758,6 +758,26 @@ for (i in 1:nrow(count_data)) {
   }
 }
 ```
+## add number of bees and queen status to count_data
+```{r}
+# first add queen factor
+count_data$queen <- NA
+count_data$queen <- as.character(count_data$queen)
+count_data[count_data$nestTYPE == "QF", "queen"] <- "queenright"
+count_data[count_data$nestTYPE == "QT", "queen"] <- "queenright"
+count_data[count_data$nestTYPE == "NF", "queen"] <- "queenless"
+count_data[count_data$nestTYPE == "NT", "queen"] <- "queenless"
+
+# then add number of workers
+count_data$nWork <- NA
+count_data$nWork <- as.numeric(count_data$nWork)
+count_data[count_data$nestTYPE == "QF", "nWork"] <- 5
+count_data[count_data$nestTYPE == "QT", "nWork"] <- 3
+count_data[count_data$nestTYPE == "NF", "nWork"] <- 5
+count_data[count_data$nestTYPE == "NT", "nWork"] <- 3
+count_data
+```
+
 # Visualize Data
 
 ## graph the number of observations per camera type per nest 
@@ -1198,7 +1218,7 @@ count_time[c("nectarforaging", "pollenforaging", "feedsbrood")] [is.na(count_tim
 # sum number of behaviors per bee per timepoint into nBehav column
 count_time$nBehavs <- rowSums(count_time[, c("feedsbrood", "nectarforaging", "pollenforaging")], na.rm = TRUE)
 
-# add in body size and ovary data from count_data
+# add in body size, ovary data, queen status, and number of workers from count_data
 count_time$size <- NA
 count_time$ovL1 <- NA
 count_time$ovL2 <- NA
@@ -1206,6 +1226,8 @@ count_time$ovR1 <- NA
 count_time$ovR2 <- NA
 count_time$ovS1 <- NA
 count_time$ovS2 <- NA
+count_time$queen <- NA
+count_time$nWork <- NA
 
 for (i in 1:nrow(count_time)){
   for (j in 1:nrow(count_data)){
@@ -1217,6 +1239,8 @@ for (i in 1:nrow(count_time)){
       count_time$ovR2[i] <- count_data$ovR2[j]
       count_time$ovS1[i] <- count_data$ovS1[j]
       count_time$ovS2[i] <- count_data$ovS2[j]
+      count_time$queen[i] <- count_data$queen[j]
+      count_time$nWork[i] <- count_data$nWork[j]
     }
   }
 }
@@ -1248,7 +1272,8 @@ count_noObsBeesTime$pollenforaging <- 0
 count_noObsBeesTime$nBehavs <- 0
 # bind no obs bees to count_time that has obs bees
 count_time <- rbind(count_time, count_noObsBeesTime)
-
+count_time
+count_noObsBeesTime
 # check that you have all the bees accounted for
 if (nrow(count_time) == 2*nrow(count_data)) {
   print("all bees are accounted for at both timepoints in the count_time df!")
