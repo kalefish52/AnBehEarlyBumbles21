@@ -1514,11 +1514,11 @@ count_known <- count_data[!grepl("unknown", count_data$beeID), ]
 # print the number of bees that meet the shannon threshold as well as the bees that do not
 print(paste(nrow(count_known[!is.na(count_known$shannon),]), "out of", nrow(count_known), "known bees have over the threshold number of behaviors and will therefore be included in shannon analyses", sep = " "))
 
-print(paste(nrow(count_known[count_known$nBehav == 0,]), "out of", nrow(count_known), "known bees 0 recorded behaviors", sep = " "))
+print(paste(nrow(count_known[count_known$nBehavs == 0,]), "out of", nrow(count_known), "known bees 0 recorded behaviors", sep = " "))
 
-print(paste(nrow(count_known[count_known$nBehav == 1,]), "out of", nrow(count_known), "known bees 1 recorded behaviors", sep = " "))
+print(paste(nrow(count_known[count_known$nBehavs == 1,]), "out of", nrow(count_known), "known bees 1 recorded behaviors", sep = " "))
 
-print(paste(nrow(count_known[count_known$nBehav == 2,]), "out of", nrow(count_known), "known bees 2 recorded behaviors", sep = " "))
+print(paste(nrow(count_known[count_known$nBehavs == 2,]), "out of", nrow(count_known), "known bees 2 recorded behaviors", sep = " "))
 
 count_known[count_known$shannon > 1.24, ]
 # print the max shannon value
@@ -1641,20 +1641,30 @@ for (i in 1:nrow(count_data)) {
   else if (count_data$shannon[i] > shannonSpecialist) {
     # name the behavior as generalist
     count_data$specBehav[i] <- "generalist"
-    # keep proportion as NA
-    count_data$specProp[i] <- NA
+    # name the behavior that each individual did the most of: column index of max number of behaviors + skip columns
+    behavior <- names(count_data[skip + max.col(count_data[i, c("nectarforaging", "feedsbrood", "pollenforaging", "egglaying")])])
+    # calculate proportion of total behaviors comprised by the most common behavior
+    count_data$specProp[i] <- count_data[i, behavior] / count_data$nBehavs[i]
   }
 }
 
 # check the minimum proportion of behaviors carried out by specialists for this given shannon threshold
 count_data$specProp <- as.numeric(count_data$specProp)
-minSpecProp <- min(count_data$specProp, na.rm = TRUE)
+minSpecProp <- min(count_data$specProp[count_data$shannon <= shannonSpecialist], na.rm = TRUE)
 print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
 
-# count the number of bees that categorize as specialists
-count_notNA <- count_data[!is.na(count_data$shannon),]
-print(paste("there are", nrow(count_notNA[count_notNA$shannon <= shannonSpecialist, ]), "specialists", sep = " "))
-nrow(count_data)
+# check the range of proportions of most common behavior carried out by generalists
+minGenProp <- min(count_data$specProp[count_data$shannon > shannonSpecialist], na.rm = TRUE)
+maxGenProp <- max(count_data$specProp[count_data$shannon > shannonSpecialist], na.rm = TRUE)
+print(paste("Generalists carry out", minGenProp, "to", maxGenProp, "percent of their most common behavior.", sep = " "))
+
+# count the number of bees that categorize as specialists, generalists, and lazy
+count_known <- count_data[!grepl("unknown", count_data$beeID), ]
+count_notNA <- count_known[!is.na(count_known$shannon),]
+print(paste("there are", nrow(count_notNA[count_notNA$shannon <= shannonSpecialist, ]), "specialists,", nrow(count_notNA[count_notNA$shannon > shannonSpecialist, ]), "generalists, and", nrow(count_known[count_known$specBehav == "lazy", ]), "lazy workers.", sep = " "))
+# tally the number of specialists in each category
+specCat <- count_known %>% dplyr::group_by(specBehav) %>% dplyr::summarise(nSpec = dplyr::n())
+specCat
 # save for future analyses
 write.csv(count_data, "../Data/filtData/count_data.csv")
 
@@ -1987,7 +1997,7 @@ ggsave("../figures/shanDistBehav.jpg")
 write prop_bees
 ```{r}
 # remove unidentified bees and bees with fewer than threshold number of observations (they have NA shannon values)
-count_bees <- count_data[is.na(count_data$shannon),]
+count_bees <- count_data[!is.na(count_data$shannon),]
 
 # rename to prop_bees to describe more accurately
 prop_bees <- count_bees
@@ -2003,6 +2013,18 @@ for (i in 1:nrow(prop_bees)) {
 
 # save for later analyses
 write.csv(prop_bees, "../Data/filtData/prop_bees.csv")
+
+prop_bees
+prop_gen <- prop_bees[prop_bees$specBehav == "generalist", c("beeID", "nectarforaging", "feedsbrood", "pollenforaging", "egglaying", "nBehavs", "shannon", "specBehav")]
+max(prop_gen$nectarforaging)
+max(prop_gen$pollenforaging)
+max(prop_gen$feedsbrood)
+max(prop_gen$egglaying)
+
+min(prop_gen$nectarforaging[prop_gen$nectarforaging > 0])
+min(prop_gen$pollenforaging[prop_gen$pollenforaging > 0])
+min(prop_gen$feedsbrood[prop_gen$feedsbrood > 0])
+min(prop_gen$egglaying[prop_gen$egglaying > 0])
 ```
 ## convert count_beesTime to proportions
 write prop_beesTime
