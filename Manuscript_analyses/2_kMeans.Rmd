@@ -44,7 +44,6 @@ elbow <- plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
-elbow
 ```
 
 run k means analysis
@@ -156,8 +155,23 @@ k2 <- glmer(cluster ~ size + (1|nestTYPE) + (1|natal) + (1|caste),
 tab_model(k1)
 tab_model(k2)
 
-ggplot(count_data, aes(cluster, size, color = caste, shape = nestTYPE)) +
+library(gridExtra)
+p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  scale_shape_manual(values = c(21, 16)) +
+  scale_color_manual(values = c("aquamarine3", "darkslateblue"))
 ggsave("../figures/kmeansBS.jpg")
+p1
+
+p2 <- ggplot(count_data, aes(cluster, avgOvS, shape = caste, color = cluster)) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  scale_shape_manual(values = c(21, 16)) + 
+  scale_color_manual(values = c("aquamarine3", "darkslateblue"))
+p2
+ggsave("../figures/kmeansOv.jpg")
+
+ggarrange(p1, p2, labels = c("A", "B"))
+ggsave("../figures/kmeansBSov.jpg")
 ```
