@@ -178,6 +178,11 @@ BehavAssign
 #Merge back into original dataframe
 FinalBehavRank<-left_join(count_data, BehavAssign, by="beeID")
 FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
+
+ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
+ggsave("../figures/highcountdistribution.jpg")
+
+
 #Run GLMMs using BehavAssign as a grouping variable 
 FinalBehavRank
 ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
