@@ -201,12 +201,13 @@ rpttime %>% filter(beeID=="NF0182")
 # plot the change in proportion from early to late
 avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(propDist, na.rm = T)) %>% dplyr::pull(avg)
 
-ggplot(rpttime, aes(propDist, Behavior)) +
+rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+R1<-ggplot(rpttime, aes(propDist, Behavior)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
-  labs(x = "change in proportion from early to late timepoint")
+  labs(x = "change in individual behavior proportion from early to late timepoint")
 ggsave("../figures/propDistBehav.jpg")
 
 #Graph average nest but only include bees that are in distance graph by removing observations that only have one timepoint 
@@ -222,15 +223,17 @@ rpt_filt_graph<-rpttime %>% filter(beeID %in% namesbeesfilt$beeID)
 
 nrow(rpt_filt_graph)
 nrow(rpttime)
-
-ggplot(rpt_filt_graph, aes(Proportion, Behavior, shape=timepoint)) +
+rpt_filt_graph$nestTYPE <- ordered(rpt_filt_graph$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+R2<-ggplot(rpt_filt_graph, aes(Proportion, Behavior, shape=timepoint)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
              aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) + 
-  labs(x="Proportion Total Behavioral Observations on a Particular Behavior")
+  labs(x="change in proportion of behaviors performed in a nest")
 ggsave("../figures/rptNEST.jpg")
 
+ggarrange(R1, R2, nrow=2, labels=c('A', 'B'))
+ggsave("../figures/repeatability.jpg")
 ```
 
 
