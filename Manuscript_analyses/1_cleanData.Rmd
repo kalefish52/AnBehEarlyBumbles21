@@ -9,6 +9,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(fig.width=3, fig.height=5) # use only to create multipanel shannon individual plot
+# knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel change in shannon plot
 ```
 # Load Packages
 ```{r}
@@ -775,6 +777,14 @@ count_data[count_data$nestTYPE == "QF", "nWork"] <- 5
 count_data[count_data$nestTYPE == "QT", "nWork"] <- 3
 count_data[count_data$nestTYPE == "NF", "nWork"] <- 5
 count_data[count_data$nestTYPE == "NT", "nWork"] <- 3
+
+# then add number of bees
+count_data$nBees <- NA
+count_data$nBees <- as.numeric(count_data$nBees)
+count_data[count_data$nestTYPE == "QF", "nBees"] <- 6
+count_data[count_data$nestTYPE == "QT", "nBees"] <- 4
+count_data[count_data$nestTYPE == "NF", "nBees"] <- 5
+count_data[count_data$nestTYPE == "NT", "nBees"] <- 3 
 count_data
 ```
 
@@ -1228,6 +1238,7 @@ count_time$ovS1 <- NA
 count_time$ovS2 <- NA
 count_time$queen <- NA
 count_time$nWork <- NA
+count_time$nBees <- NA
 
 for (i in 1:nrow(count_time)){
   for (j in 1:nrow(count_data)){
@@ -1241,6 +1252,7 @@ for (i in 1:nrow(count_time)){
       count_time$ovS2[i] <- count_data$ovS2[j]
       count_time$queen[i] <- count_data$queen[j]
       count_time$nWork[i] <- count_data$nWork[j]
+      count_time$nBees[i] <- count_data$nBees[j]
     }
   }
 }
@@ -1513,25 +1525,29 @@ count_data[grepl("unknown", count_data$beeID), "shannon"] <- NA
 print(paste(nrow(count_data[is.na(count_data$shannon),]), "bees are unknown or have fewer than the threshold number of recorded behaviors and therefore have an NA shannon value", sep = " "))
 print(paste(nrow(count_data[!is.na(count_data$shannon),]), "bees have equal or greater than the threshold number of recorded behaviors and will be included in shannon analyses"))
 
+count_data$nestTYPE <- ordered(count_data$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot density of shannons vs nestTYPE and as sum total together
 ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 
-ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
+p1 <- ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
   geom_histogram(color = "black", alpha = 0.4)
 
 # plot nestTYPE vs. shannon scatterplot
-ggplot(count_data, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
+p2 <- ggplot(count_data, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/shannon.jpg")
 
 # plot number of behaviors vs. shannon scatterplot
-ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
+p3 <- ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8, size = 2) +
   scale_shape_manual(values = c(21, 16))
 ggsave("../figures/shannonVSnBehavs.jpg")
+
+ggarrange(p1, p2, p3, nrow = 3, labels = c("A", "B", "C"))
+ggsave("../figures/shannonBee.jpg")
 
 # separate out known bees to get summary data
 count_known <- count_data[!grepl("unknown", count_data$beeID), ]
@@ -1572,11 +1588,13 @@ count_time$shannon[count_time$nBehavs < obsThres] <- NA
 # make shannon NA for unidentified bees - we don't want to inclue these in analyses
 count_time[grepl("unknown", count_time$beeID), "shannon"] <- NA
 
+count_time$nestTYPE <- ordered(count_time$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot shannon values by timepoint
-ggplot(count_time, aes(shannon, nestTYPE, shape = interaction(caste, timepoint), fill = nestTYPE, color = nestTYPE)) + 
+p1 <- ggplot(count_time, aes(shannon, nestTYPE, shape = interaction(caste, timepoint), fill = nestTYPE, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=0.15, height=0.2), alpha = 0.8) +
   scale_shape_manual(values = c(15, 17, 0, 6)) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  labs(shape = "caste*timepoint")
 ggsave("../figures/shannonTime.jpg")
 
 # find change in shannon over time per bee
@@ -1611,13 +1629,16 @@ ggplot(count_time, aes(shanDist, fill = nestTYPE)) +
 
 avgShannDist <- count_time %>% dplyr::summarize(avg = mean(shanDist, na.rm = T)) %>% dplyr::pull(avg)
 
-ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
+p2 <- ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) +
   labs(x = "change in shannon index from early to late timepoint")
 ggsave("../figures/shanDist.jpg")
+
+ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
+ggsave("../figures/shannonBeeTime.jpg")
 
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
 print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "known bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
@@ -1886,17 +1907,21 @@ taskshanNatal<-left_join(taskShan, nataladd,  by="nestID")
 # write the file for future analyses
 write.csv(taskshanNatal, "../Data/filtData/taskShan.csv")
 
+taskShan$nestTYPE <- ordered(taskShan$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot it
-ggplot(taskShan, aes(shannon, behav)) +
+p1 <- ggplot(taskShan, aes(shannon, behav)) +
   geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/taskShan.jpg")
 
 # plot degree of specialization against number of observations
-ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
+p2 <- ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.9, size = 1.8) +
   scale_shape_manual(values = c(16, 15, 21, 22))
 ggsave("../figures/taskShanVSnBehavs.jpg")
+
+ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
+ggsave("../figures/taskShanPanel.jpg")
 
 # print the number of nests that meet the shannon threshold
 print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
