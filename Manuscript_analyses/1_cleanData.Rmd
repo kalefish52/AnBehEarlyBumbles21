@@ -19,6 +19,7 @@ library(plyr)
 library(dplyr)    # subset, summarize, and filter
 library(ggplot2)  # graphs
 library(vegan)    # shannon diversity function
+library(ggpubr)
 ```
 
 #.
