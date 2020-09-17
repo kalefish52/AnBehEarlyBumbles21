@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(plotly)
 library(dplyr)
+library(multcomp)
 ```
 
 ## Load Data
@@ -194,10 +195,13 @@ hist(FinalBehavRank$size)
 j0 <- glmer(size~ 1 + (1|nestTYPE) + (1|natal),
             family = gaussian,
             data = FinalBehavRank)
-j1 <- glmer(size ~ BehavAssign + (1|nestTYPE) + (1|natal),
+j1 <- glmer(size ~ BehavAssign + (1|nestTYPE) + (1|natal) + (1|caste),
             family = gaussian,
             data = FinalBehavRank)
 tab_model(j1)
+
+posthoc1 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
+summary(posthoc1)
 
 
 ```
