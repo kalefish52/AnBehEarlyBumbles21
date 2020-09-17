@@ -161,3 +161,41 @@ ggplot(count_data, aes(cluster, size, color = caste, shape = nestTYPE)) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/kmeansBS.jpg")
 ```
+
+
+# Do analysis based on highest number of tasks workers perform 
+```{r}
+head(count_data)
+highbehav<-count_data %>% select(beeID, nectarforaging, 
+                                 feedsbrood, pollenforaging, egglaying)
+
+hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
+
+#Sort each bee by which behavior they do the most and then assign that bee to that behavior
+BehavAssign<-hbdf %>% group_by(beeID) %>% arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% select(beeID, BehavAssign)
+BehavAssign
+
+#Merge back into original dataframe
+FinalBehavRank<-left_join(count_data, BehavAssign, by="beeID")
+FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
+#Run GLMMs using BehavAssign as a grouping variable 
+FinalBehavRank
+ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+ggsave("../figures/highcountBS.jpg")
+
+hist(FinalBehavRank$size)
+j0 <- glmer(size~ 1 + (1|nestTYPE) + (1|natal),
+            family = gaussian,
+            data = FinalBehavRank)
+j1 <- glmer(size ~ BehavAssign + (1|nestTYPE) + (1|natal),
+            family = gaussian,
+            data = FinalBehavRank)
+tab_model(j1)
+
+
+```
+
+
+
