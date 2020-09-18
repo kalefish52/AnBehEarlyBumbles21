@@ -70,7 +70,7 @@ Look at NMDS at two time points and then
 ```{r}
 # Look at NMDS at two points
 nmds_time<-read.csv("../Data/filtData/count_time.csv") %>% 
-  select(nestID, nestTYPE, beeID, caste,  
+  dplyr::select(nestID, nestTYPE, beeID, caste,  
          shannon, specBehav, timepoint, nectarforaging, feedsbrood, pollenforaging)
 
 # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
@@ -131,8 +131,8 @@ behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feeds
 
 # Plot it using ggplot
 ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = specBehav), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
-  scale_shape_manual(values = c(16, 21)) +
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = specBehav), size = 3, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  scale_shape_manual(values = c(20, 9)) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.2, 1.1)) +
