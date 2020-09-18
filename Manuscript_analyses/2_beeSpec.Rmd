@@ -30,6 +30,12 @@ library(MuMIn)    # model.sel
 # pooled data across timepoints, values are counts
 # includes all bees, but only known bees with >=3 observations have shannon values
 count_data <- read.csv("../Data/filtData/count_data.csv") 
+count_data
+
+count_replac <- count_data[count_data$beeType == "replac",]
+count_replac <- count_replac[!is.na(count_replac$beeID),]
+count_replac
+
 ```
 
 # visualize body size in relation to behavioral specialization
