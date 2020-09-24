@@ -2100,3 +2100,35 @@ for (i in 1:nrow(prop_beesTime)) {
 write.csv(prop_beesTime, "../Data/filtData/prop_beesTime.csv")
 ```
 
+#.
+#.
+#.
+# Random extras
+```{r}
+ggplot(count_data, aes(x = nectarforaging, y = size, color = shannon)) +
+  geom_point() +
+  scale_color_gradient(low="dark blue", high="yellow")
+
+# summarize the total number of observations
+sum(count_data$nectarforaging)
+sum(count_data$pollenforaging)
+sum(count_data$egglaying)
+sum(count_data$feedsbrood)
+
+# # in order to run below code, must rerun cleanData with 0 threshold for creating count_nests 
+# task_nectarforaging <- taskShan[taskShan$behav == "nectarforaging",]
+# mean(task_nectarforaging$nBehav)
+# sd(task_nectarforaging$nBehav)/sqrt(nrow(task_nectarforaging))
+# 
+# task_pollenforaging <- taskShan[taskShan$behav == "pollenforaging",]
+# mean(task_pollenforaging$nBehav)
+# sd(task_pollenforaging$nBehav)/sqrt(nrow(task_pollenforaging))
+# 
+# task_feedsbrood <- taskShan[taskShan$behav == "feedsbrood",]
+# mean(task_feedsbrood$nBehav)
+# sd(task_feedsbrood$nBehav)/sqrt(nrow(task_feedsbrood))
+# 
+# task_egglaying <- taskShan[taskShan$behav == "egglaying",]
+# mean(task_egglaying$nBehav)
+# sd(task_egglaying$nBehav)/sqrt(nrow(task_egglaying))
+```
