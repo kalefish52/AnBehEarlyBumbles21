@@ -36,6 +36,19 @@ count_replac <- count_data[count_data$beeType == "replac",]
 count_replac <- count_replac[!is.na(count_replac$beeID),]
 count_replac
 
+count_orig <- count_data[count_data$beeType == "orig",]
+count_orig <- count_orig[!is.na(count_orig$beeID),]
+count_orig
+
+ggplot(count_data, aes(x = nBehavs, y = beeType)) +
+  geom_point()
+
+mean(count_replac$nBehavs)
+sd(count_replac$nBehavs)/sqrt(nrow(count_replac))
+
+mean(count_orig$nBehavs)
+sd(count_orig$nBehavs)/sqrt(nrow(count_orig))
+
 ```
 
 # visualize body size in relation to behavioral specialization
@@ -734,6 +747,11 @@ perfSpec <- count_data[count_data$shannon == 0,]
 perfSpec <- perfSpec[!is.na(perfSpec$shannon),]
 perfSpec
 
+nrow(perfSpec[perfSpec$specBehav == "nectarforaging",])
+nrow(perfSpec[perfSpec$specBehav == "pollenforaging",])
+nrow(perfSpec[perfSpec$specBehav == "feedsbrood",])
+nrow(perfSpec[perfSpec$specBehav == "egglaying",])
+
 # MODEL SIZE 
 hist(perfSpec$size)
 
@@ -892,7 +910,7 @@ model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, 
 
 
 st01 <- glmer(avgStage ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal),
-              data = perfSpec)
+              data = perfSpec, family = gaussian(link="identity"))
 
 
 mymodel <- st01
