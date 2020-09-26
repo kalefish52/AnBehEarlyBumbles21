@@ -51,6 +51,17 @@ sd(count_orig$nBehavs)/sqrt(nrow(count_orig))
 
 ```
 
+# count number of specialists
+```{r}
+nrow(count_data[count_data$specBehav == "nectarforaging",])
+nrow(count_data[count_data$specBehav == "pollenforaging",])
+nrow(count_data[count_data$specBehav == "feedsbrood",])
+nrow(count_data[count_data$specBehav == "egglaying",])
+nrow(count_data[count_data$specBehav == "generalist",])
+nrow(count_data[count_data$specBehav == "lazy",])
+
+```
+
 # visualize body size in relation to behavioral specialization
 ```{r}
 count_data$specBehav <- ordered(count_data$specBehav, levels = c("lazy", "generalist", "nectarforaging", "feedsbrood", "egglaying"))
