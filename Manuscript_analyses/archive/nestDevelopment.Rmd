@@ -18,29 +18,28 @@ library(MASS)
 # wd must be set to where this doc lives (Manuscript_analyses)
 
 # nest data
-nest_data <- read.csv("../Data/NestDissections.csv", header = TRUE)
+nest_data <- read.csv("../../Data/rawData/NestDissections.csv", header = TRUE)
 
 # wing length data
-wing_data <- read.csv("../Data/MaleWingMeasurements.csv", header = TRUE)
+wing_data <- read.csv("../../Data/rawData/MaleWingMeasurements.csv", header = TRUE)
 
 # development times data
-dev_data <- read.csv("../Data/cleanMasterData.csv")
+dev_data <- read.csv("../Data/rawData/cleanMasterData.csv")
+
+# count_data has natal colony info and filtered nests
+count_data <- read.csv("../../Data/filtData/count_data.csv")
+
+nest_data
+wing_data
 ```
 
 ## clean and reformat data
 ```{r}
 # remove bad data
-nest_data <- nest_data[!startsWith(nest_data$nestID, "QA"),]  # remove QA groups
-nest_data <- nest_data[!nest_data$nestID == "QF01",]          # QF01 was frozen and males eclosed, but all adults died
-nest_data <- nest_data[!nest_data$nestID == "QF08",]          # missing workers
-nest_data <- nest_data[!nest_data$nestID == "NT07",]          # missing workers
+wing_data <- wing_data %>% filter(nestID %in% count_data$nestID)
+nest_data <- nest_data %>% filter(nestID %in% count_data$nestID)
 
-wing_data <- wing_data[!startsWith(wing_data$nestID, "QA"),]  # remove QA groups
-wing_data <- wing_data[!wing_data$nestID == "QF01",]          # QF01 was frozen and males eclosed, but all adults died
-wing_data <- wing_data[!wing_data$nestID == "QF08",]          # missing workers
-wing_data <- wing_data[!wing_data$nestID == "NT07",]          # missing workers
-
-# add bee identifier to wing_data
+# add male bee identifier to wing_data
 wing_data$bee <- 1:nrow(wing_data)
 
 # add nestTYPE column to all datasets, add columns for number of workers, number of queens, and number of bees
@@ -72,19 +71,24 @@ wing_data$nQueen <- as.numeric(wing_data$nQueen)
 wing_data$nBees <- wing_data$nWorkers + wing_data$nQueen
 wing_data
 
-qChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[1]} )
-wChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[2]} )
-dev_data$nestTYPE <- paste0(qChar, wChar)
-dev_data$nWorkers <- wChar
-dev_data$nWorkers[dev_data$nWorkers == "F"] <- 5
-dev_data$nWorkers[dev_data$nWorkers == "T"] <- 3
-dev_data$nQueen <- qChar
-dev_data$nQueen[dev_data$nQueen == "N"] <- 0
-dev_data$nQueen[dev_data$nQueen == "Q"] <- 1
-dev_data$nWorkers <- as.numeric(dev_data$nWorkers)
-dev_data$nQueen <- as.numeric(dev_data$nQueen)
-dev_data$nBees <- dev_data$nWorkers + dev_data$nQueen
-dev_data
+# add worker natal colony to include as random effect
+
+# add queen natal colony to include as random effect
+
+
+# qChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[1]} )
+# wChar <- sapply(strsplit(dev_data$nestID, ""), function(x) {x[2]} )
+# dev_data$nestTYPE <- paste0(qChar, wChar)
+# dev_data$nWorkers <- wChar
+# dev_data$nWorkers[dev_data$nWorkers == "F"] <- 5
+# dev_data$nWorkers[dev_data$nWorkers == "T"] <- 3
+# dev_data$nQueen <- qChar
+# dev_data$nQueen[dev_data$nQueen == "N"] <- 0
+# dev_data$nQueen[dev_data$nQueen == "Q"] <- 1
+# dev_data$nWorkers <- as.numeric(dev_data$nWorkers)
+# dev_data$nQueen <- as.numeric(dev_data$nQueen)
+# dev_data$nBees <- dev_data$nWorkers + dev_data$nQueen
+# dev_data
 
 # sum total number of brood in nest_data
 nest_data$blackLarvae <- as.numeric(nest_data$blackLarvae)
@@ -112,6 +116,7 @@ data is mostly normal
 ```{r}
 # visualize the distribution
 ggdensity(wing_data$beeAvg)
+wing_data
 # normal 
 qqp(wing_data$beeAvg, "norm")
 # # lnorm means lognormal
