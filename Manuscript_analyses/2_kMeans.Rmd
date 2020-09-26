@@ -18,11 +18,15 @@ library(multcomp)
 ## Load Data
 ```{r}
 # pooled data across timepoints, values are counts
-# includes all bees, but only known bees with >=3 observations have shannon values
+# includes all bees,including unknown and low counts
 count_data <- read.csv("../Data/filtData/count_data.csv")
 
 # remove unknown bees
 count_data <- count_data[!grepl("unknown", count_data$beeID), ]
+count_data
+
+count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
+count_data <- count_data[!grepl("unknown", count_data$beeID),]
 
 ```
 
@@ -75,7 +79,7 @@ plot_ly(x = count_data$feedsbrood,
         z = count_data$egglaying, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_data$caste, symbols = c('square', 'circle'),
+        #symbol = count_data$caste, symbols = c('square', 'circle'),
         color = count_data$cluster) %>%
   layout(
     title = "k means clustering",
@@ -106,9 +110,9 @@ ggplot(count_data, aes(x = feedsbrood, y = cluster)) +
   geom_point()
 ggplot(count_data, aes(x = egglaying, y = cluster)) +
   geom_point()
-min(count_data[count_data$cluster == 2, "nectarforaging"])
-max(count_data[count_data$cluster == 1, "nectarforaging"])
-
+min(count_data[count_data$cluster == 1, "pollenforaging"])
+max(count_data[count_data$cluster == 2, "pollenforaging"])
+count_data[count_data$cluster == 1,]
 ```
 # Do groups correspond to ovary/body size data?  
 ```{r}
