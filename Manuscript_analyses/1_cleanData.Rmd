@@ -1571,6 +1571,7 @@ count_known[count_known$shannon > 1.24, ]
 print(paste("there are", nrow(count_known[count_known$shannon == 0, ]) - nrow(count_known[is.na(count_known$shannon),]), "perfectly specialized bees with a shannon value of 0 out of", nrow(count_known), "total bees", sep = " "))
 
 count_known[count_known$shannon == 0,]
+p2
 ```
 ### bee shannon over time
 add shannon and shanDist columns to count_time df for bees with > threshold number of behaviors
@@ -2105,15 +2106,51 @@ write.csv(prop_beesTime, "../Data/filtData/prop_beesTime.csv")
 #.
 # Random extras
 ```{r}
-ggplot(count_data, aes(x = nectarforaging, y = size, color = shannon)) +
-  geom_point() +
-  scale_color_gradient(low="dark blue", high="yellow")
-
 # summarize the total number of observations
 sum(count_data$nectarforaging)
 sum(count_data$pollenforaging)
 sum(count_data$egglaying)
 sum(count_data$feedsbrood)
+
+# calculate the proportions of all behaviors carried out
+# scale to nf because there are the most of that
+nf <- sum(count_data$nectarforaging) / sum(count_data$nectarforaging)
+pf <- sum(count_data$pollenforaging) / sum(count_data$nectarforaging)
+el <- sum(count_data$egglaying) / sum(count_data$nectarforaging)
+fb <- sum(count_data$feedsbrood) / sum(count_data$nectarforaging)
+
+count_scaled <- count_data
+count_scaled$pollenforaging <- countScaled$pollenforaging / pf
+count_scaled$egglaying <- countScaled$egglaying / el
+count_scaled$feedsbrood <- countScaled$feedsbrood / fb
+
+write.csv(count_scaled, "../Data/filtData/count_scaled.csv")
+
+# check that count_scaled proportions are similar across nests
+sumNests <- count_data %>% group_by(nestID) %>% summarise(nectarforaging = sum(nectarforaging),
+                                                             pollenforaging = sum(pollenforaging),
+                                                             feedsbrood = sum(feedsbrood),
+                                                             egglaying = sum(egglaying))
+sumNests$nBehavs <- rowSums(sumNests[2:5], na.rm = TRUE)
+sumNests$nestTYPE <- substr(sumNests$nestID, start = 1, stop = 2)
+
+
+ggplot(sumNests, aes(x = nestTYPE, y = nectarforaging/nBehavs)) +
+  geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
+ggplot(sumNests, aes(x = nestTYPE, y = pollenforaging/nBehavs)) +
+  geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
+ggplot(sumNests, aes(x = nestTYPE, y = feedsbrood/nBehavs)) +
+  geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
+ggplot(sumNests, aes(x = nestTYPE, y = egglaying/nBehavs)) +
+  geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+
 
 # # in order to run below code, must rerun cleanData with 0 threshold for creating count_nests 
 # task_nectarforaging <- taskShan[taskShan$behav == "nectarforaging",]
@@ -2132,3 +2169,5 @@ sum(count_data$feedsbrood)
 # mean(task_egglaying$nBehav)
 # sd(task_egglaying$nBehav)/sqrt(nrow(task_egglaying))
 ```
+
+
