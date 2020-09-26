@@ -2112,20 +2112,6 @@ sum(count_data$pollenforaging)
 sum(count_data$egglaying)
 sum(count_data$feedsbrood)
 
-# calculate the proportions of all behaviors carried out
-# scale to nf because there are the most of that
-nf <- sum(count_data$nectarforaging) / sum(count_data$nectarforaging)
-pf <- sum(count_data$pollenforaging) / sum(count_data$nectarforaging)
-el <- sum(count_data$egglaying) / sum(count_data$nectarforaging)
-fb <- sum(count_data$feedsbrood) / sum(count_data$nectarforaging)
-
-count_scaled <- count_data
-count_scaled$pollenforaging <- countScaled$pollenforaging / pf
-count_scaled$egglaying <- countScaled$egglaying / el
-count_scaled$feedsbrood <- countScaled$feedsbrood / fb
-
-write.csv(count_scaled, "../Data/filtData/count_scaled.csv")
-
 # check that count_scaled proportions are similar across nests
 sumNests <- count_data %>% group_by(nestID) %>% summarise(nectarforaging = sum(nectarforaging),
                                                              pollenforaging = sum(pollenforaging),
@@ -2133,6 +2119,8 @@ sumNests <- count_data %>% group_by(nestID) %>% summarise(nectarforaging = sum(n
                                                              egglaying = sum(egglaying))
 sumNests$nBehavs <- rowSums(sumNests[2:5], na.rm = TRUE)
 sumNests$nestTYPE <- substr(sumNests$nestID, start = 1, stop = 2)
+sumNests <- subset(sumNests, nestID %in% count_nests$nestID)
+
 
 
 ggplot(sumNests, aes(x = nestTYPE, y = nectarforaging/nBehavs)) +
@@ -2151,6 +2139,19 @@ ggplot(sumNests, aes(x = nestTYPE, y = egglaying/nBehavs)) +
   geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 
+# calculate the proportions of all behaviors carried out
+# scale to nf because there are the most of that
+nf <- sum(count_data$nectarforaging) / sum(count_data$nectarforaging)
+pf <- sum(count_data$pollenforaging) / sum(count_data$nectarforaging)
+el <- sum(count_data$egglaying) / sum(count_data$nectarforaging)
+fb <- sum(count_data$feedsbrood) / sum(count_data$nectarforaging)
+
+count_scaled <- count_data
+count_scaled$pollenforaging <- countScaled$pollenforaging / pf
+count_scaled$egglaying <- countScaled$egglaying / el
+count_scaled$feedsbrood <- countScaled$feedsbrood / fb
+
+write.csv(count_scaled, "../Data/filtData/count_scaled.csv")
 
 # # in order to run below code, must rerun cleanData with 0 threshold for creating count_nests 
 # task_nectarforaging <- taskShan[taskShan$behav == "nectarforaging",]
