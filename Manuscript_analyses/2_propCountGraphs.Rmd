@@ -24,7 +24,13 @@ prop <- prop[!grepl("unknown", prop$beeID), ]
 
 prop
 ```
+# number of egg layers
+```{r}
 
+```
+
+
+# BODY SIZE
 ```{r}
 # body size
 
@@ -109,7 +115,6 @@ count$ovR <- rowMeans(count[,c("ovR1", "ovR2")], na.rm = TRUE)
 
 ```{r}
 # body size
-
 ggplot(count, aes(x = nectarforaging, y = size)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
