@@ -2113,7 +2113,7 @@ sum(count_data$egglaying)
 sum(count_data$feedsbrood)
 
 # check that count_scaled proportions are similar across nests
-sumNests <- count_data %>% group_by(nestID) %>% summarise(nectarforaging = sum(nectarforaging),
+sumNests <- count_data %>% dplyr::group_by(nestID) %>% dplyr::summarise(nectarforaging = sum(nectarforaging),
                                                              pollenforaging = sum(pollenforaging),
                                                              feedsbrood = sum(feedsbrood),
                                                              egglaying = sum(egglaying))
@@ -2147,9 +2147,9 @@ el <- sum(count_data$egglaying) / sum(count_data$nectarforaging)
 fb <- sum(count_data$feedsbrood) / sum(count_data$nectarforaging)
 
 count_scaled <- count_data
-count_scaled$pollenforaging <- countScaled$pollenforaging / pf
-count_scaled$egglaying <- countScaled$egglaying / el
-count_scaled$feedsbrood <- countScaled$feedsbrood / fb
+count_scaled$pollenforaging <- count_scaled$pollenforaging / pf
+count_scaled$egglaying <- count_scaled$egglaying / el
+count_scaled$feedsbrood <- count_scaled$feedsbrood / fb
 
 write.csv(count_scaled, "../Data/filtData/count_scaled.csv")
 
