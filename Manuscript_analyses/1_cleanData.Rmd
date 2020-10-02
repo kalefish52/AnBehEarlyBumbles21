@@ -1315,6 +1315,99 @@ print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late
 ```
 
 #.
+# Scale data to nectar foraging
+## Scale count_data
+```{r}
+count_data
+# Calculate number of each behavior for each nest 
+countsNestscale<-count_data %>% group_by(nestID) %>% 
+  mutate(nestnectar=sum(nectarforaging)) %>% 
+  mutate(nestpollen=sum(pollenforaging)) %>% 
+  mutate(nestegglaying=sum(egglaying)) %>% 
+  mutate(nestfeedsbrood=sum(feedsbrood)) %>% 
+  #Remove nests that do not have any nectar foraging for now - 4 nests
+  filter(nestnectar !=0)
+
+# calculate the proportions of all behaviors carried out per nest 
+# scale to nf because there are the most of that
+
+countsNests_scale <-  countsNestscale %>% 
+  mutate(nf=nestnectar/nestnectar) %>% 
+  mutate(pf=nestpollen/nestnectar) %>% 
+  mutate(el=nestegglaying/nestnectar) %>% 
+  mutate(fb=nestfeedsbrood/nestnectar)
+
+count_scaled <- countsNests_scale
+count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
+count_scaled$egglaying <- count_scaled$egglaying / count_scaled$el
+count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
+
+# Replace all NaNs with 0 
+count_scaled[count_scaled=="NaN"]<-0
+
+
+#remove nest total and scaling columns 
+count_scaled <- count_scaled %>% select(!c(pf, el, fb, nf, nestnectar, nestpollen, nestegglaying, nestfeedsbrood)) 
+
+count_scaled
+# Make all counts into integers 
+count_scaled[, 9:12] <- sapply(count_scaled[, 9:12], as.integer)
+
+#Update nBehavs to reflect scaling 
+count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging, egglaying))
+# Save as count_data again so we use this for all future analyses # # #
+
+count_data<-count_scaled 
+count_data
+```
+
+
+## Scale count_time
+```{r}
+# Calculate number of each behavior for each nest 
+# Did not group by time too because we want to scale by total for the nest, the same as above
+# Also removed egglaying
+
+countsNestscale<-count_time %>% group_by(nestID) %>% 
+  mutate(nestnectar=sum(nectarforaging)) %>% 
+  mutate(nestpollen=sum(pollenforaging)) %>% 
+  mutate(nestfeedsbrood=sum(feedsbrood)) %>% 
+  #Remove nests that do not have any nectar foraging for now - 4 nests
+  filter(nestnectar !=0)
+
+
+# calculate the proportions of all behaviors carried out per nest 
+# scale to nf because there are the most of that
+
+countsNests_scale <-  countsNestscale %>% 
+  mutate(nf=nestnectar/nestnectar) %>% 
+  mutate(pf=nestpollen/nestnectar) %>% 
+  mutate(fb=nestfeedsbrood/nestnectar)
+
+count_scaled <- countsNests_scale
+count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
+count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
+
+# Replace all NaNs with 0 
+count_scaled[count_scaled=="NaN"]<-0
+
+
+#remove nest total and scaling columns 
+count_scaled <- count_scaled %>% select(!c(pf, fb, nf, nestnectar, nestpollen, nestfeedsbrood)) 
+
+count_scaled
+# Make all counts into integers 
+count_scaled[, 10:12] <- sapply(count_scaled[, 10:12], as.integer)
+
+#Update nBehavs to reflect scaling 
+count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging))
+count_scaled
+# Save as count_time again so we use this for all future analyses # # #
+count_time<-count_scaled
+```
+
+
+
 
 # Filter Data
 
@@ -1334,6 +1427,7 @@ camDur_filt
 # check how many nests were removed
 print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
 ```
+
 ### visualize and filter obs, count, and camDur data based on duration
 write obs_data
 write obs_time
