@@ -1518,7 +1518,6 @@ write.csv(obs_nests, "../Data/filtData/obs_nests.csv")
 # gather all behaviors into a single column
 countsFilt_gathered <- count_nests %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
 countsFilt_gathered
-
 # summarize and graph the total number behaviors observed across all individuals
 statsBehavFilt <- ddply(countsFilt_gathered, 
                 c("behav"), 
@@ -1528,7 +1527,7 @@ statsBehavFilt <- ddply(countsFilt_gathered,
                 sd = sd(count),
                 sem = sd(count)/sqrt(length(count)))
 ggplot(statsBehavFilt, aes(x = behav, y = nObs, fill = behav)) + geom_bar(stat = "identity")
-
+statsBehavFilt
 # summarize and graph the total number behaviors observed for each filtered nest
 statsNestFilt <- ddply(countsFilt_gathered, 
                 c("nestID", "behav"), 
@@ -1541,6 +1540,26 @@ statsNestFilt
 ggplot(statsNestFilt, aes(x = nestID, y = nObs, fill = behav)) + 
   geom_bar(stat = "identity") + 
   theme(axis.text.x = element_text(angle = 90), legend.position = "top")
+
+#Summary statsitics for all behaviors
+# gather all behaviors into a single column
+allFilt_gathered <- count_nests %>% gather("feedsbrood", "nectarforaging", 
+                                           "pollenforaging",
+                                           "egglaying", key = "behav", value = "count")
+
+# summarize and graph the total number behaviors observed across all individuals
+statsallBehavFilt <- ddply(allFilt_gathered, 
+                c("behav"), 
+                summarise,
+                nObs = sum(count),
+                mean = mean(count), 
+                sd = sd(count),
+                sem = sd(count)/sqrt(length(count)))
+
+statsallBehavFilt
+
+
+
 ```
 ## filter nest data at early and late timepoints
 nests with threshold number of observations at early OR late timepoints
