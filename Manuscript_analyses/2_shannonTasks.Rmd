@@ -17,6 +17,8 @@ library(lme4)     # glmms
 library(sjPlot)   # model summary
 library(multcomp) # tukey tests
 library(lsmeans)  # ls means posthoc tests
+library(car)      # qqp
+library(MuMIn)    # model.sel
 ```
 
 # load data
@@ -52,7 +54,7 @@ ps7 <- glmer(shannon ~ nBehav + (1|nestID) + (1|natal),
               data = taskShan)
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
 
-mymodel <- ps3
+mymodel <- ps5
 tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
