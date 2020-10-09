@@ -176,7 +176,7 @@ R1<-ggplot(rpttime, aes(Dist, Behavior)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
-  labs(x = "change in individual behavior proportion from early to late timepoint")
+  labs(x = "change in number of behaviors performed from early to late timepoint")
 
 ggsave("../figures/rptDistBehav.jpg")
 ```
