@@ -1315,7 +1315,7 @@ print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late
 ```
 
 #.
-# Scale data to nectar foraging
+# Scale data to nestBehavs
 ## Scale count_data
 ```{r}
 count_data
