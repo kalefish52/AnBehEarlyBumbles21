@@ -186,66 +186,7 @@ ggsave("../figures/kmeansBSov.jpg")
 ```
 
 
-# Analysis based on highest number of tasks workers perform 
-```{r}
-head(count_data)
-#filter so all bees have >= 3 behaviors
-high_behav<-count_data %>% filter(nBehavs>=3) 
-nrow(high_behav)
 
-highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging, 
-                                 feedsbrood, pollenforaging, egglaying)
-
-hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
-
-#Sort each bee by which behavior they do the most and then assign that bee to that behavior
-BehavAssign<-hbdf %>% dplyr::group_by(beeID) %>% dplyr::arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
-BehavAssign
-
-#Merge back into original dataframe
-FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
-FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
-
-ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
-ggsave("../figures/highcountdistribution.jpg")
-
-#Run GLMMs using BehavAssign as a grouping variable 
-
-ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
-ggsave("../figures/highcountBS.jpg")
-
-FinalBehavRank %>% dplyr::select(BehavAssign, beeID, avgOvS)
-ggplot(FinalBehavRank, aes(BehavAssign, avgOvS, color = caste, shape = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
-ggsave("../figures/highcountOV.jpg")
-
-hist(FinalBehavRank$size)
-FinalBehavRank
-j0 <- lmer(size~ 1 + (1|nestTYPE) + (1|natal),
-            data = FinalBehavRank)
-j1 <- lmer(size ~ BehavAssign + (1|nestTYPE) + (1|natal) + (1|caste),
-            data = FinalBehavRank)
-model.sel(j0, j1) 
-
-
-posthoc1 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
-summary(posthoc1)
-
-
-b0 <- lmer(avgOvS~ 1 + (1|nestTYPE) + (1|natal),
-            data = FinalBehavRank)
-b1 <- lmer(avgOvS ~ BehavAssign  + (1|nestTYPE) + (1|natal) + (1|caste), data = FinalBehavRank)
-model.sel(b0, b1) 
-
-
-posthoc2 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
-summary(posthoc2)
-
-
-```
 
 
 
