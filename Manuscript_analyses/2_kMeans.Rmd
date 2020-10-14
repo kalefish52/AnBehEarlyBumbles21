@@ -209,13 +209,18 @@ FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
 ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
 ggsave("../figures/highcountdistribution.jpg")
 
-
 #Run GLMMs using BehavAssign as a grouping variable 
 
 ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/highcountBS.jpg")
+
+FinalBehavRank %>% dplyr::select(BehavAssign, beeID, avgOvS)
+ggplot(FinalBehavRank, aes(BehavAssign, avgOvS, color = caste, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5)
+ggsave("../figures/highcountOV.jpg")
 
 hist(FinalBehavRank$size)
 FinalBehavRank
@@ -228,6 +233,16 @@ model.sel(j0, j1)
 
 posthoc1 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
 summary(posthoc1)
+
+
+b0 <- lmer(avgOvS~ 1 + (1|nestTYPE) + (1|natal),
+            data = FinalBehavRank)
+b1 <- lmer(avgOvS ~ BehavAssign  + (1|nestTYPE) + (1|natal) + (1|caste), data = FinalBehavRank)
+model.sel(b0, b1) 
+
+
+posthoc2 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
+summary(posthoc2)
 
 
 ```
