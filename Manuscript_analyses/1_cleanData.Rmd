@@ -16,10 +16,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)# piping, subset and filtering
 library(plyr)
-library(dplyr)    # subset, summarize, and filter
 library(ggplot2)  # graphs
 library(vegan)    # shannon diversity function
 library(ggpubr)
+library(dplyr)    # subset, summarize, and filter
 ```
 
 #.
@@ -1344,7 +1344,7 @@ count_scaled$nectarforaging<-count_scaled$nectarforaging / count_scaled$nf
 count_scaled[count_scaled=="NaN"]<-0
 
 #remove nest total and scaling columns 
-count_scaled <- count_scaled %>% select(!c(pf, el, fb, nf, nestnectar, nestpollen, nestegglaying, nestfeedsbrood, nestBehavs)) 
+count_scaled <- count_scaled %>% dplyr::select(!c(pf, el, fb, nf, nestnectar, nestpollen, nestegglaying, nestfeedsbrood, nestBehavs)) 
 
 count_scaled
 # Make all counts into integers 
@@ -1391,7 +1391,7 @@ count_scaled[count_scaled=="NaN"]<-0
 count_scaled
 
 #remove nest total and scaling columns 
-count_scaled <- count_scaled %>% select(!c(pf, fb, nf, nestnectar, nestpollen, nestfeedsbrood, nestBehavs)) 
+count_scaled <- count_scaled %>% dplyr::select(!c(pf, fb, nf, nestnectar, nestpollen, nestfeedsbrood, nestBehavs)) 
 
 count_scaled
 # Make all counts into integers 
@@ -2014,7 +2014,7 @@ taskShan <- taskShan[!is.na(taskShan$shannon),]
 max(taskShan$shannon)
 count_data[count_data$nestID == "QF06",]
 #add natalcolony column 
-nataladd<-count_nests %>% select(nestID, natal)
+nataladd<-count_nests %>% dplyr::select(nestID, natal)
 write.csv(nataladd, "../Data/nataladd.csv")
 taskshanNatal<-left_join(taskShan, nataladd,  by="nestID")
 
@@ -2111,7 +2111,7 @@ taskShanTime$nestTYPE <- substr(taskShanTime$nestID, start = 1, stop = 2)
 taskShanTime <- taskShanTime[!is.na(taskShanTime$shannon),]
 
 #add natalcolony column 
-nataladd<-count_nests %>% select(nestID, natal)
+nataladd<-count_nests %>% dplyr::select(nestID, natal)
 taskShanTime<-left_join(taskShanTime, nataladd,  by="nestID")
 
 
