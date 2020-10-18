@@ -29,7 +29,8 @@ count_data <- count_data[!grepl("unknown", count_data$beeID), ]
 count_data
 
 count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
-count_data <- count_data[!grepl("unknown", count_data$beeID),]
+count_data <- count_data[!grepl("unknown", count_data$beeID),] %>%
+  filter(nBehavs>=3)
 
 ```
 
@@ -42,7 +43,7 @@ set.seed(123)
 ## compute and plot total within sum of squares for 2-10 clusters
 k.max <- 10
 ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglaying
-data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]
+data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")] 
 
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
@@ -60,7 +61,7 @@ run k means analysis
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 3
+k <- 2
 
 ## run k means test
 test <- kmeans(data, k, nstart = 20)
@@ -120,19 +121,23 @@ count_data[count_data$cluster == 1,]
 # Do groups correspond to ovary/body size data?  
 ```{r}
 count_data
-kmeanstrends<-count_data %>% dplyr::select(size, ovS1, ovS2, cluster) %>% na.omit()
 
 count_data$avgOvS <- NA
 for (i in 1:nrow(count_data)) {
   count_data$avgOvS[i] <- (count_data$ovS1[i] + count_data$ovS2[i]) / 2
 }
 
+kmeanstrends<-count_data %>% dplyr::select(size, avgOvS, cluster) %>% na.omit()
+
+
+
+head(kmeanstrends)
 graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
   mutate(asize=mean(size)) %>%  
   mutate(sdsize=sd(size)) %>% 
-  mutate(aov=mean(avgov))  %>% 
-  mutate(sdov=sd(avgov)) %>% 
-  select(cluster, asize, sdsize, aov, sdov) %>% unique()
+  mutate(aov=mean(avgOvS))  %>% 
+  mutate(sdov=sd(avgOvS)) %>% 
+  dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
 
 BSk<-ggplot(graphkmeans, aes(x=cluster, y=asize)) +
     geom_bar(stat="identity", position=position_dodge(), colour="black") + 
@@ -169,7 +174,7 @@ p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
-  scale_color_manual(values = c("aquamarine3", "darkslateblue"))
+  scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
 ggsave("../figures/kmeansBS.jpg")
 p1
 
@@ -177,7 +182,7 @@ p2 <- ggplot(count_data, aes(cluster, avgOvS, shape = caste, color = cluster)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) + 
-  scale_color_manual(values = c("aquamarine3", "darkslateblue"))
+  scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
 p2
 ggsave("../figures/kmeansOv.jpg")
 

@@ -755,10 +755,10 @@ plot(allEffects(mymodel))
 ## Analysis based on highest number of tasks workers perform 
 ```{r}
 head(count_data)
-#filter so all bees have >= 3 behaviors
+#filter so all bees have >= 3 behaviors 
+# this includes lazy bees 
 high_behav<-count_data %>% filter(nBehavs>=3) 
 nrow(high_behav)
-
 highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging, 
                                  feedsbrood, pollenforaging, egglaying)
 
@@ -766,7 +766,8 @@ hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
 
 #Sort each bee by which behavior they do the most and then assign that bee to that behavior
 BehavAssign<-hbdf %>% dplyr::group_by(beeID) %>% dplyr::arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
-BehavAssign
+
+#How many bees are in each category? 
 
 #Merge back into original dataframe
 FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
@@ -831,6 +832,7 @@ summary(posthoc2)
 # subset to look only at perfectly specialized individuals
 perfSpec <- count_data[count_data$shannon == 0,]
 perfSpec <- perfSpec[!is.na(perfSpec$shannon),]
+nrow(perfSpec)
 perfSpec
 
 nrow(perfSpec[perfSpec$specBehav == "nectarforaging",])

@@ -35,9 +35,9 @@ count_time
 # How specialized are individuals? 
 ## two part model on pooled shannon across nestTYPES
 ```{r}
-# remove NA shannon values
-count_bees <- count_data[!is.na(count_data$shannon),]
-
+# remove NA shannon values and filter so only have bees with >= 3 behaviors
+count_bees <- count_data[!is.na(count_data$shannon),] %>% filter(nBehavs>=3)
+nrow(count_bees)
 # make a new column for over or under 0
 count_bees$shan0 <- NA
 # if shannon = 0, shan0 = 1
