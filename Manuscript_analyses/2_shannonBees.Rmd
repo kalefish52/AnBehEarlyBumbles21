@@ -29,11 +29,9 @@ count_data <- read.csv("../Data/filtData/count_data.csv")
 # split across timepoints, includes all bees, but only known bees with >=3 observations have shannon values
 count_time <- read.csv("../Data/filtData/count_time.csv")
 
-count_time
 ```
 
 # How specialized are individuals? 
-## two part model on pooled shannon across nestTYPES
 ```{r}
 # remove NA shannon values and filter so only have bees with >= 3 behaviors
 count_bees <- count_data[!is.na(count_data$shannon),] %>% filter(nBehavs>=3)
@@ -45,7 +43,16 @@ count_bees$shan0[count_bees$shannon == 0] <- 1
 # if shannon > 0, shan0 = 0
 count_bees$shan0[count_bees$shannon > 0] <- 0
 
+shanzero<-count_bees %>% filter(shan0=="1")
+#How many are perfectly specialized? 
+nrow(shanzero)
 
+#Max shannon
+max(count_bees$shannon)
+```
+## two part model on pooled shannon across nestTYPES
+### Bees with shannon=0
+```{r}
 # model 0 vs. >0 shannon values
 # need to add natal colony as random effect
 ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
@@ -83,15 +90,20 @@ ps15 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
 ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
               data = count_bees, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
-#Best model is ps5: AIC==117.1
+#Best model is ps11: AIC==137.7
 mymodel <- ps11
 tab_model(mymodel)
+summary(mymodel)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
-################
+
+```
+
+### Bees with shannon >0
+```{r}
 
 # make a new column that contains only shannon for bees with shannon > 0
 count_bees$shan1 <- NA
@@ -137,8 +149,9 @@ ps16 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal),
               data = count_bees)
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
-mymodel <- ps0
+mymodel <- ps15
 tab_model(mymodel)
+summary(mymodel)
 # plot model residuals
 modelResiduals <- resid(mymodel, type = "pearson") # Extract standardized residuals 
 hist(modelResiduals)
@@ -208,8 +221,9 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 posthoc1 <- glht(mymodel, linfct = mcp(queen + nBees = "Tukey"))
 summary(posthoc1)
 
-################
+```
 
+```{r}
 # make a new column that contains only shannon for bees with shannon > 0
 count_beesTime$shan1 <- NA
 count_beesTime$shan1[count_beesTime$shannon > 0] <- count_beesTime$shannon[count_beesTime$shannon > 0]
@@ -263,7 +277,10 @@ tab_model(mymodel)
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
 
+
+```{r}
 # run all using gaussian
 # model 0 vs. >0 shannon values
 ps0 <- glmer(shannon ~ 1 + (1|nestID) + (1|natal),
@@ -302,7 +319,7 @@ ps16 <- glmer(shannon ~ caste + (1|nestID) + (1|natal),
               data = count_beesTime, family = gaussian(link = "identity"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
-mymodel <- ps12
+mymodel <- ps15
 tab_model(mymodel)
 ```
 
