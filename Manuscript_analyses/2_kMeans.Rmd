@@ -61,7 +61,7 @@ run k means analysis
 set.seed(124)
 
 ## set k based on where elbow is in above graph
-k <- 2
+k <- 3
 
 ## run k means test
 test <- kmeans(data, k, nstart = 20)
@@ -93,11 +93,18 @@ plot_ly(x = count_data$feedsbrood,
       zaxis = list(title = "egglaying"))
   )
 
+
+
 #Plot counts of each cluster for each specBehav
 count_data
-kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster)
+kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster, egglaying, nectarforaging, feedsbrood, pollenforaging)
 
-head(kcounts)
+#How many in each group
+one<-kcounts %>% filter(cluster=="1")
+two<-kcounts %>% filter(cluster=="2")
+three<-kcounts %>% filter(cluster=="3")
+
+kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
 
 kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% dplyr::select(specBehav, cluster, frequency) %>% unique()
 
@@ -155,19 +162,24 @@ library(MuMIn)    # model.sel
 
 count_data$cluster <- as.factor(count_data$cluster)
 
-k0 <- glmer(cluster ~ 1 + (1|nestTYPE) + (1|natal),
-            family = binomial,
-            data = count_data)
-k1 <- glmer(cluster ~ avgOvS + (1|nestTYPE) + (1|natal),
-            family = binomial,
-            data = count_data)
-k2 <- glmer(cluster ~ size + (1|nestTYPE) + (1|natal) + (1|caste),
-            family = binomial,
+#Does ovary size change with cluster? 
+hist(count_data$avgOvS)
+k0 <- lmer(avgOvS ~ 1 + (1|nestTYPE) + (1|natal),
             data = count_data)
 
+k1 <- lmer(avgOvS ~ cluster + (1|nestTYPE) + (1|natal),
+            data = count_data)
+model.sel(k0, k1)
 
-tab_model(k1)
-tab_model(k2)
+k2 <- lmer(size ~ 1 + (1|nestTYPE) + (1|natal),
+            data = count_data)
+
+k3 <- lmer(size ~ cluster + (1|nestTYPE) + (1|natal) + (1|caste),
+            data = count_data)
+model.sel(k2, k3)
+posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
+summary(posthoc)
+
 
 library(gridExtra)
 p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
