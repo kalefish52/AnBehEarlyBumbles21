@@ -830,16 +830,21 @@ summary(posthoc2)
 # Perfectly specialized counts- size and ovaries 
 ```{r}
 # subset to look only at perfectly specialized individuals
+nrow(count_data)
 perfSpec <- count_data[count_data$shannon == 0,]
 perfSpec <- perfSpec[!is.na(perfSpec$shannon),]
 nrow(perfSpec)
-perfSpec
+
 
 nrow(perfSpec[perfSpec$specBehav == "nectarforaging",])
 nrow(perfSpec[perfSpec$specBehav == "pollenforaging",])
 nrow(perfSpec[perfSpec$specBehav == "feedsbrood",])
 nrow(perfSpec[perfSpec$specBehav == "egglaying",])
 
+```
+
+## Body Size 
+```{r}
 # MODEL SIZE 
 hist(perfSpec$size)
 
@@ -905,7 +910,7 @@ s30 <- glmer(size ~ nBees + (1|nestID) + (1|natal),
               data = perfSpec)
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
 
-s01 <- glmer(size ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal) + (1|caste),
+s01 <- lmer(size ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal) + (1|caste),
               data = perfSpec)
 
 mymodel <- s01
@@ -918,6 +923,22 @@ plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residu
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
+posthoc<-glht(s01, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc)
+
+
+# plot size against behavioral specialization 
+
+ggplot(data = perfSpec, aes(specBehav, size, color = nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "Behavior", y = "Body Size", color = "Nest Configuration")
+ggsave("../figures/bsperfectlyspecialized.jpg")
+
+```
+
+
+```{r}
 # plot all
 ggplot(data = perfSpec, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
