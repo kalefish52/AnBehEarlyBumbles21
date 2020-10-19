@@ -53,6 +53,7 @@ elbow <- plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
+ggsave("elbow.jpg")
 ```
 
 run k means analysis
@@ -187,8 +188,9 @@ p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
-ggsave("../figures/kmeansBS.jpg")
 p1
+ggsave("../figures/kmeansBS.jpg")
+
 
 p2 <- ggplot(count_data, aes(cluster, avgOvS, shape = caste, color = cluster)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
