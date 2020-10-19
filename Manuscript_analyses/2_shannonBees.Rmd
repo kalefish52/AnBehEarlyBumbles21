@@ -31,6 +31,7 @@ count_time <- read.csv("../Data/filtData/count_time.csv")
 
 ```
 
+
 # How specialized are individuals? 
 ```{r}
 # remove NA shannon values and filter so only have bees with >= 3 behaviors

@@ -60,6 +60,8 @@ nrow(count_data[count_data$specBehav == "egglaying",])
 nrow(count_data[count_data$specBehav == "generalist",])
 nrow(count_data[count_data$specBehav == "lazy",])
 
+count_data %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
 ```
 
 # visualize body size in relation to behavioral specialization

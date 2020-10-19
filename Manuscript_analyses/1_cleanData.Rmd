@@ -1867,8 +1867,8 @@ nSpec$nestTYPE <- substr(nSpec$nestID, start = 1, stop = 2)
 nSpec$nestTYPE <- ordered(nSpec$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 nSpec$specBehav <- ordered(nSpec$specBehav, levels = c("lazy", "generalist", "pollenforaging", "nectarforaging", "feedsbrood", "egglaying"))
 
+nSpec %>% filter(specBehav=="nectarforaging") %>% nrow()
 
-write.csv(nSpec, "../Data/filtData/nSpecialists.csv")
 
 ggplot(nSpec, aes(nBeesPerNest, specBehav)) +
   geom_point(position = position_jitter(width=0.15, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
