@@ -663,11 +663,14 @@ count_data
 # add to ovary length count_data
 count_data$ovL1 <- NA
 count_data$ovL2 <- NA
+count_data$ovLavg <- NA
 for (i in 1:nrow(count_data)) {
   for (j in 1:nrow(ovary_data)) {
     if (count_data$beeID[i] == ovary_data$beeID[j]) {
       count_data$ovL1[i] <- ovary_data$l1[j]
       count_data$ovL2[i] <- ovary_data$l2[j]
+      count_data$ovLavg[i] <- rowMeans(ovary_data[j, c("l1", "l2")], na.rm = TRUE)
+
     }
   }
 }
@@ -708,13 +711,14 @@ ovary_data$r2 <- as.numeric(ovary_data$r2)
 
 count_data$ovR1 <- NA
 count_data$ovR2 <- NA
-
+count_data$ovRavg <- NA
 # add ovary_data to count_data df
 for (i in 1:nrow(count_data)) {
   for (j in 1:nrow(ovary_data)) {
     if (count_data$beeID[i] == ovary_data$beeID[j]) {
       count_data$ovR1[i] <- ovary_data$r1[j]
       count_data$ovR2[i] <- ovary_data$r2[j]
+      count_data$ovRavg[i] <- rowMeans(ovary_data[j, c("r1", "r2")], na.rm = TRUE)
     }
   }
 }
@@ -752,14 +756,17 @@ ovary_data$s2 <- as.numeric(ovary_data$s2)
 # add ovary stage to count_data
 count_data$ovS1 <- NA
 count_data$ovS2 <- NA
+count_data$ovSavg <- NA
 for (i in 1:nrow(count_data)) {
   for (j in 1:nrow(ovary_data)) {
     if (count_data$beeID[i] == ovary_data$beeID[j]) {
       count_data$ovS1[i] <- ovary_data$s1[j]
       count_data$ovS2[i] <- ovary_data$s2[j]
+      count_data$ovSavg[i] <- rowMeans(ovary_data[j, c("s1", "s2")], na.rm = TRUE)
     }
   }
 }
+count_data
 ```
 ## add number of bees and queen status to count_data
 ```{r}
@@ -1233,10 +1240,13 @@ count_time$nBehavs <- rowSums(count_time[, c("feedsbrood", "nectarforaging", "po
 count_time$size <- NA
 count_time$ovL1 <- NA
 count_time$ovL2 <- NA
+count_time$ovLavg <- NA
 count_time$ovR1 <- NA
 count_time$ovR2 <- NA
+count_time$ovRavg <- NA
 count_time$ovS1 <- NA
 count_time$ovS2 <- NA
+count_time$ovSavg <- NA
 count_time$queen <- NA
 count_time$nWork <- NA
 count_time$nBees <- NA
@@ -1247,10 +1257,13 @@ for (i in 1:nrow(count_time)){
       count_time$size[i] <- count_data$size[j]
       count_time$ovL1[i] <- count_data$ovL1[j]
       count_time$ovL2[i] <- count_data$ovL2[j]
+      count_time$ovLavg[i] <- count_data$ovLavg[j]
       count_time$ovR1[i] <- count_data$ovR1[j]
       count_time$ovR2[i] <- count_data$ovR2[j]
+      count_time$ovRavg[i] <- count_data$ovRavg[j]
       count_time$ovS1[i] <- count_data$ovS1[j]
       count_time$ovS2[i] <- count_data$ovS2[j]
+      count_time$ovSavg[i] <- count_data$ovSavg[j]
       count_time$queen[i] <- count_data$queen[j]
       count_time$nWork[i] <- count_data$nWork[j]
       count_time$nBees[i] <- count_data$nBees[j]
@@ -1315,99 +1328,24 @@ print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late
 ```
 
 #.
-# Scale data to nestBehavs
-## Scale count_data
+# Scale data to nestBehavs and Filter Data
+## label lazy workers
 ```{r}
+# define lazy threshold
+obsThres <- 3
+
+# count_data
+count_data$lazy <- NA
+count_data$lazy[count_data$nBehavs < obsThres] <- "lazy"
+count_data$lazy[count_data$nBehavs >= obsThres] <- "notLazy"
 count_data
-# Calculate number of each behavior for each nest 
-countsNestscale<-count_data %>% group_by(nestID) %>% 
-  mutate(nestnectar=sum(nectarforaging)) %>% 
-  mutate(nestpollen=sum(pollenforaging)) %>% 
-  mutate(nestegglaying=sum(egglaying)) %>% 
-  mutate(nestfeedsbrood=sum(feedsbrood))%>% rowwise() %>% 
-  mutate(nestBehavs=sum(nestnectar, nestpollen, nestegglaying, nestfeedsbrood))
 
-# scale to total nest behaviors 
-countsNests_scale <-  countsNestscale %>% 
-  mutate(nf=nestnectar/nestBehavs) %>% 
-  mutate(pf=nestpollen/nestBehavs) %>% 
-  mutate(el=nestegglaying/nestBehavs) %>% 
-  mutate(fb=nestfeedsbrood/nestBehavs) 
-
-count_scaled <- countsNests_scale
-count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
-count_scaled$egglaying <- count_scaled$egglaying / count_scaled$el
-count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
-count_scaled$nectarforaging<-count_scaled$nectarforaging / count_scaled$nf
-
-# Replace all NaNs with 0 
-count_scaled[count_scaled=="NaN"]<-0
-
-#remove nest total and scaling columns 
-count_scaled <- count_scaled %>% dplyr::select(!c(pf, el, fb, nf, nestnectar, nestpollen, nestegglaying, nestfeedsbrood, nestBehavs)) 
-
-count_scaled
-# Make all counts into integers 
-count_scaled[, 9:12] <- sapply(count_scaled[, 9:12], as.integer)
-
-#Update nBehavs to reflect scaling 
-count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging, egglaying))
-count_scaled
-# Save as count_data again so we use this for all future analyses # # #
-
-count_data<-count_scaled 
-count_data
+# count_time
+count_time$lazy <- NA
+count_time$lazy[count_time$nBehavs < obsThres] <- "lazy"
+count_time$lazy[count_time$nBehavs >= obsThres] <- "notLazy"
+count_time
 ```
-
-
-## Scale count_time
-```{r}
-# Calculate number of each behavior for each nest 
-# Did not group by time too because we want to scale by total for the nest, the same as above
-# Also removed egglaying
-
-countsNestscale<-count_time %>% group_by(nestID) %>% 
-  mutate(nestnectar=sum(nectarforaging)) %>% 
-  mutate(nestpollen=sum(pollenforaging)) %>% 
-  mutate(nestfeedsbrood=sum(feedsbrood)) %>% rowwise() %>% 
-  mutate(nestBehavs=sum(nestnectar, nestpollen, nestfeedsbrood))
-
-
-# calculate the proportions of all behaviors carried out per nest 
-# scale to nf because there are the most of that
-
-countsNests_scale <-  countsNestscale %>% 
-  mutate(nf=nestnectar/nestBehavs) %>% 
-  mutate(pf=nestpollen/nestBehavs) %>% 
-  mutate(fb=nestfeedsbrood/nestBehavs)
-
-count_scaled <- countsNests_scale
-count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
-count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
-count_scaled$nectarforaging <- count_scaled$nectarforaging / count_scaled$nf
-
-# Replace all NaNs with 0 
-count_scaled[count_scaled=="NaN"]<-0
-count_scaled
-
-#remove nest total and scaling columns 
-count_scaled <- count_scaled %>% dplyr::select(!c(pf, fb, nf, nestnectar, nestpollen, nestfeedsbrood, nestBehavs)) 
-
-count_scaled
-# Make all counts into integers 
-count_scaled[, 10:12] <- sapply(count_scaled[, 10:12], as.integer)
-
-#Update nBehavs to reflect scaling 
-count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging))
-count_scaled
-# Save as count_time again so we use this for all future analyses # # #
-count_time<-count_scaled
-```
-
-
-
-
-# Filter Data
 
 ## filter all data based on nest with threshold duration of video watched
     filter to include only nests that have passed a threshold amount of video watched
@@ -1609,6 +1547,92 @@ unique(rmNestsLate$nestID)
 count_nestsTime <- rbind(count_nestsEarly, count_nestsLate)
 write.csv(count_nestsTime, "../Data/filtData/count_nestsTime.csv")
 ```
+## Scale count_data
+```{r}
+count_data
+# Calculate number of each behavior for each nest 
+countsNestscale<-count_data %>% group_by(nestID) %>% 
+  mutate(nestnectar=sum(nectarforaging)) %>% 
+  mutate(nestpollen=sum(pollenforaging)) %>% 
+  mutate(nestegglaying=sum(egglaying)) %>% 
+  mutate(nestfeedsbrood=sum(feedsbrood))%>% rowwise() %>% 
+  mutate(nestBehavs=sum(nestnectar, nestpollen, nestegglaying, nestfeedsbrood))
+
+# scale to total nest behaviors 
+countsNests_scale <-  countsNestscale %>% 
+  mutate(nf=nestnectar/nestBehavs) %>% 
+  mutate(pf=nestpollen/nestBehavs) %>% 
+  mutate(el=nestegglaying/nestBehavs) %>% 
+  mutate(fb=nestfeedsbrood/nestBehavs) 
+
+count_scaled <- countsNests_scale
+count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
+count_scaled$egglaying <- count_scaled$egglaying / count_scaled$el
+count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
+count_scaled$nectarforaging<-count_scaled$nectarforaging / count_scaled$nf
+
+# Replace all NaNs with 0 
+count_scaled[count_scaled=="NaN"]<-0
+
+#remove nest total and scaling columns 
+count_scaled <- count_scaled %>% dplyr::select(!c(pf, el, fb, nf, nestnectar, nestpollen, nestegglaying, nestfeedsbrood, nestBehavs)) 
+
+count_scaled
+# Make all counts into integers 
+count_scaled[, 9:12] <- sapply(count_scaled[, 9:12], as.integer)
+
+#Update nBehavs to reflect scaling 
+count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging, egglaying))
+count_scaled
+# Save as count_data again so we use this for all future analyses # # #
+
+count_data<-count_scaled 
+count_data
+```
+
+## Scale count_time
+```{r}
+# Calculate number of each behavior for each nest 
+# Did not group by time too because we want to scale by total for the nest, the same as above
+# Also removed egglaying
+
+countsNestscale<-count_time %>% group_by(nestID) %>% 
+  mutate(nestnectar=sum(nectarforaging)) %>% 
+  mutate(nestpollen=sum(pollenforaging)) %>% 
+  mutate(nestfeedsbrood=sum(feedsbrood)) %>% rowwise() %>% 
+  mutate(nestBehavs=sum(nestnectar, nestpollen, nestfeedsbrood))
+
+
+# calculate the proportions of all behaviors carried out per nest 
+# scale to nf because there are the most of that
+
+countsNests_scale <-  countsNestscale %>% 
+  mutate(nf=nestnectar/nestBehavs) %>% 
+  mutate(pf=nestpollen/nestBehavs) %>% 
+  mutate(fb=nestfeedsbrood/nestBehavs)
+
+count_scaled <- countsNests_scale
+count_scaled$pollenforaging <- count_scaled$pollenforaging / count_scaled$pf
+count_scaled$feedsbrood <- count_scaled$feedsbrood / count_scaled$fb
+count_scaled$nectarforaging <- count_scaled$nectarforaging / count_scaled$nf
+
+# Replace all NaNs with 0 
+count_scaled[count_scaled=="NaN"]<-0
+count_scaled
+
+#remove nest total and scaling columns 
+count_scaled <- count_scaled %>% dplyr::select(!c(pf, fb, nf, nestnectar, nestpollen, nestfeedsbrood, nestBehavs)) 
+
+count_scaled
+# Make all counts into integers 
+count_scaled[, 10:12] <- sapply(count_scaled[, 10:12], as.integer)
+
+#Update nBehavs to reflect scaling 
+count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, feedsbrood, pollenforaging))
+count_scaled
+# Save as count_time again so we use this for all future analyses # # #
+count_time<-count_scaled
+```
 
 #.
 #.
@@ -1627,9 +1651,8 @@ count_data$shannon <- NA
 # calculate shannon for each bee in the matrix and add to shannon column
 count_data$shannon <- diversity(beeShan, index = "shannon") 
 
-# make shannon NA for bees with less than threshold number of behaviors - we only want to include bees with above a threshold number in analyses
-obsThres <- 3
-count_data$shannon[count_data$nBehavs < obsThres] <- NA
+# make shannon NA for lazy bees with less than threshold number of behaviors - we only want to include bees with above a threshold number in shannon analyses
+count_data$shannon[count_data$lazy == "lazy"] <- NA
 # make shannon NA for unidentified bees - we don't want to inclue these in analyses
 count_data[grepl("unknown", count_data$beeID), "shannon"] <- NA
 
@@ -1695,9 +1718,9 @@ beeShanTime <- as.matrix(count_time[,c("feedsbrood", "nectarforaging", "pollenfo
 # calculate shannon for each bee in the matrix
 count_time$shannon <- diversity(beeShanTime, index = "shannon") 
 
-# make shannon NA for bees with less than threshold number of behaviors - we only want to include bees with above a threshold number in analyses
+# make shannon NA for lazy bees with less than threshold number of behaviors - we only want to include bees with above a threshold number in shannon analyses
 # threshold defined in bee shannon chunk
-count_time$shannon[count_time$nBehavs < obsThres] <- NA
+count_time$shannon[count_time$lazy == "lazy"] <- NA
 # make shannon NA for unidentified bees - we don't want to inclue these in analyses
 count_time[grepl("unknown", count_time$beeID), "shannon"] <- NA
 
@@ -1781,12 +1804,15 @@ count_data$specBehav <- NA
 count_data$specProp <- NA
 
 for (i in 1:nrow(count_data)) {
-  # if the bee has fewer than threshold number of obs (shannon is NA)
-  if (is.na(count_data$shannon[i])) {
+  # if the bee has fewer than threshold number of obs (shannon is NA as well)
+  if (count_data$lazy[i] == "lazy") {
     # name the behavior as lazy
     count_data$specBehav[i] <- "lazy"
     # kepp proportion as NA
     count_data$specProp[i] <- NA
+  }
+  else if (is.na(count_data$shannon[i])) {
+  # if the shannon is na, skip it
   }
   # if the bee is a specialist (i.e. shannon <= threshold)
   else if (count_data$shannon[i] <= shannonSpecialist) {
@@ -1825,6 +1851,9 @@ print(paste("there are", nrow(count_notNA[count_notNA$shannon <= shannonSpeciali
 # tally the number of specialists in each category
 specCat <- count_known %>% dplyr::group_by(specBehav) %>% dplyr::summarise(nSpec = dplyr::n())
 specCat
+
+# remove unknown workers
+count_data <- count_data[!grepl("unknown", count_data$beeID),]
 # save for future analyses
 write.csv(count_data, "../Data/filtData/count_data.csv")
 
@@ -1889,12 +1918,15 @@ count_time$specBehav <- NA
 count_time$specProp <- NA
 
 for (i in 1:nrow(count_time)) {
-   # if the bee has fewer than threshold number of obs (shannon is NA)
-  if (is.na(count_time$shannon[i])) {
+   # if the bee has fewer than threshold number of obs (shannon is also NA)
+  if (count_time$lazy == "lazy") {
     # name the behavior as lazy
     count_time$specBehav[i] <- "lazy"
     # kepp proportion as NA
     count_time$specProp[i] <- NA
+  }
+  else if (is.na(count_time$shannon[i])) {
+  # if shannon is na, skip it, stays as NA specBehav
   }
   # if the bee is a specialist (i.e. shannon <= threshold)
   else if (count_time$shannon[i] <= shannonSpecialist) {
@@ -1917,6 +1949,9 @@ for (i in 1:nrow(count_time)) {
 count_time$specProp <- as.numeric(count_time$specProp)
 minSpecProp <- min(count_time$specProp, na.rm = TRUE)
 print(paste0("With a shannon specialist cutoff of ", shannonSpecialist, ", the specialized behavior comprises ", minSpecProp, " to 100% of all behaviors carried out by a given individual."))
+
+# remove unknown workers
+count_time <- count_time[!grepl("unknown", count_time$beeID),]
 
 # write for future analyses
 write.csv(count_time, "../Data/filtData/count_time.csv")
@@ -1946,8 +1981,10 @@ for (i in 0:(length(unique(count_time$nestID))-1)) {
 # replace number of bees with accurate number
 # first summarize 
 nSpecTime_missing0 <- count_time %>% dplyr::group_by(nestID, nestTYPE, specBehav, timepoint) %>% dplyr::summarise(nBeesPerNest = dplyr::n())
+# remove unknown workers (with NA specialist behavior)
+nSpecTime_missing0 <- nSpecTime_missing0[!is.na(nSpecTime_missing0$specBehav),]
 nSpecTime_missing0
-
+nSpecTime
 # for each line in nSpecTime_missing0
 for (i in 1:nrow(nSpecTime_missing0)) {
   # iterate through the nSpecTime df
