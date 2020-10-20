@@ -130,21 +130,14 @@ count_data[count_data$cluster == 1,]
 ```{r}
 count_data
 
-count_data$avgOvS <- NA
-for (i in 1:nrow(count_data)) {
-  count_data$avgOvS[i] <- (count_data$ovS1[i] + count_data$ovS2[i]) / 2
-}
-
-kmeanstrends<-count_data %>% dplyr::select(size, avgOvS, cluster) %>% na.omit()
-
-
+kmeanstrends<-count_data %>% dplyr::select(size, ovSavg, cluster) %>% na.omit()
 
 head(kmeanstrends)
 graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
   mutate(asize=mean(size)) %>%  
   mutate(sdsize=sd(size)) %>% 
-  mutate(aov=mean(avgOvS))  %>% 
-  mutate(sdov=sd(avgOvS)) %>% 
+  mutate(aov=mean(ovSavg))  %>% 
+  mutate(sdov=sd(ovSavg)) %>% 
   dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
 
 BSk<-ggplot(graphkmeans, aes(x=cluster, y=asize)) +
@@ -164,11 +157,11 @@ library(MuMIn)    # model.sel
 count_data$cluster <- as.factor(count_data$cluster)
 
 #Does ovary size change with cluster? 
-hist(count_data$avgOvS)
-k0 <- lmer(avgOvS ~ 1 + (1|nestTYPE) + (1|natal),
+hist(count_data$ovSavg)
+k0 <- lmer(ovSavg ~ 1 + (1|nestTYPE) + (1|natal),
             data = count_data)
 
-k1 <- lmer(avgOvS ~ cluster + (1|nestTYPE) + (1|natal),
+k1 <- lmer(ovSavg ~ cluster + (1|nestTYPE) + (1|natal),
             data = count_data)
 model.sel(k0, k1)
 
@@ -192,7 +185,7 @@ p1
 ggsave("../figures/kmeansBS.jpg")
 
 
-p2 <- ggplot(count_data, aes(cluster, avgOvS, shape = caste, color = cluster)) +
+p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) + 

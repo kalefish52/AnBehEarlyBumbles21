@@ -166,11 +166,10 @@ nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
 nmds_worker <- cbind(nmds_worker, nmds_Wscores)
 
 nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-nmds_worker <- nmds_worker %>% mutate(avgStage=((ovS1+ovS2)/2))
 nmds_worker
 # plot ovary stage onto nmds
 ggplot() + 
-  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = avgStage), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = ovSavg), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
   scale_colour_gradient(low = "yellow", high = "blue") + 
   geom_text(data=behav_Wscores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
@@ -178,7 +177,7 @@ ggsave("../figures/nmdsOVARY.jpg")
 
 # plot ovary stage by egg laying
 ggplot() +
-  geom_point(data = nmds_worker, aes(x = egglaying, y = avgStage, color = avgStage), 
+  geom_point(data = nmds_worker, aes(x = egglaying, y = ovSavg, color = ovSavg), 
              size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.5) +
     scale_colour_gradient(low = "yellow", high = "blue") 
 ggsave("../figures/eggOVARY.jpg")

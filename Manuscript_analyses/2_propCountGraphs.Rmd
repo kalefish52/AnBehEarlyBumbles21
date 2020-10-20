@@ -17,12 +17,8 @@ library(ggplot2)
 ```{r}
 prop <- read.csv("../Data/filtData/prop_bees.csv")
 
+# look only at workers
 prop <- prop[prop$caste == "W",]
-prop$ovS <- rowMeans(prop[,c("ovS1", "ovS2")], na.rm = TRUE)
-prop$ovR <- rowMeans(prop[,c("ovR1", "ovR2")], na.rm = TRUE)
-prop <- prop[!grepl("unknown", prop$beeID), ]
-
-prop
 ```
 # number of egg layers
 ```{r}
@@ -58,22 +54,22 @@ ggplot(prop, aes(x = egglaying, y = size)) +
 ```{r}
 # ovary stage
 
-ggplot(prop, aes(x = nectarforaging, y = ovS)) +
+ggplot(prop, aes(x = nectarforaging, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = pollenforaging, y = ovS)) +
+ggplot(prop, aes(x = pollenforaging, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = feedsbrood, y = ovS)) +
+ggplot(prop, aes(x = feedsbrood, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = egglaying, y = ovS)) +
+ggplot(prop, aes(x = egglaying, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
@@ -82,22 +78,22 @@ ggplot(prop, aes(x = egglaying, y = ovS)) +
 ```{r}
 # ovary resorption
 
-ggplot(prop, aes(x = nectarforaging, y = ovR)) +
+ggplot(prop, aes(x = nectarforaging, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = pollenforaging, y = ovR)) +
+ggplot(prop, aes(x = pollenforaging, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = feedsbrood, y = ovR)) +
+ggplot(prop, aes(x = feedsbrood, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(prop, aes(x = egglaying, y = ovR)) +
+ggplot(prop, aes(x = egglaying, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
@@ -106,11 +102,7 @@ ggplot(prop, aes(x = egglaying, y = ovR)) +
 # COUNTS
 ```{r}
 count <- read.csv("../Data/filtData/count_data.csv")
-count <- count[count$nBehavs > 2,]
 count <- count[count$caste == "W",]
-count <- count[!grepl("unknown", count$beeID), ]
-count$ovS <- rowMeans(count[,c("ovS1", "ovS2")], na.rm = TRUE)
-count$ovR <- rowMeans(count[,c("ovR1", "ovR2")], na.rm = TRUE)
 ```
 
 ```{r}
@@ -139,22 +131,22 @@ ggplot(count, aes(x = egglaying, y = size)) +
 ```{r}
 # ovary stage
 
-ggplot(count, aes(x = nectarforaging, y = ovS)) +
+ggplot(count, aes(x = nectarforaging, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = pollenforaging, y = ovS)) +
+ggplot(count, aes(x = pollenforaging, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = feedsbrood, y = ovS)) +
+ggplot(count, aes(x = feedsbrood, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = egglaying, y = ovS)) +
+ggplot(count, aes(x = egglaying, y = ovSavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
@@ -163,22 +155,22 @@ ggplot(count, aes(x = egglaying, y = ovS)) +
 ```{r}
 # ovary resorption
 
-ggplot(count, aes(x = nectarforaging, y = ovR)) +
+ggplot(count, aes(x = nectarforaging, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = pollenforaging, y = ovR)) +
+ggplot(count, aes(x = pollenforaging, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = feedsbrood, y = ovR)) +
+ggplot(count, aes(x = feedsbrood, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")
 
-ggplot(count, aes(x = egglaying, y = ovR)) +
+ggplot(count, aes(x = egglaying, y = ovRavg)) +
   geom_smooth(method=lm) +
   geom_point(aes(color = shannon, shape = specBehav)) +
   scale_color_gradient(low="dark blue", high="yellow")

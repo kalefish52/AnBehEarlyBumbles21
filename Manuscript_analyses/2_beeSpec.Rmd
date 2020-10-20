@@ -81,11 +81,7 @@ ggsave("../figures/bodySize.jpg")
 # visualize ovary development in relation to behavioral specialization
 ```{r}
 # OVARY LENGTH
-
-# calculate mean for each bee
-count_data$avgLen <- rowMeans(count_data[,c("ovL1", "ovL2")], na.rm = TRUE)
-
-ggplot(data = count_data, aes(avgLen, specBehav, color = shannon)) +
+ggplot(data = count_data, aes(ovLavg, specBehav, color = shannon)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_color_gradient(low="dark blue", high="yellow") +
@@ -95,11 +91,7 @@ ggsave("../figures/ovaryLength.jpg")
 
 
 # OVARY STAGE (resorbed oocytes = stage 4)
-
-# calculate mean for each bee
-count_data$avgStage <- rowMeans(count_data[,c("ovS1", "ovS2")], na.rm = TRUE)
-
-p2 <- ggplot(data = count_data, aes(avgStage, specBehav, color = shannon)) +
+p2 <- ggplot(data = count_data, aes(ovSavg, specBehav, color = shannon)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_color_gradient(low="dark blue", high="yellow") +
@@ -110,11 +102,7 @@ ggsave("../figures/ovaryStage.jpg")
 
 
 # OOCYTE RESORPTION - similar trends
-
-# calculate mean for each bee
-count_data$avgRes <- rowMeans(count_data[,c("ovR1", "ovR2")], na.rm = TRUE)
-
-p3 <- ggplot(data = count_data, aes(avgRes, specBehav, color = shannon)) +
+p3 <- ggplot(data = count_data, aes(ovRavg, specBehav, color = shannon)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_color_gradient(low="dark blue", high="yellow") +
@@ -136,7 +124,7 @@ ggdensity(count_data$size)
 count_data
 
 # transform the data to make each specialization a different column, with yes/no (0/1) data in each row
-count_wide <- pivot_wider(count_data, id_cols = c(caste, nestTYPE, beeID, nestID, size, avgStage, avgRes, natal, queen, nBees), names_from = specBehav, values_from = specBehav)
+count_wide <- pivot_wider(count_data, id_cols = c(caste, nestTYPE, beeID, nestID, size, ovSavg, ovRavg, natal, queen, nBees), names_from = specBehav, values_from = specBehav)
 
 # make NA values "other" in behavioral specialization
 count_wide$feedsbrood <- as.character(count_wide$feedsbrood)
@@ -169,33 +157,33 @@ count_wide
 # MODEL EGG LAYING 
 el0 <- glmer(egglaying ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-el1 <- glmer(egglaying ~ size + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+el1 <- glmer(egglaying ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el2 <- glmer(egglaying ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+el2 <- glmer(egglaying ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el3 <- glmer(egglaying ~ size + avgStage + queen + nBees + (1|nestID) + (1|natal),
+el3 <- glmer(egglaying ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el4 <- glmer(egglaying ~ size + avgStage + queen  + (1|nestID) + (1|natal),
+el4 <- glmer(egglaying ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el5 <- glmer(egglaying ~ size + avgStage  + nBees + (1|nestID) + (1|natal),
+el5 <- glmer(egglaying ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el6 <- glmer(egglaying ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+el6 <- glmer(egglaying ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el7 <- glmer(egglaying ~ size + avgRes + queen  + (1|nestID) + (1|natal),
+el7 <- glmer(egglaying ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el8 <- glmer(egglaying ~ size + avgRes  + nBees + (1|nestID) + (1|natal),
+el8 <- glmer(egglaying ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el9 <- glmer(egglaying ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+el9 <- glmer(egglaying ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el10 <- glmer(egglaying ~ avgStage + avgRes + queen  + (1|nestID) + (1|natal),
+el10 <- glmer(egglaying ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el11 <- glmer(egglaying ~ avgStage + avgRes  + nBees + (1|nestID) + (1|natal),
+el11 <- glmer(egglaying ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el12 <- glmer(egglaying ~ size + avgStage + (1|nestID) + (1|natal),
+el12 <- glmer(egglaying ~ size + ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el13 <- glmer(egglaying ~ size + avgRes + (1|nestID) + (1|natal),
+el13 <- glmer(egglaying ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el14 <- glmer(egglaying ~ avgStage + avgRes + (1|nestID) + (1|natal),
+el14 <- glmer(egglaying ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 el15 <- glmer(egglaying ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -203,23 +191,23 @@ el16 <- glmer(egglaying ~ size + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 el17 <- glmer(egglaying ~ size  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el18 <- glmer(egglaying ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+el18 <- glmer(egglaying ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el19 <- glmer(egglaying ~ avgStage + queen  + (1|nestID) + (1|natal),
+el19 <- glmer(egglaying ~ ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el20 <- glmer(egglaying ~ avgStage  + nBees + (1|nestID) + (1|natal),
+el20 <- glmer(egglaying ~ ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el21 <- glmer(egglaying ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+el21 <- glmer(egglaying ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el22 <- glmer(egglaying ~ avgRes + queen  + (1|nestID) + (1|natal),
+el22 <- glmer(egglaying ~ ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el23 <- glmer(egglaying ~ avgRes  + nBees + (1|nestID) + (1|natal),
+el23 <- glmer(egglaying ~ ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 el24 <- glmer(egglaying ~ size + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el25 <- glmer(egglaying ~ avgStage + (1|nestID) + (1|natal),
+el25 <- glmer(egglaying ~ ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-el26 <- glmer(egglaying ~ avgRes + (1|nestID) + (1|natal),
+el26 <- glmer(egglaying ~ ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 el27 <- glmer(egglaying ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -239,33 +227,33 @@ plot(allEffects(mymodel))
 # MODEL BROOD FEEDING
 fb0 <- glmer(feedsbrood ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-fb1 <- glmer(feedsbrood ~ size + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+fb1 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb2 <- glmer(feedsbrood ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+fb2 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb3 <- glmer(feedsbrood ~ size + avgStage + queen + nBees + (1|nestID) + (1|natal),
+fb3 <- glmer(feedsbrood ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb4 <- glmer(feedsbrood ~ size + avgStage + queen  + (1|nestID) + (1|natal),
+fb4 <- glmer(feedsbrood ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb5 <- glmer(feedsbrood ~ size + avgStage  + nBees + (1|nestID) + (1|natal),
+fb5 <- glmer(feedsbrood ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb6 <- glmer(feedsbrood ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+fb6 <- glmer(feedsbrood ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb7 <- glmer(feedsbrood ~ size + avgRes + queen  + (1|nestID) + (1|natal),
+fb7 <- glmer(feedsbrood ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb8 <- glmer(feedsbrood ~ size + avgRes  + nBees + (1|nestID) + (1|natal),
+fb8 <- glmer(feedsbrood ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb9 <- glmer(feedsbrood ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+fb9 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb10 <- glmer(feedsbrood ~ avgStage + avgRes + queen  + (1|nestID) + (1|natal),
+fb10 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb11 <- glmer(feedsbrood ~ avgStage + avgRes  + nBees + (1|nestID) + (1|natal),
+fb11 <- glmer(feedsbrood ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb12 <- glmer(feedsbrood ~ size + avgStage + (1|nestID) + (1|natal),
+fb12 <- glmer(feedsbrood ~ size + ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb13 <- glmer(feedsbrood ~ size + avgRes + (1|nestID) + (1|natal),
+fb13 <- glmer(feedsbrood ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb14 <- glmer(feedsbrood ~ avgStage + avgRes + (1|nestID) + (1|natal),
+fb14 <- glmer(feedsbrood ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 fb15 <- glmer(feedsbrood ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -273,23 +261,23 @@ fb16 <- glmer(feedsbrood ~ size + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 fb17 <- glmer(feedsbrood ~ size  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb18 <- glmer(feedsbrood ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+fb18 <- glmer(feedsbrood ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb19 <- glmer(feedsbrood ~ avgStage + queen  + (1|nestID) + (1|natal),
+fb19 <- glmer(feedsbrood ~ ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb20 <- glmer(feedsbrood ~ avgStage  + nBees + (1|nestID) + (1|natal),
+fb20 <- glmer(feedsbrood ~ ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb21 <- glmer(feedsbrood ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+fb21 <- glmer(feedsbrood ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb22 <- glmer(feedsbrood ~ avgRes + queen  + (1|nestID) + (1|natal),
+fb22 <- glmer(feedsbrood ~ ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb23 <- glmer(feedsbrood ~ avgRes  + nBees + (1|nestID) + (1|natal),
+fb23 <- glmer(feedsbrood ~ ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 fb24 <- glmer(feedsbrood ~ size + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb25 <- glmer(feedsbrood ~ avgStage + (1|nestID) + (1|natal),
+fb25 <- glmer(feedsbrood ~ ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb26 <- glmer(feedsbrood ~ avgRes + (1|nestID) + (1|natal),
+fb26 <- glmer(feedsbrood ~ ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 fb27 <- glmer(feedsbrood ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -309,33 +297,33 @@ plot(allEffects(mymodel))
 # MODEL NECTAR FORAGING
 nf0 <- glmer(nectarforaging ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-nf1 <- glmer(nectarforaging ~ size + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+nf1 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf2 <- glmer(nectarforaging ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+nf2 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf3 <- glmer(nectarforaging ~ size + avgStage + queen + nBees + (1|nestID) + (1|natal),
+nf3 <- glmer(nectarforaging ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf4 <- glmer(nectarforaging ~ size + avgStage + queen  + (1|nestID) + (1|natal),
+nf4 <- glmer(nectarforaging ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf5 <- glmer(nectarforaging ~ size + avgStage  + nBees + (1|nestID) + (1|natal),
+nf5 <- glmer(nectarforaging ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf6 <- glmer(nectarforaging ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+nf6 <- glmer(nectarforaging ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf7 <- glmer(nectarforaging ~ size + avgRes + queen  + (1|nestID) + (1|natal),
+nf7 <- glmer(nectarforaging ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf8 <- glmer(nectarforaging ~ size + avgRes  + nBees + (1|nestID) + (1|natal),
+nf8 <- glmer(nectarforaging ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf9 <- glmer(nectarforaging ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+nf9 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf10 <- glmer(nectarforaging ~ avgStage + avgRes + queen  + (1|nestID) + (1|natal),
+nf10 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf11 <- glmer(nectarforaging ~ avgStage + avgRes  + nBees + (1|nestID) + (1|natal),
+nf11 <- glmer(nectarforaging ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf12 <- glmer(nectarforaging ~ size + avgStage + (1|nestID) + (1|natal),
+nf12 <- glmer(nectarforaging ~ size + ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf13 <- glmer(nectarforaging ~ size + avgRes + (1|nestID) + (1|natal),
+nf13 <- glmer(nectarforaging ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf14 <- glmer(nectarforaging ~ avgStage + avgRes + (1|nestID) + (1|natal),
+nf14 <- glmer(nectarforaging ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 nf15 <- glmer(nectarforaging ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -343,23 +331,23 @@ nf16 <- glmer(nectarforaging ~ size + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 nf17 <- glmer(nectarforaging ~ size  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf18 <- glmer(nectarforaging ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+nf18 <- glmer(nectarforaging ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf19 <- glmer(nectarforaging ~ avgStage + queen  + (1|nestID) + (1|natal),
+nf19 <- glmer(nectarforaging ~ ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf20 <- glmer(nectarforaging ~ avgStage  + nBees + (1|nestID) + (1|natal),
+nf20 <- glmer(nectarforaging ~ ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf21 <- glmer(nectarforaging ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+nf21 <- glmer(nectarforaging ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf22 <- glmer(nectarforaging ~ avgRes + queen  + (1|nestID) + (1|natal),
+nf22 <- glmer(nectarforaging ~ ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf23 <- glmer(nectarforaging ~ avgRes  + nBees + (1|nestID) + (1|natal),
+nf23 <- glmer(nectarforaging ~ ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 nf24 <- glmer(nectarforaging ~ size + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf25 <- glmer(nectarforaging ~ avgStage + (1|nestID) + (1|natal),
+nf25 <- glmer(nectarforaging ~ ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-nf26 <- glmer(nectarforaging ~ avgRes + (1|nestID) + (1|natal),
+nf26 <- glmer(nectarforaging ~ ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 nf27 <- glmer(nectarforaging ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -380,33 +368,33 @@ plot(allEffects(mymodel))
 # MODEL GENERALISTS
 gen0 <- glmer(generalist ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-gen1 <- glmer(generalist ~ size + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+gen1 <- glmer(generalist ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen2 <- glmer(generalist ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+gen2 <- glmer(generalist ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen3 <- glmer(generalist ~ size + avgStage + queen + nBees + (1|nestID) + (1|natal),
+gen3 <- glmer(generalist ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen4 <- glmer(generalist ~ size + avgStage + queen  + (1|nestID) + (1|natal),
+gen4 <- glmer(generalist ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen5 <- glmer(generalist ~ size + avgStage  + nBees + (1|nestID) + (1|natal),
+gen5 <- glmer(generalist ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen6 <- glmer(generalist ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+gen6 <- glmer(generalist ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen7 <- glmer(generalist ~ size + avgRes + queen  + (1|nestID) + (1|natal),
+gen7 <- glmer(generalist ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen8 <- glmer(generalist ~ size + avgRes  + nBees + (1|nestID) + (1|natal),
+gen8 <- glmer(generalist ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen9 <- glmer(generalist ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+gen9 <- glmer(generalist ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen10 <- glmer(generalist ~ avgStage + avgRes + queen  + (1|nestID) + (1|natal),
+gen10 <- glmer(generalist ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen11 <- glmer(generalist ~ avgStage + avgRes  + nBees + (1|nestID) + (1|natal),
+gen11 <- glmer(generalist ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen12 <- glmer(generalist ~ size + avgStage + (1|nestID) + (1|natal),
+gen12 <- glmer(generalist ~ size + ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen13 <- glmer(generalist ~ size + avgRes + (1|nestID) + (1|natal),
+gen13 <- glmer(generalist ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen14 <- glmer(generalist ~ avgStage + avgRes + (1|nestID) + (1|natal),
+gen14 <- glmer(generalist ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 gen15 <- glmer(generalist ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -414,23 +402,23 @@ gen16 <- glmer(generalist ~ size + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 gen17 <- glmer(generalist ~ size  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen18 <- glmer(generalist ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+gen18 <- glmer(generalist ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen19 <- glmer(generalist ~ avgStage + queen  + (1|nestID) + (1|natal),
+gen19 <- glmer(generalist ~ ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen20 <- glmer(generalist ~ avgStage  + nBees + (1|nestID) + (1|natal),
+gen20 <- glmer(generalist ~ ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen21 <- glmer(generalist ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+gen21 <- glmer(generalist ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen22 <- glmer(generalist ~ avgRes + queen  + (1|nestID) + (1|natal),
+gen22 <- glmer(generalist ~ ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen23 <- glmer(generalist ~ avgRes  + nBees + (1|nestID) + (1|natal),
+gen23 <- glmer(generalist ~ ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 gen24 <- glmer(generalist ~ size + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen25 <- glmer(generalist ~ avgStage + (1|nestID) + (1|natal),
+gen25 <- glmer(generalist ~ ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-gen26 <- glmer(generalist ~ avgRes + (1|nestID) + (1|natal),
+gen26 <- glmer(generalist ~ ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 gen27 <- glmer(generalist ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -451,33 +439,33 @@ plot(allEffects(mymodel))
 # MODEL LAZY
 laz0 <- glmer(lazy ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-laz1 <- glmer(lazy ~ size + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+laz1 <- glmer(lazy ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz2 <- glmer(lazy ~ size + avgStage + avgRes + (1|nestID) + (1|natal),
+laz2 <- glmer(lazy ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz3 <- glmer(lazy ~ size + avgStage + queen + nBees + (1|nestID) + (1|natal),
+laz3 <- glmer(lazy ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz4 <- glmer(lazy ~ size + avgStage + queen  + (1|nestID) + (1|natal),
+laz4 <- glmer(lazy ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz5 <- glmer(lazy ~ size + avgStage  + nBees + (1|nestID) + (1|natal),
+laz5 <- glmer(lazy ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz6 <- glmer(lazy ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+laz6 <- glmer(lazy ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz7 <- glmer(lazy ~ size + avgRes + queen  + (1|nestID) + (1|natal),
+laz7 <- glmer(lazy ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz8 <- glmer(lazy ~ size + avgRes  + nBees + (1|nestID) + (1|natal),
+laz8 <- glmer(lazy ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz9 <- glmer(lazy ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+laz9 <- glmer(lazy ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz10 <- glmer(lazy ~ avgStage + avgRes + queen  + (1|nestID) + (1|natal),
+laz10 <- glmer(lazy ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz11 <- glmer(lazy ~ avgStage + avgRes  + nBees + (1|nestID) + (1|natal),
+laz11 <- glmer(lazy ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz12 <- glmer(lazy ~ size + avgStage + (1|nestID) + (1|natal),
+laz12 <- glmer(lazy ~ size + ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz13 <- glmer(lazy ~ size + avgRes + (1|nestID) + (1|natal),
+laz13 <- glmer(lazy ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz14 <- glmer(lazy ~ avgStage + avgRes + (1|nestID) + (1|natal),
+laz14 <- glmer(lazy ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 laz15 <- glmer(lazy ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -485,23 +473,23 @@ laz16 <- glmer(lazy ~ size + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 laz17 <- glmer(lazy ~ size  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz18 <- glmer(lazy ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+laz18 <- glmer(lazy ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz19 <- glmer(lazy ~ avgStage + queen  + (1|nestID) + (1|natal),
+laz19 <- glmer(lazy ~ ovSavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz20 <- glmer(lazy ~ avgStage  + nBees + (1|nestID) + (1|natal),
+laz20 <- glmer(lazy ~ ovSavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz21 <- glmer(lazy ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+laz21 <- glmer(lazy ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz22 <- glmer(lazy ~ avgRes + queen  + (1|nestID) + (1|natal),
+laz22 <- glmer(lazy ~ ovRavg + queen  + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz23 <- glmer(lazy ~ avgRes  + nBees + (1|nestID) + (1|natal),
+laz23 <- glmer(lazy ~ ovRavg  + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 laz24 <- glmer(lazy ~ size + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz25 <- glmer(lazy ~ avgStage + (1|nestID) + (1|natal),
+laz25 <- glmer(lazy ~ ovSavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-laz26 <- glmer(lazy ~ avgRes + (1|nestID) + (1|natal),
+laz26 <- glmer(lazy ~ ovRavg + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
 laz27 <- glmer(lazy ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
@@ -523,33 +511,33 @@ hist(count_data$size)
 
 s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID),
               data = count_data)
-s1 <- glmer(size ~ specBehav + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(size ~ specBehav + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s3 <- glmer(size ~ specBehav + avgStage + avgRes + (1|nestID) + (1|natal),
+s3 <- glmer(size ~ specBehav + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s4 <- glmer(size ~ specBehav + avgStage + queen + nBees + (1|nestID) + (1|natal),
+s4 <- glmer(size ~ specBehav + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s5 <- glmer(size ~ specBehav + avgStage + queen + (1|nestID) + (1|natal),
+s5 <- glmer(size ~ specBehav + ovSavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s6 <- glmer(size ~ specBehav + avgStage + nBees + (1|nestID) + (1|natal),
+s6 <- glmer(size ~ specBehav + ovSavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s7 <- glmer(size ~ specBehav + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(size ~ specBehav + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s8 <- glmer(size ~ specBehav + avgRes + queen + (1|nestID) + (1|natal),
+s8 <- glmer(size ~ specBehav + ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s9 <- glmer(size ~ specBehav + avgRes + nBees + (1|nestID) + (1|natal),
+s9 <- glmer(size ~ specBehav + ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s10 <- glmer(size ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(size ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s11 <- glmer(size ~ avgStage + avgRes + queen + (1|nestID) + (1|natal),
+s11 <- glmer(size ~ ovSavg + ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s12 <- glmer(size ~ avgStage + avgRes + nBees + (1|nestID) + (1|natal),
+s12 <- glmer(size ~ ovSavg + ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s13 <- glmer(size ~ specBehav + avgStage + (1|nestID) + (1|natal),
+s13 <- glmer(size ~ specBehav + ovSavg + (1|nestID) + (1|natal),
               data = count_data)
-s14 <- glmer(size ~ specBehav + avgRes + (1|nestID) + (1|natal),
+s14 <- glmer(size ~ specBehav + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s15 <- glmer(size ~ avgStage + avgRes + (1|nestID) + (1|natal),
+s15 <- glmer(size ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
 s16 <- glmer(size ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
@@ -557,23 +545,23 @@ s17 <- glmer(size ~ specBehav + queen + (1|nestID) + (1|natal),
               data = count_data)
 s18 <- glmer(size ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s19 <- glmer(size ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+s19 <- glmer(size ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s20 <- glmer(size ~ avgStage + queen + (1|nestID) + (1|natal),
+s20 <- glmer(size ~ ovSavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s21 <- glmer(size ~ avgStage + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(size ~ ovSavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s22 <- glmer(size ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+s22 <- glmer(size ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s23 <- glmer(size ~ avgRes + queen + (1|nestID) + (1|natal),
+s23 <- glmer(size ~ ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s24 <- glmer(size ~ avgRes + nBees + (1|nestID) + (1|natal),
+s24 <- glmer(size ~ ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
 s25 <- glmer(size ~ specBehav + (1|nestID) + (1|natal),
               data = count_data)
-s26 <- glmer(size ~ avgStage + (1|nestID) + (1|natal),
+s26 <- glmer(size ~ ovSavg + (1|nestID) + (1|natal),
               data = count_data)
-s27 <- glmer(size ~ avgRes + (1|nestID) + (1|natal),
+s27 <- glmer(size ~ ovRavg + (1|nestID) + (1|natal),
               data = count_data)
 s28 <- glmer(size ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
@@ -581,7 +569,7 @@ s29 <- glmer(size ~ queen + (1|nestID) + (1|natal),
               data = count_data)
 s30 <- glmer(size ~ nBees + (1|nestID) + (1|natal),
               data = count_data)
-model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
+model.sel(s0, s1, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
 mymodel <- s26
 summary(mymodel)
 tab_model(mymodel)
@@ -593,7 +581,7 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
 # plot all
-ggplot(data = count_data, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
+ggplot(data = count_data, aes(ovRavg, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "ovary resorption", y = "body size", color = "behavioral specialization")
@@ -603,69 +591,69 @@ ggsave("../figures/ovaryResVsize.jpg")
 ## ovary stage
 ```{r}
 # MODEL OVARY STAGE
-hist(count_data$avgStage)
+hist(count_data$ovSavg)
 
-s0 <- glmer(avgStage ~ 1 + (1|natal) + (1|nestID),
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID),
               data = count_data)
-s1 <- glmer(avgStage ~ specBehav + size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(ovSavg ~ specBehav + size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s2 <- glmer(avgStage ~ specBehav + size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s2 <- glmer(ovSavg ~ specBehav + size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s3 <- glmer(avgStage ~ specBehav + size + avgRes + (1|nestID) + (1|natal),
+s3 <- glmer(ovSavg ~ specBehav + size + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s4 <- glmer(avgStage ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s4 <- glmer(ovSavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s5 <- glmer(avgStage ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s5 <- glmer(ovSavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s6 <- glmer(avgStage ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s6 <- glmer(ovSavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s7 <- glmer(avgStage ~ specBehav + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(ovSavg ~ specBehav + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s8 <- glmer(avgStage ~ specBehav + avgRes + queen + (1|nestID) + (1|natal),
+s8 <- glmer(ovSavg ~ specBehav + ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s9 <- glmer(avgStage ~ specBehav + avgRes + nBees + (1|nestID) + (1|natal),
+s9 <- glmer(ovSavg ~ specBehav + ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s10 <- glmer(avgStage ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(ovSavg ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s11 <- glmer(avgStage ~ size + avgRes + queen + (1|nestID) + (1|natal),
+s11 <- glmer(ovSavg ~ size + ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s12 <- glmer(avgStage ~ size + avgRes + nBees + (1|nestID) + (1|natal),
+s12 <- glmer(ovSavg ~ size + ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s13 <- glmer(avgStage ~ specBehav + size + (1|nestID) + (1|natal),
+s13 <- glmer(ovSavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = count_data)
-s14 <- glmer(avgStage ~ specBehav + avgRes + (1|nestID) + (1|natal),
+s14 <- glmer(ovSavg ~ specBehav + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s15 <- glmer(avgStage ~ size + avgRes + (1|nestID) + (1|natal),
+s15 <- glmer(ovSavg ~ size + ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s16 <- glmer(avgStage ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s16 <- glmer(ovSavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s17 <- glmer(avgStage ~ specBehav + queen + (1|nestID) + (1|natal),
+s17 <- glmer(ovSavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = count_data)
-s18 <- glmer(avgStage ~ specBehav + nBees + (1|nestID) + (1|natal),
+s18 <- glmer(ovSavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s19 <- glmer(avgStage ~ size + queen + nBees + (1|nestID) + (1|natal),
+s19 <- glmer(ovSavg ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s20 <- glmer(avgStage ~ size + queen + (1|nestID) + (1|natal),
+s20 <- glmer(ovSavg ~ size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s21 <- glmer(avgStage ~ size + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(ovSavg ~ size + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s22 <- glmer(avgStage ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+s22 <- glmer(ovSavg ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s23 <- glmer(avgStage ~ avgRes + queen + (1|nestID) + (1|natal),
+s23 <- glmer(ovSavg ~ ovRavg + queen + (1|nestID) + (1|natal),
               data = count_data)
-s24 <- glmer(avgStage ~ avgRes + nBees + (1|nestID) + (1|natal),
+s24 <- glmer(ovSavg ~ ovRavg + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s25 <- glmer(avgStage ~ specBehav + (1|nestID) + (1|natal),
+s25 <- glmer(ovSavg ~ specBehav + (1|nestID) + (1|natal),
               data = count_data)
-s26 <- glmer(avgStage ~ size + (1|nestID) + (1|natal),
+s26 <- glmer(ovSavg ~ size + (1|nestID) + (1|natal),
               data = count_data)
-s27 <- glmer(avgStage ~ avgRes + (1|nestID) + (1|natal),
+s27 <- glmer(ovSavg ~ ovRavg + (1|nestID) + (1|natal),
               data = count_data)
-s28 <- glmer(avgStage ~ queen + nBees + (1|nestID) + (1|natal),
+s28 <- glmer(ovSavg ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s29 <- glmer(avgStage ~ queen + (1|nestID) + (1|natal),
+s29 <- glmer(ovSavg ~ queen + (1|nestID) + (1|natal),
               data = count_data)
-s30 <- glmer(avgStage ~ nBees + (1|nestID) + (1|natal),
+s30 <- glmer(ovSavg ~ nBees + (1|nestID) + (1|natal),
               data = count_data)
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
 
@@ -681,7 +669,7 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
 
 
-ggplot(data = count_data, aes(avgStage, size, color = specBehav, shape = nestTYPE)) +
+ggplot(data = count_data, aes(ovSavg, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.15, height = 0), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "ovary stage", y = "body size", color = "behavioral specialization")
@@ -691,59 +679,59 @@ ggsave("../figures/ovaryVsize.jpg")
 ## ovary resorption
 ```{r}
 # MODEL OVARY RESORPTION
-hist(count_data$avgRes)
+hist(count_data$ovRavg)
 
-s0 <- glmer(avgRes ~ 1 + (1|natal) + (1|nestID),
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestID),
               data = count_data)
-s1 <- glmer(avgRes ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(ovRavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s2 <- glmer(avgRes ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s2 <- glmer(ovRavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s3 <- glmer(avgRes ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s3 <- glmer(ovRavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s4 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+s4 <- glmer(ovRavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = count_data)
-s5 <- glmer(avgRes ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s5 <- glmer(ovRavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s6 <- glmer(avgRes ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s6 <- glmer(ovRavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s7 <- glmer(avgRes ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(ovRavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s8 <- glmer(avgRes ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s8 <- glmer(ovRavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s9 <- glmer(avgRes ~ specBehav + queen + (1|nestID) + (1|natal),
+s9 <- glmer(ovRavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = count_data)
-s10 <- glmer(avgRes ~ specBehav + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(ovRavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s11 <- glmer(avgRes ~ size + queen + (1|nestID) + (1|natal),
+s11 <- glmer(ovRavg ~ size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s12 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+s12 <- glmer(ovRavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = count_data)
-s13 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+s13 <- glmer(ovRavg ~ specBehav + (1|nestID) + (1|natal),
               data = count_data)
-s14 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+s14 <- glmer(ovRavg ~ size + (1|nestID) + (1|natal),
               data = count_data)
-s15 <- glmer(avgRes ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s15 <- glmer(ovRavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s16 <- glmer(avgRes ~ specBehav + queen + (1|nestID) + (1|natal),
+s16 <- glmer(ovRavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = count_data)
-s17 <- glmer(avgRes ~ specBehav + nBees + (1|nestID) + (1|natal),
+s17 <- glmer(ovRavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s18 <- glmer(avgRes ~ size + queen + nBees + (1|nestID) + (1|natal),
+s18 <- glmer(ovRavg ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s19 <- glmer(avgRes ~ size + queen + (1|nestID) + (1|natal),
+s19 <- glmer(ovRavg ~ size + queen + (1|nestID) + (1|natal),
               data = count_data)
-s20 <- glmer(avgRes ~ size + nBees + (1|nestID) + (1|natal),
+s20 <- glmer(ovRavg ~ size + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s21 <- glmer(avgRes ~ queen + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(ovRavg ~ queen + nBees + (1|nestID) + (1|natal),
               data = count_data)
-s22 <- glmer(avgRes ~ queen + (1|nestID) + (1|natal),
+s22 <- glmer(ovRavg ~ queen + (1|nestID) + (1|natal),
               data = count_data)
-s23 <- glmer(avgRes ~ nBees + (1|nestID) + (1|natal),
+s23 <- glmer(ovRavg ~ nBees + (1|nestID) + (1|natal),
               data = count_data)
-s24 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+s24 <- glmer(ovRavg ~ specBehav + (1|nestID) + (1|natal),
               data = count_data)
-s25 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+s25 <- glmer(ovRavg ~ size + (1|nestID) + (1|natal),
               data = count_data)
 
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25)
@@ -777,7 +765,7 @@ FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
 
 ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
 
-p2 <- ggplot(data = count_data, aes(avgStage, specBehav, color = shannon)) +
+p2 <- ggplot(data = count_data, aes(ovSavg, specBehav, color = shannon)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_color_gradient(low="dark blue", high="yellow") +
@@ -852,33 +840,33 @@ hist(perfSpec$size)
 
 s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID),
               data = perfSpec)
-s1 <- glmer(size ~ specBehav + avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(size ~ specBehav + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s3 <- glmer(size ~ specBehav + avgStage + avgRes + (1|nestID) + (1|natal),
+s3 <- glmer(size ~ specBehav + ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s4 <- glmer(size ~ specBehav + avgStage + queen + nBees + (1|nestID) + (1|natal),
+s4 <- glmer(size ~ specBehav + ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s5 <- glmer(size ~ specBehav + avgStage + queen + (1|nestID) + (1|natal),
+s5 <- glmer(size ~ specBehav + ovSavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s6 <- glmer(size ~ specBehav + avgStage + nBees + (1|nestID) + (1|natal),
+s6 <- glmer(size ~ specBehav + ovSavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s7 <- glmer(size ~ specBehav + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(size ~ specBehav + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s8 <- glmer(size ~ specBehav + avgRes + queen + (1|nestID) + (1|natal),
+s8 <- glmer(size ~ specBehav + ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s9 <- glmer(size ~ specBehav + avgRes + nBees + (1|nestID) + (1|natal),
+s9 <- glmer(size ~ specBehav + ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s10 <- glmer(size ~ avgStage + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(size ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s11 <- glmer(size ~ avgStage + avgRes + queen + (1|nestID) + (1|natal),
+s11 <- glmer(size ~ ovSavg + ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s12 <- glmer(size ~ avgStage + avgRes + nBees + (1|nestID) + (1|natal),
+s12 <- glmer(size ~ ovSavg + ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s13 <- glmer(size ~ specBehav + avgStage + (1|nestID) + (1|natal),
+s13 <- glmer(size ~ specBehav + ovSavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s14 <- glmer(size ~ specBehav + avgRes + (1|nestID) + (1|natal),
+s14 <- glmer(size ~ specBehav + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s15 <- glmer(size ~ avgStage + avgRes + (1|nestID) + (1|natal),
+s15 <- glmer(size ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
 s16 <- glmer(size ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
@@ -886,23 +874,23 @@ s17 <- glmer(size ~ specBehav + queen + (1|nestID) + (1|natal),
               data = perfSpec)
 s18 <- glmer(size ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s19 <- glmer(size ~ avgStage + queen + nBees + (1|nestID) + (1|natal),
+s19 <- glmer(size ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s20 <- glmer(size ~ avgStage + queen + (1|nestID) + (1|natal),
+s20 <- glmer(size ~ ovSavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s21 <- glmer(size ~ avgStage + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(size ~ ovSavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s22 <- glmer(size ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+s22 <- glmer(size ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s23 <- glmer(size ~ avgRes + queen + (1|nestID) + (1|natal),
+s23 <- glmer(size ~ ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s24 <- glmer(size ~ avgRes + nBees + (1|nestID) + (1|natal),
+s24 <- glmer(size ~ ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
 s25 <- glmer(size ~ specBehav + (1|nestID) + (1|natal),
               data = perfSpec)
-s26 <- glmer(size ~ avgStage + (1|nestID) + (1|natal),
+s26 <- glmer(size ~ ovSavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s27 <- glmer(size ~ avgRes + (1|nestID) + (1|natal),
+s27 <- glmer(size ~ ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
 s28 <- glmer(size ~ queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
@@ -942,7 +930,7 @@ ggsave("../figures/bsperfectlyspecialized.jpg")
 
 ```{r}
 # plot all
-ggplot(data = perfSpec, aes(avgRes, size, color = specBehav, shape = nestTYPE)) +
+ggplot(data = perfSpec, aes(ovRavg, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "ovary resorption", y = "body size", color = "behavioral specialization")
@@ -953,74 +941,74 @@ ggsave("../figures/ovaryResVsize.jpg")
 
 
 # MODEL OVARY STAGE
-hist(perfSpec$avgStage)
+hist(perfSpec$ovSavg)
 
-s0 <- glmer(avgStage ~ 1 + (1|natal) + (1|nestID),
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID),
               data = perfSpec)
-s1 <- glmer(avgStage ~ specBehav + size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(ovSavg ~ specBehav + size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s2 <- glmer(avgStage ~ specBehav + size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s2 <- glmer(ovSavg ~ specBehav + size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s3 <- glmer(avgStage ~ specBehav + size + avgRes + (1|nestID) + (1|natal),
+s3 <- glmer(ovSavg ~ specBehav + size + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s4 <- glmer(avgStage ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s4 <- glmer(ovSavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s5 <- glmer(avgStage ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s5 <- glmer(ovSavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s6 <- glmer(avgStage ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s6 <- glmer(ovSavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s7 <- glmer(avgStage ~ specBehav + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(ovSavg ~ specBehav + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s8 <- glmer(avgStage ~ specBehav + avgRes + queen + (1|nestID) + (1|natal),
+s8 <- glmer(ovSavg ~ specBehav + ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s9 <- glmer(avgStage ~ specBehav + avgRes + nBees + (1|nestID) + (1|natal),
+s9 <- glmer(ovSavg ~ specBehav + ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s10 <- glmer(avgStage ~ size + avgRes + queen + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(ovSavg ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s11 <- glmer(avgStage ~ size + avgRes + queen + (1|nestID) + (1|natal),
+s11 <- glmer(ovSavg ~ size + ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s12 <- glmer(avgStage ~ size + avgRes + nBees + (1|nestID) + (1|natal),
+s12 <- glmer(ovSavg ~ size + ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s13 <- glmer(avgStage ~ specBehav + size + (1|nestID) + (1|natal),
+s13 <- glmer(ovSavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = perfSpec)
-s14 <- glmer(avgStage ~ specBehav + avgRes + (1|nestID) + (1|natal),
+s14 <- glmer(ovSavg ~ specBehav + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s15 <- glmer(avgStage ~ size + avgRes + (1|nestID) + (1|natal),
+s15 <- glmer(ovSavg ~ size + ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s16 <- glmer(avgStage ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s16 <- glmer(ovSavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s17 <- glmer(avgStage ~ specBehav + queen + (1|nestID) + (1|natal),
+s17 <- glmer(ovSavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s18 <- glmer(avgStage ~ specBehav + nBees + (1|nestID) + (1|natal),
+s18 <- glmer(ovSavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s19 <- glmer(avgStage ~ size + queen + nBees + (1|nestID) + (1|natal),
+s19 <- glmer(ovSavg ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s20 <- glmer(avgStage ~ size + queen + (1|nestID) + (1|natal),
+s20 <- glmer(ovSavg ~ size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s21 <- glmer(avgStage ~ size + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(ovSavg ~ size + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s22 <- glmer(avgStage ~ avgRes + queen + nBees + (1|nestID) + (1|natal),
+s22 <- glmer(ovSavg ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s23 <- glmer(avgStage ~ avgRes + queen + (1|nestID) + (1|natal),
+s23 <- glmer(ovSavg ~ ovRavg + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s24 <- glmer(avgStage ~ avgRes + nBees + (1|nestID) + (1|natal),
+s24 <- glmer(ovSavg ~ ovRavg + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s25 <- glmer(avgStage ~ specBehav + (1|nestID) + (1|natal),
+s25 <- glmer(ovSavg ~ specBehav + (1|nestID) + (1|natal),
               data = perfSpec)
-s26 <- glmer(avgStage ~ size + (1|nestID) + (1|natal),
+s26 <- glmer(ovSavg ~ size + (1|nestID) + (1|natal),
               data = perfSpec)
-s27 <- glmer(avgStage ~ avgRes + (1|nestID) + (1|natal),
+s27 <- glmer(ovSavg ~ ovRavg + (1|nestID) + (1|natal),
               data = perfSpec)
-s28 <- glmer(avgStage ~ queen + nBees + (1|nestID) + (1|natal),
+s28 <- glmer(ovSavg ~ queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s29 <- glmer(avgStage ~ queen + (1|nestID) + (1|natal),
+s29 <- glmer(ovSavg ~ queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s30 <- glmer(avgStage ~ nBees + (1|nestID) + (1|natal),
+s30 <- glmer(ovSavg ~ nBees + (1|nestID) + (1|natal),
               data = perfSpec)
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
 
 
-st01 <- glmer(avgStage ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal),
+st01 <- glmer(ovSavg ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal),
               data = perfSpec, family = gaussian(link="identity"))
 
 
@@ -1037,7 +1025,7 @@ plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residu
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
-ggplot(data = perfSpec, aes(avgStage, size, color = specBehav, shape = nestTYPE)) +
+ggplot(data = perfSpec, aes(ovSavg, size, color = specBehav, shape = nestTYPE)) +
   geom_point(position = position_jitter(width = 0.15, height = 0), size = 2, alpha = 0.7) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
   labs(x = "ovary stage", y = "body size", color = "behavioral specialization")
@@ -1047,64 +1035,64 @@ ggsave("../figures/ovaryVsize.jpg")
 
 
 # MODEL OVARY RESORPTION
-hist(perfSpec$avgRes)
+hist(perfSpec$ovRavg)
 
-s0 <- glmer(avgRes ~ 1 + (1|natal) + (1|nestID),
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestID),
               data = perfSpec)
-s1 <- glmer(avgRes ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s1 <- glmer(ovRavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s2 <- glmer(avgRes ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s2 <- glmer(ovRavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s3 <- glmer(avgRes ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s3 <- glmer(ovRavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s4 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+s4 <- glmer(ovRavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = perfSpec)
-s5 <- glmer(avgRes ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
+s5 <- glmer(ovRavg ~ specBehav + size + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s6 <- glmer(avgRes ~ specBehav + size + queen + (1|nestID) + (1|natal),
+s6 <- glmer(ovRavg ~ specBehav + size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s7 <- glmer(avgRes ~ specBehav + size + nBees + (1|nestID) + (1|natal),
+s7 <- glmer(ovRavg ~ specBehav + size + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s8 <- glmer(avgRes ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s8 <- glmer(ovRavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s9 <- glmer(avgRes ~ specBehav + queen + (1|nestID) + (1|natal),
+s9 <- glmer(ovRavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s10 <- glmer(avgRes ~ specBehav + nBees + (1|nestID) + (1|natal),
+s10 <- glmer(ovRavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s11 <- glmer(avgRes ~ size + queen + (1|nestID) + (1|natal),
+s11 <- glmer(ovRavg ~ size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s12 <- glmer(avgRes ~ specBehav + size + (1|nestID) + (1|natal),
+s12 <- glmer(ovRavg ~ specBehav + size + (1|nestID) + (1|natal),
               data = perfSpec)
-s13 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+s13 <- glmer(ovRavg ~ specBehav + (1|nestID) + (1|natal),
               data = perfSpec)
-s14 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+s14 <- glmer(ovRavg ~ size + (1|nestID) + (1|natal),
               data = perfSpec)
-s15 <- glmer(avgRes ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
+s15 <- glmer(ovRavg ~ specBehav + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s16 <- glmer(avgRes ~ specBehav + queen + (1|nestID) + (1|natal),
+s16 <- glmer(ovRavg ~ specBehav + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s17 <- glmer(avgRes ~ specBehav + nBees + (1|nestID) + (1|natal),
+s17 <- glmer(ovRavg ~ specBehav + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s18 <- glmer(avgRes ~ size + queen + nBees + (1|nestID) + (1|natal),
+s18 <- glmer(ovRavg ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s19 <- glmer(avgRes ~ size + queen + (1|nestID) + (1|natal),
+s19 <- glmer(ovRavg ~ size + queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s20 <- glmer(avgRes ~ size + nBees + (1|nestID) + (1|natal),
+s20 <- glmer(ovRavg ~ size + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s21 <- glmer(avgRes ~ queen + nBees + (1|nestID) + (1|natal),
+s21 <- glmer(ovRavg ~ queen + nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s22 <- glmer(avgRes ~ queen + (1|nestID) + (1|natal),
+s22 <- glmer(ovRavg ~ queen + (1|nestID) + (1|natal),
               data = perfSpec)
-s23 <- glmer(avgRes ~ nBees + (1|nestID) + (1|natal),
+s23 <- glmer(ovRavg ~ nBees + (1|nestID) + (1|natal),
               data = perfSpec)
-s24 <- glmer(avgRes ~ specBehav + (1|nestID) + (1|natal),
+s24 <- glmer(ovRavg ~ specBehav + (1|nestID) + (1|natal),
               data = perfSpec)
-s25 <- glmer(avgRes ~ size + (1|nestID) + (1|natal),
+s25 <- glmer(ovRavg ~ size + (1|nestID) + (1|natal),
               data = perfSpec)
 
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25)
 
-r01 <- glmer(avgRes ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal),
+r01 <- glmer(ovRavg ~ specBehav + (1|nestTYPE) + (1|nestID) + (1|natal),
               data = perfSpec)
 
 mymodel <- r01
