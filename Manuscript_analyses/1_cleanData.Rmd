@@ -2272,6 +2272,27 @@ sum(count_data$pollenforaging)
 sum(count_data$egglaying)
 sum(count_data$feedsbrood)
 
+# calculate mean and se of each behavior per nest (43 nests)
+count_data %>% dplyr::select(nestID, nectarforaging) %>% group_by(nestID) %>% mutate(sum=sum(nectarforaging)) %>% 
+  dplyr::select(nestID, sum) %>% unique() %>% ungroup() %>% 
+  mutate(avgnectar=mean(sum)) %>% mutate(senectar=sd(sum)/43)
+
+count_data %>% dplyr::select(nestID, pollenforaging) %>% group_by(nestID) %>% mutate(sum=sum(pollenforaging)) %>% 
+  dplyr::select(nestID, sum) %>% unique() %>% ungroup() %>% 
+  mutate(avg=mean(sum)) %>% mutate(se=sd(sum)/43)
+
+count_data %>% dplyr::select(nestID, feedsbrood) %>% group_by(nestID) %>% mutate(sum=sum(feedsbrood)) %>% 
+  dplyr::select(nestID, sum) %>% unique() %>% ungroup() %>% 
+  mutate(avg=mean(sum)) %>% mutate(se=sd(sum)/43)
+
+count_data %>% dplyr::select(nestID, egglaying) %>% group_by(nestID) %>% mutate(sum=sum(egglaying)) %>% 
+  dplyr::select(nestID, sum) %>% unique() %>% ungroup() %>% 
+  mutate(avg=mean(sum)) %>% mutate(se=sd(sum)/43)
+
+
+# check number of bees in count_time analyses
+count_time[!is.na(count_time$shanDist),] %>% nrow()
+
 # check that count_scaled proportions are similar across nests
 sumNests <- count_data %>% dplyr::group_by(nestID) %>% dplyr::summarise(nectarforaging = sum(nectarforaging),
                                                              pollenforaging = sum(pollenforaging),
@@ -2280,6 +2301,7 @@ sumNests <- count_data %>% dplyr::group_by(nestID) %>% dplyr::summarise(nectarfo
 sumNests$nBehavs <- rowSums(sumNests[2:5], na.rm = TRUE)
 sumNests$nestTYPE <- substr(sumNests$nestID, start = 1, stop = 2)
 sumNests <- subset(sumNests, nestID %in% count_nests$nestID)
+```
 
 
 

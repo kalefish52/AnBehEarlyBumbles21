@@ -26,6 +26,15 @@ library(MuMIn)    # model.sel
 taskShan <- read.csv("../Data/filtData/taskShan.csv")
 taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
 
+#How many task shans do we have?
+taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique()
+
+#How many task shans are 0? 
+taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique() %>% filter(shannon=="0") %>% nrow()
+
+#What is the mask task shan? 
+max(taskShan$shannon)
+
 ```
 
 # How specialized are tasks? 
@@ -34,7 +43,7 @@ taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
 # much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 
 ggdensity(taskShan$shannon)
 qqp(taskShan$shannon, "norm")
-taskShan
+
 
 ps0 <- glmer(shannon ~1 + (1|nestID) + (1|natal),
               data = taskShan)
@@ -54,7 +63,7 @@ ps7 <- glmer(shannon ~ nBehav + (1|nestID) + (1|natal),
               data = taskShan)
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
 
-mymodel <- ps5
+mymodel <- ps3
 tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
