@@ -670,7 +670,6 @@ for (i in 1:nrow(count_data)) {
       count_data$ovL1[i] <- ovary_data$l1[j]
       count_data$ovL2[i] <- ovary_data$l2[j]
       count_data$ovLavg[i] <- rowMeans(ovary_data[j, c("l1", "l2")], na.rm = TRUE)
-
     }
   }
 }
@@ -766,6 +765,19 @@ for (i in 1:nrow(count_data)) {
     }
   }
 }
+
+# QUEENS - all queens have stage 4 unresorbed oocytes
+for (i in 1:nrow(count_data)) {
+  if (count_data$caste[i] == "Q") {
+    count_data$ovS1[i] <- 4
+    count_data$ovS2[i] <- 4
+    count_data$ovSavg[i] <- 4
+    count_data$ovR1[i] <- 0
+    count_data$ovR2[i] <- 0
+    count_data$ovRavg[i] <- 0
+  }
+}
+
 count_data
 ```
 ## add number of bees and queen status to count_data
