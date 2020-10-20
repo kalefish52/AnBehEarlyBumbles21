@@ -49,6 +49,8 @@ sd(count_replac$nBehavs)/sqrt(nrow(count_replac))
 mean(count_orig$nBehavs)
 sd(count_orig$nBehavs)/sqrt(nrow(count_orig))
 
+# How many bees are included in this analysis? 
+count_data %>% filter(lazy=="notLazy") %>% dplyr::select(beeID) %>% nrow()
 ```
 
 # count number of specialists
