@@ -51,11 +51,13 @@ sd(count_orig$nBehavs)/sqrt(nrow(count_orig))
 
 # How many bees are included in this analysis? 
 count_data %>% filter(lazy=="notLazy") %>% dplyr::select(beeID) %>% nrow()
+count_data %>%  filter(lazy=="lazy") %>% nrow()
 count_data  %>% nrow()
 ```
 
 # count number of specialists
 ```{r}
+
 nrow(count_data[count_data$specBehav == "nectarforaging",])
 nrow(count_data[count_data$specBehav == "pollenforaging",])
 nrow(count_data[count_data$specBehav == "feedsbrood",])

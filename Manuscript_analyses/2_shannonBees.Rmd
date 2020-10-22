@@ -34,10 +34,9 @@ count_time <- read.csv("../Data/filtData/count_time.csv")
 
 # How specialized are individuals? 
 ```{r}
-# remove lazy bees (have NA shannon values)
-count_bees <- count_data %>% dplyr::filter(lazy=="notLazy") %>% dplyr::select(beeID) 
+# remove lazy bees 
+count_bees<-count_data %>% filter(lazy=="notLazy") 
 
-count_bees
 nrow(count_bees)
 # make a new column for over or under 0
 count_bees$shan0 <- NA
@@ -93,7 +92,7 @@ ps15 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
 ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
               data = count_bees, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
-#Best model is ps11: AIC==137.7
+#Best model is ps11: AIC==105.9
 mymodel <- ps11
 tab_model(mymodel)
 summary(mymodel)
@@ -167,6 +166,7 @@ hist(modelResiduals)
 ## glmms on early vs. late shannons
 ```{r}
 # remove NA shannon values
+count_time$beeID
 count_beesTime <- count_time[!is.na(count_time$shannon),]
 
 # two part model
