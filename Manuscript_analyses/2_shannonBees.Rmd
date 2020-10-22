@@ -23,7 +23,7 @@ library(MuMIn)    # model.sel
 # load data
 ```{r}
 # pooled data across timepoints, values are counts
-# includes all bees, but only known bees with >=3 observations have shannon values
+# includes all bees and filter non-lazy workers
 count_data <- read.csv("../Data/filtData/count_data.csv")
 
 # split across timepoints, includes all bees, but only known bees with >=3 observations have shannon values
@@ -35,7 +35,8 @@ count_time <- read.csv("../Data/filtData/count_time.csv")
 # How specialized are individuals? 
 ```{r}
 # remove lazy bees (have NA shannon values)
-count_bees <- count_data[!is.na(count_data$shannon),]
+count_bees <- count_data %>% dplyr::filter(lazy=="notLazy") %>% dplyr::select(beeID) 
+
 count_bees
 nrow(count_bees)
 # make a new column for over or under 0
