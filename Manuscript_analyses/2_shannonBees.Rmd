@@ -165,10 +165,10 @@ hist(modelResiduals)
 # How does average specialization change with time point?
 ## glmms on early vs. late shannons
 ```{r}
-# remove NA shannon values
-count_time$beeID
-count_beesTime <- count_time[!is.na(count_time$shannon),]
-
+#Remove lazy bees by filtering
+count_beesTime <- count_time %>% filter(lazy=="notLazy") 
+#How many bees meet the criteria? 
+count_beesTime %>% dplyr::select(beeID) %>% unique() %>% nrow()
 # two part model
 # make a new column for over or under 0
 count_beesTime$shan0 <- NA
@@ -179,43 +179,42 @@ count_beesTime$shan0[count_beesTime$shannon > 0] <- 0
 
 
 # model 0 vs. >0 shannon values
-ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
+ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal) +(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps1 <- glmer(shan0 ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps1 <- glmer(shan0 ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),data = count_beesTime, family = binomial(link = "logit"))
+ps2 <- glmer(shan0 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps2 <- glmer(shan0 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps3 <- glmer(shan0 ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps3 <- glmer(shan0 ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal),
+ps4 <- glmer(shan0 ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps4 <- glmer(shan0 ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps5 <- glmer(shan0 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps5 <- glmer(shan0 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal),
+ps6 <- glmer(shan0 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps6 <- glmer(shan0 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps7 <- glmer(shan0 ~ timepoint + queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps7 <- glmer(shan0 ~ timepoint + queen + nBees + (1|nestID) + (1|natal),
+ps8 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps8 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps9 <- glmer(shan0 ~ timepoint + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps9 <- glmer(shan0 ~ timepoint + caste + (1|nestID) + (1|natal),
+ps10 <- glmer(shan0 ~ queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps10 <- glmer(shan0 ~ queen + nBees + caste + (1|nestID) + (1|natal),
+ps11 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps11 <- glmer(shan0 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps12 <- glmer(shan0 ~ queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps12 <- glmer(shan0 ~ queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps13 <- glmer(shan0 ~ nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps13 <- glmer(shan0 ~ nBehavs + caste + (1|nestID) + (1|natal),
+ps14 <- glmer(shan0 ~ queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps14 <- glmer(shan0 ~ queen + nBees + (1|nestID) + (1|natal),
+ps15 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
-ps15 <- glmer(shan0 ~ nBehavs + (1|nestID) + (1|natal),
-              data = count_beesTime, family = binomial(link = "logit"))
-ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal),
+ps16 <- glmer(shan0 ~ caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = binomial(link = "logit"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
-mymodel <- ps12
+mymodel <- ps15
 tab_model(mymodel)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
@@ -237,39 +236,39 @@ qqp(count_beesTime$shan1, "norm")
 # model 0 vs. >0 shannon values
 # need to add natal colony as random effect
 #Run interactions?
-ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|natal),
+ps0 <- glmer(shan1 ~ 1 + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps1 <- glmer(shan1 ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps1 <- glmer(shan1 ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps2 <- glmer(shan1 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps2 <- glmer(shan1 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps3 <- glmer(shan1 ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal),
+ps3 <- glmer(shan1 ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps4 <- glmer(shan1 ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps4 <- glmer(shan1 ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps5 <- glmer(shan1 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal),
+ps5 <- glmer(shan1 ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps6 <- glmer(shan1 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps6 <- glmer(shan1 ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps7 <- glmer(shan1 ~ timepoint + queen + nBees + (1|nestID) + (1|natal),
+ps7 <- glmer(shan1 ~ timepoint + queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps8 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps8 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps9 <- glmer(shan1 ~ timepoint + caste + (1|nestID) + (1|natal),
+ps9 <- glmer(shan1 ~ timepoint + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps10 <- glmer(shan1 ~ queen + nBees + caste + (1|nestID) + (1|natal),
+ps10 <- glmer(shan1 ~ queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps11 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps11 <- glmer(shan1 ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps12 <- glmer(shan1 ~ queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps12 <- glmer(shan1 ~ queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps13 <- glmer(shan1 ~ nBehavs + caste + (1|nestID) + (1|natal),
+ps13 <- glmer(shan1 ~ nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps14 <- glmer(shan1 ~ queen + nBees + (1|nestID) + (1|natal),
+ps14 <- glmer(shan1 ~ queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps15 <- glmer(shan1 ~ nBehavs + (1|nestID) + (1|natal),
+ps15 <- glmer(shan1 ~ nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
-ps16 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal),
+ps16 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime)
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
@@ -286,39 +285,39 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```{r}
 # run all using gaussian
 # model 0 vs. >0 shannon values
-ps0 <- glmer(shannon ~ 1 + (1|nestID) + (1|natal),
+ps0 <- glmer(shannon ~ 1 + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps1 <- glmer(shannon ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps1 <- glmer(shannon ~ timepoint + queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps2 <- glmer(shannon ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps2 <- glmer(shannon ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps3 <- glmer(shannon ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal),
+ps3 <- glmer(shannon ~ timepoint + queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps4 <- glmer(shannon ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps4 <- glmer(shannon ~ timepoint + queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps5 <- glmer(shannon ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal),
+ps5 <- glmer(shannon ~ timepoint + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps6 <- glmer(shannon ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal),
+ps6 <- glmer(shannon ~ queen + nBees + nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps7 <- glmer(shannon ~ timepoint + queen + nBees + (1|nestID) + (1|natal),
+ps7 <- glmer(shannon ~ timepoint + queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps8 <- glmer(shannon ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps8 <- glmer(shannon ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps9 <- glmer(shannon ~ timepoint + caste + (1|nestID) + (1|natal),
+ps9 <- glmer(shannon ~ timepoint + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps10 <- glmer(shannon ~ queen + nBees + caste + (1|nestID) + (1|natal),
+ps10 <- glmer(shannon ~ queen + nBees + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps11 <- glmer(shannon ~ timepoint + nBehavs + (1|nestID) + (1|natal),
+ps11 <- glmer(shannon ~ timepoint + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps12 <- glmer(shannon ~ queen + nBees + nBehavs + (1|nestID) + (1|natal),
+ps12 <- glmer(shannon ~ queen + nBees + nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps13 <- glmer(shannon ~ nBehavs + caste + (1|nestID) + (1|natal),
+ps13 <- glmer(shannon ~ nBehavs + caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps14 <- glmer(shannon ~ queen + nBees + (1|nestID) + (1|natal),
+ps14 <- glmer(shannon ~ queen + nBees + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps15 <- glmer(shannon ~ nBehavs + (1|nestID) + (1|natal),
+ps15 <- glmer(shannon ~ nBehavs + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
-ps16 <- glmer(shannon ~ caste + (1|nestID) + (1|natal),
+ps16 <- glmer(shannon ~ caste + (1|nestID) + (1|natal)+(1|beeID),
               data = count_beesTime, family = gaussian(link = "identity"))
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
@@ -329,21 +328,24 @@ tab_model(mymodel)
 # Does an individual's specialization change with time point? 
 ## glmms on change in shannon across timepoints
 ```{r}
+#how many bees are at both early and late timepoints? 
+shanspec<-count_beesTime %>% filter(shanDist!="NA")
+nrow(shanspec)
 # pretty normal
-ggdensity(count_beesTime$shanDist)
-qqp(count_beesTime$shanDist, "norm")
+ggdensity(shanspec$shanDist)
+qqp(shanspec$shanDist, "norm")
 
-count_beesTime
+
 
 # need to add natal colony as random effect
 cs0 <- glmer(shanDist ~ 1 + (1|nestID) + (1|natal),
-              data = count_beesTime)
+              data = shanspec)
 cs1 <- glmer(shanDist ~ queen + nBees + caste + (1|nestID) + (1|natal),
-              data = count_beesTime)
+              data = shanspec)
 cs2 <- glmer(shanDist ~ queen + nBees + (1|nestID) + (1|natal),
-              data = count_beesTime)
+              data = shanspec)
 cs3 <- glmer(shanDist ~ caste + (1|nestID) + (1|natal),
-              data = count_beesTime)
+              data = shanspec)
 model.sel(cs0, cs1, cs2, cs3)
 
 mymodel <- cs0
