@@ -161,6 +161,40 @@ hist(modelResiduals)
 ## Graph 
 
 ```
+# How does shannon index impact body size and ovary development? 
+```{r}
+#Body Size 
+head(count_bees)
+hist(count_bees$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = count_bees)
+s1 <- glmer(size ~ shannon + (1|nestID) + (1|natal) + (1|caste), data = count_bees)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+hist(count_bees$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = count_bees)
+s1 <- glmer(ovRavg ~ shannon + (1|nestID) + (1|natal) + (1|caste), data = count_bees)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(count_bees$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = count_bees)
+s1 <- glmer(ovSavg ~ shannon + (1|nestID) + (1|natal) + (1|caste), data = count_bees)
+
+model.sel(s0, s1)
+
+
+
+
+
+
+```
 
 # How does average specialization change with time point?
 ## glmms on early vs. late shannons
