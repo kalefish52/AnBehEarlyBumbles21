@@ -30,7 +30,7 @@ library(MuMIn)    # model.sel
 # pooled data across timepoints, values are counts
 # includes all bees, but only known bees with >=3 observations have shannon values
 count_data <- read.csv("../Data/filtData/count_data.csv") 
-count_data
+
 
 count_replac <- count_data[count_data$beeType == "replac",]
 count_replac <- count_replac[!is.na(count_replac$beeID),]
@@ -49,10 +49,13 @@ sd(count_replac$nBehavs)/sqrt(nrow(count_replac))
 mean(count_orig$nBehavs)
 sd(count_orig$nBehavs)/sqrt(nrow(count_orig))
 
-# How many bees are included in this analysis? 
-count_data %>% filter(lazy=="notLazy") %>% dplyr::select(beeID) %>% nrow()
-count_data %>%  filter(lazy=="lazy") %>% nrow()
-count_data  %>% nrow()
+#How many included?
+count_data %>% filter(lazy=="notLazy") %>% nrow()
+
+#How many not included, lazy? 
+count_data %>% filter(lazy=="lazy") %>% nrow()
+
+
 ```
 
 # count number of specialists
@@ -750,9 +753,8 @@ plot(allEffects(mymodel))
 ## Analysis based on highest number of tasks workers perform 
 ```{r}
 head(count_data)
-#filter so all bees have >= 3 behaviors 
-# this includes lazy bees 
-high_behav<-count_data %>% filter(nBehavs>=3) 
+#filter so all bees have >= 3 behaviors (exclude lazies)
+high_behav<-count_data %>% filter(lazy=="notLazy") 
 nrow(high_behav)
 highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging, 
                                  feedsbrood, pollenforaging, egglaying)
@@ -762,11 +764,20 @@ hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
 #Sort each bee by which behavior they do the most and then assign that bee to that behavior
 BehavAssign<-hbdf %>% dplyr::group_by(beeID) %>% dplyr::arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
 
-#How many bees are in each category? 
-
 #Merge back into original dataframe
 FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
 FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
+
+#How many bees are in each category? 
+nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "nectarforaging",])
+nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "pollenforaging",])
+nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "feedsbrood",])
+nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "egglaying",])
+
+
+
+
+
 
 ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
 
@@ -793,31 +804,40 @@ ggplot(FinalBehavRank, aes(BehavAssign, avgOvS, color = caste, shape = nestTYPE)
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/highcountOV.jpg")
 
+
+
+```
+
+## Models
+```{r}
+#Body Size 
 hist(FinalBehavRank$size)
-WBehavRank <- FinalBehavRank %>% filter(queen=="queenless")
-                                          )
-j0 <- lmer(size~ 1 + (1|nestTYPE) + (1|natal) + (1|caste),
-            data = FinalBehavRank)
-j1 <- lmer(size ~ BehavAssign + (1|nestTYPE) + (1|caste) + 
-             (1|natal), data = FinalBehavRank)
+head(FinalBehavRank)
 
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = FinalBehavRank)
+s1 <- glmer(size ~ BehavAssign + (1|nestID) + (1|natal) + (1|caste), data = FinalBehavRank)
 
-model.sel(j0,j1)
+model.sel(s0, s1)
+# Behavioral group not included in best model 
 
-posthoc<-glht(j2, linfct = mcp(BehavAssign = "Tukey"))
-summary(posthoc)
+#Ovary Resporbtion 
+hist(FinalBehavRank$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = FinalBehavRank)
+s1 <- glmer(ovRavg ~ BehavAssign + (1|nestID) + (1|natal) + (1|caste), data = FinalBehavRank)
 
-b0 <- lmer(avgOvS~ 1 + (1|nestTYPE) + (1|natal) + (1|caste),
-            data = FinalBehavRank)
+model.sel(s0, s1)
 
-b1 <- lmer(avgOvS ~ BehavAssign  + (1|nestTYPE) + (1|natal) + (1|caste), data = FinalBehavRank)
-model.sel(b0, b1) 
+#Ovary Stage 
+hist(FinalBehavRank$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = FinalBehavRank)
+s1 <- glmer(ovSavg ~ BehavAssign + (1|nestID) + (1|natal) + (1|caste), data = FinalBehavRank)
 
+model.sel(s0, s1)
 
-posthoc2 <- glht(j1, linfct = mcp(BehavAssign = "Tukey"))
-summary(posthoc2)
-
-
+#Behaviorlal assign not included in any of the best models 
 ```
 
 
@@ -825,11 +845,8 @@ summary(posthoc2)
 # Perfectly specialized counts- size and ovaries 
 ```{r}
 # subset to look only at perfectly specialized individuals
-nrow(count_data)
-perfSpec <- count_data[count_data$shannon == 0,]
-perfSpec <- perfSpec[!is.na(perfSpec$shannon),]
+perfSpec <- count_data %>% filter(lazy=="notLazy") %>% filter(shannon=="0")
 nrow(perfSpec)
-
 
 nrow(perfSpec[perfSpec$specBehav == "nectarforaging",])
 nrow(perfSpec[perfSpec$specBehav == "pollenforaging",])
@@ -837,6 +854,61 @@ nrow(perfSpec[perfSpec$specBehav == "feedsbrood",])
 nrow(perfSpec[perfSpec$specBehav == "egglaying",])
 
 ```
+
+
+## Models 
+```{r}
+#Body Size 
+hist(perfSpec$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = perfSpec)
+s1 <- glmer(size ~ specBehav + (1|nestID) + (1|natal) + (1|caste), data = perfSpec)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+hist(perfSpec$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = perfSpec)
+s1 <- glmer(ovRavg ~ specBehav + (1|nestID) + (1|natal) + (1|caste), data = perfSpec)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(FinalBehavRank$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
+              data = perfSpec)
+s1 <- glmer(ovSavg ~ specBehav + (1|nestID) + (1|natal) + (1|caste), data = perfSpec)
+
+model.sel(s0, s1)
+
+mymodel <- s1
+summary(mymodel)
+tab_model(mymodel)
+plot(allEffects(mymodel))
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+posthoc<-glht(s1, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc)
+
+ggplot(data = perfSpec, aes(specBehav, ovSavg, color = nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
+  labs(x = "Behavior", y = "Average Ovary Stage", color = "Nest Configuration")
+ggsave("../figures/osperfectlyspecialized.jpg")
+
+
+```
+
+
+
+
+
 
 ## Body Size 
 ```{r}
