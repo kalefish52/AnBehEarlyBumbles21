@@ -24,14 +24,8 @@ library(MuMIn)
 # includes all bees,including unknown and low counts
 count_data <- read.csv("../Data/filtData/count_data.csv")
 
-# remove unknown bees
-count_data <- count_data[!grepl("unknown", count_data$beeID), ]
-count_data
-
-count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
-count_data <- count_data[!grepl("unknown", count_data$beeID),] %>%
-  filter(nBehavs>=3)
-
+#Filter out lazy bees
+count_data<-count_data %>% filter(lazy=="notLazy") 
 ```
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
@@ -101,9 +95,11 @@ count_data
 kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster, egglaying, nectarforaging, feedsbrood, pollenforaging)
 
 #How many in each group
-one<-kcounts %>% filter(cluster=="1")
-two<-kcounts %>% filter(cluster=="2")
-three<-kcounts %>% filter(cluster=="3")
+one<-kcounts %>% filter(cluster=="1") 
+two<-kcounts %>% filter(cluster=="2") 
+two %>% arrange(egglaying)
+three<-kcounts %>% filter(cluster=="3") 
+three %>% arrange(nectarforaging)
 
 kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
 
@@ -155,10 +151,10 @@ library(sjPlot)  # tab_model
 library(MuMIn)    # model.sel
 
 count_data$cluster <- as.factor(count_data$cluster)
-
+head(count_data)
 #Does ovary size change with cluster? 
 hist(count_data$ovSavg)
-k0 <- lmer(ovSavg ~ 1 + (1|nestTYPE) + (1|natal),
+k0 <- glmer(ovSavg ~ 1 + (1|nestTYPE) + (1|natal),
             data = count_data)
 
 k1 <- lmer(ovSavg ~ cluster + (1|nestTYPE) + (1|natal),
@@ -173,6 +169,13 @@ k3 <- lmer(size ~ cluster + (1|nestTYPE) + (1|natal) + (1|caste),
 model.sel(k2, k3)
 posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
 summary(posthoc)
+
+k4<-lmer(ovRavg~1+(1|nestTYPE) + (1|natal) + (1|caste),
+            data = count_data)
+  
+k5<-lmer(ovRavg~cluster+(1|nestTYPE) + (1|natal) + (1|caste),
+            data = count_data)
+model.sel(k4, k5)
 
 
 library(gridExtra)
