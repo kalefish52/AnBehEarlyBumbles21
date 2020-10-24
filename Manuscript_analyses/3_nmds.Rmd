@@ -29,16 +29,14 @@ library(MuMIn)    # model.sel
 # pooled data across timepoints, values are counts
 # includes only known bees
 count_kmeans <- read.csv("../Data/filtData/count_kmeans.csv") 
-
+nrow(count_kmeans)
 ```
 
 # NMDS on all pooled data
 ```{r}
-# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_data <- count_kmeans[!is.na(count_kmeans$shannon),]
-nmds_data
+
 # make matrix of only behavior counts for all timepoints
-nmds_m <- as.matrix(nmds_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+nmds_m <- as.matrix(count_kmeans[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
 
 # Run NMDS with euclidean distance
 nmds_scores <- metaMDS(nmds_m)
@@ -51,7 +49,7 @@ behav_scores
 
 # merge bee NMDS info into nmds_data
 nmds_scores <- as.data.frame(scores(nmds_scores))
-nmds_data <- cbind(nmds_data, nmds_scores)
+nmds_data <- cbind(count_kmeans, nmds_scores)
 
 nmds_data$nestTYPE <- ordered(nmds_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 nmds_data
