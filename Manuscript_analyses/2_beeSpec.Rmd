@@ -68,8 +68,6 @@ nrow(count_data[count_data$specBehav == "egglaying",])
 nrow(count_data[count_data$specBehav == "generalist",])
 nrow(count_data[count_data$specBehav == "lazy",])
 
-count_data %>% dplyr::select(nestID) %>% unique() %>% nrow()
-
 ```
 
 # visualize body size in relation to behavioral specialization
@@ -165,66 +163,66 @@ count_wide
 # MODEL EGG LAYING 
 el0 <- glmer(egglaying ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-el1 <- glmer(egglaying ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+el1 <- glmer(egglaying ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el2 <- glmer(egglaying ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
+el2 <- glmer(egglaying ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el3 <- glmer(egglaying ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
+el3 <- glmer(egglaying ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el4 <- glmer(egglaying ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
+el4 <- glmer(egglaying ~ size + ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el5 <- glmer(egglaying ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
+el5 <- glmer(egglaying ~ size + ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el6 <- glmer(egglaying ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+el6 <- glmer(egglaying ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el7 <- glmer(egglaying ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
+el7 <- glmer(egglaying ~ size + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el8 <- glmer(egglaying ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
+el8 <- glmer(egglaying ~ size + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el9 <- glmer(egglaying ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+el9 <- glmer(egglaying ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el10 <- glmer(egglaying ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
+el10 <- glmer(egglaying ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el11 <- glmer(egglaying ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
+el11 <- glmer(egglaying ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el12 <- glmer(egglaying ~ size + ovSavg + (1|nestID) + (1|natal),
+el12 <- glmer(egglaying ~ size + ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el13 <- glmer(egglaying ~ size + ovRavg + (1|nestID) + (1|natal),
+el13 <- glmer(egglaying ~ size + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el14 <- glmer(egglaying ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
+el14 <- glmer(egglaying ~ ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el15 <- glmer(egglaying ~ size + queen + nBees + (1|nestID) + (1|natal),
+el15 <- glmer(egglaying ~ size + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el16 <- glmer(egglaying ~ size + queen  + (1|nestID) + (1|natal),
+el16 <- glmer(egglaying ~ size + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el17 <- glmer(egglaying ~ size  + nBees + (1|nestID) + (1|natal),
+el17 <- glmer(egglaying ~ size  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el18 <- glmer(egglaying ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
+el18 <- glmer(egglaying ~ ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el19 <- glmer(egglaying ~ ovSavg + queen  + (1|nestID) + (1|natal),
+el19 <- glmer(egglaying ~ ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el20 <- glmer(egglaying ~ ovSavg  + nBees + (1|nestID) + (1|natal),
+el20 <- glmer(egglaying ~ ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el21 <- glmer(egglaying ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
+el21 <- glmer(egglaying ~ ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el22 <- glmer(egglaying ~ ovRavg + queen  + (1|nestID) + (1|natal),
+el22 <- glmer(egglaying ~ ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el23 <- glmer(egglaying ~ ovRavg  + nBees + (1|nestID) + (1|natal),
+el23 <- glmer(egglaying ~ ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el24 <- glmer(egglaying ~ size + (1|nestID) + (1|natal),
+el24 <- glmer(egglaying ~ size + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el25 <- glmer(egglaying ~ ovSavg + (1|nestID) + (1|natal),
+el25 <- glmer(egglaying ~ ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el26 <- glmer(egglaying ~ ovRavg + (1|nestID) + (1|natal),
+el26 <- glmer(egglaying ~ ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el27 <- glmer(egglaying ~ queen + nBees + (1|nestID) + (1|natal),
+el27 <- glmer(egglaying ~ queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el28 <- glmer(egglaying ~ queen  + (1|nestID) + (1|natal),
+el28 <- glmer(egglaying ~ queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-el29 <- glmer(egglaying ~ nBees + (1|nestID) + (1|natal),
+el29 <- glmer(egglaying ~ nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
 model.sel(el0, el2, el5, el6, el7, el8, el10, el11, el13, el14, el15, el16, el17, el18, el19, el20, el21, el22, el23, el24, el25, el26, el27, el28, el29)
-mymodel <- el13
+mymodel <- el24
 summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
@@ -233,65 +231,65 @@ plot(allEffects(mymodel))
 ## brood feeding
 ```{r}
 # MODEL BROOD FEEDING
-fb0 <- glmer(feedsbrood ~ 1 + (1|natal) + (1|nestID),
+fb0 <- glmer(feedsbrood ~ 1 + (1|natal) + (1|nestID) + (1|caste),
               data = count_wide, family = binomial)
-fb1 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+fb1 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb2 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
+fb2 <- glmer(feedsbrood ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb3 <- glmer(feedsbrood ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
+fb3 <- glmer(feedsbrood ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb4 <- glmer(feedsbrood ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
+fb4 <- glmer(feedsbrood ~ size + ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb5 <- glmer(feedsbrood ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
+fb5 <- glmer(feedsbrood ~ size + ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb6 <- glmer(feedsbrood ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+fb6 <- glmer(feedsbrood ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb7 <- glmer(feedsbrood ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
+fb7 <- glmer(feedsbrood ~ size + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb8 <- glmer(feedsbrood ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
+fb8 <- glmer(feedsbrood ~ size + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb9 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+fb9 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb10 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
+fb10 <- glmer(feedsbrood ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb11 <- glmer(feedsbrood ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
+fb11 <- glmer(feedsbrood ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb12 <- glmer(feedsbrood ~ size + ovSavg + (1|nestID) + (1|natal),
+fb12 <- glmer(feedsbrood ~ size + ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb13 <- glmer(feedsbrood ~ size + ovRavg + (1|nestID) + (1|natal),
+fb13 <- glmer(feedsbrood ~ size + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb14 <- glmer(feedsbrood ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
+fb14 <- glmer(feedsbrood ~ ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
 fb15 <- glmer(feedsbrood ~ size + queen + nBees + (1|nestID) + (1|natal),
               data = count_wide, family = binomial)
-fb16 <- glmer(feedsbrood ~ size + queen  + (1|nestID) + (1|natal),
+fb16 <- glmer(feedsbrood ~ size + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb17 <- glmer(feedsbrood ~ size  + nBees + (1|nestID) + (1|natal),
+fb17 <- glmer(feedsbrood ~ size  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb18 <- glmer(feedsbrood ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
+fb18 <- glmer(feedsbrood ~ ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb19 <- glmer(feedsbrood ~ ovSavg + queen  + (1|nestID) + (1|natal),
+fb19 <- glmer(feedsbrood ~ ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb20 <- glmer(feedsbrood ~ ovSavg  + nBees + (1|nestID) + (1|natal),
+fb20 <- glmer(feedsbrood ~ ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb21 <- glmer(feedsbrood ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
+fb21 <- glmer(feedsbrood ~ ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb22 <- glmer(feedsbrood ~ ovRavg + queen  + (1|nestID) + (1|natal),
+fb22 <- glmer(feedsbrood ~ ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb23 <- glmer(feedsbrood ~ ovRavg  + nBees + (1|nestID) + (1|natal),
+fb23 <- glmer(feedsbrood ~ ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb24 <- glmer(feedsbrood ~ size + (1|nestID) + (1|natal),
+fb24 <- glmer(feedsbrood ~ size + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb25 <- glmer(feedsbrood ~ ovSavg + (1|nestID) + (1|natal),
+fb25 <- glmer(feedsbrood ~ ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb26 <- glmer(feedsbrood ~ ovRavg + (1|nestID) + (1|natal),
+fb26 <- glmer(feedsbrood ~ ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb27 <- glmer(feedsbrood ~ queen + nBees + (1|nestID) + (1|natal),
+fb27 <- glmer(feedsbrood ~ queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb28 <- glmer(feedsbrood ~ queen  + (1|nestID) + (1|natal),
+fb28 <- glmer(feedsbrood ~ queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-fb29 <- glmer(feedsbrood ~ nBees + (1|nestID) + (1|natal),
+fb29 <- glmer(feedsbrood ~ nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
 model.sel(fb0, fb2, fb5, fb6, fb7, fb8, fb10, fb11, fb13, fb14, fb15, fb16, fb17, fb18, fb19, fb20, fb21, fb22, fb23, fb24, fb25, fb26, fb27, fb28, fb29)
 
@@ -305,67 +303,67 @@ plot(allEffects(mymodel))
 # MODEL NECTAR FORAGING
 nf0 <- glmer(nectarforaging ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-nf1 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+nf1 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf2 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
+nf2 <- glmer(nectarforaging ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf3 <- glmer(nectarforaging ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
+nf3 <- glmer(nectarforaging ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf4 <- glmer(nectarforaging ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
+nf4 <- glmer(nectarforaging ~ size + ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf5 <- glmer(nectarforaging ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
+nf5 <- glmer(nectarforaging ~ size + ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf6 <- glmer(nectarforaging ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+nf6 <- glmer(nectarforaging ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf7 <- glmer(nectarforaging ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
+nf7 <- glmer(nectarforaging ~ size + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf8 <- glmer(nectarforaging ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
+nf8 <- glmer(nectarforaging ~ size + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf9 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+nf9 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf10 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
+nf10 <- glmer(nectarforaging ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf11 <- glmer(nectarforaging ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
+nf11 <- glmer(nectarforaging ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf12 <- glmer(nectarforaging ~ size + ovSavg + (1|nestID) + (1|natal),
+nf12 <- glmer(nectarforaging ~ size + ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf13 <- glmer(nectarforaging ~ size + ovRavg + (1|nestID) + (1|natal),
+nf13 <- glmer(nectarforaging ~ size + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf14 <- glmer(nectarforaging ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
+nf14 <- glmer(nectarforaging ~ ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf15 <- glmer(nectarforaging ~ size + queen + nBees + (1|nestID) + (1|natal),
+nf15 <- glmer(nectarforaging ~ size + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf16 <- glmer(nectarforaging ~ size + queen  + (1|nestID) + (1|natal),
+nf16 <- glmer(nectarforaging ~ size + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf17 <- glmer(nectarforaging ~ size  + nBees + (1|nestID) + (1|natal),
+nf17 <- glmer(nectarforaging ~ size  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf18 <- glmer(nectarforaging ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
+nf18 <- glmer(nectarforaging ~ ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf19 <- glmer(nectarforaging ~ ovSavg + queen  + (1|nestID) + (1|natal),
+nf19 <- glmer(nectarforaging ~ ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf20 <- glmer(nectarforaging ~ ovSavg  + nBees + (1|nestID) + (1|natal),
+nf20 <- glmer(nectarforaging ~ ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf21 <- glmer(nectarforaging ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
+nf21 <- glmer(nectarforaging ~ ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf22 <- glmer(nectarforaging ~ ovRavg + queen  + (1|nestID) + (1|natal),
+nf22 <- glmer(nectarforaging ~ ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf23 <- glmer(nectarforaging ~ ovRavg  + nBees + (1|nestID) + (1|natal),
+nf23 <- glmer(nectarforaging ~ ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf24 <- glmer(nectarforaging ~ size + (1|nestID) + (1|natal),
+nf24 <- glmer(nectarforaging ~ size + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf25 <- glmer(nectarforaging ~ ovSavg + (1|nestID) + (1|natal),
+nf25 <- glmer(nectarforaging ~ ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf26 <- glmer(nectarforaging ~ ovRavg + (1|nestID) + (1|natal),
+nf26 <- glmer(nectarforaging ~ ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf27 <- glmer(nectarforaging ~ queen + nBees + (1|nestID) + (1|natal),
+nf27 <- glmer(nectarforaging ~ queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf28 <- glmer(nectarforaging ~ queen  + (1|nestID) + (1|natal),
+nf28 <- glmer(nectarforaging ~ queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-nf29 <- glmer(nectarforaging ~ nBees + (1|nestID) + (1|natal),
+nf29 <- glmer(nectarforaging ~ nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
 model.sel(nf0, nf2, nf5, nf6, nf7, nf8, nf10, nf11, nf13, nf14, nf15, nf16, nf17, nf18, nf19, nf20, nf21, nf22, nf23, nf24, nf25, nf26, nf27, nf28, nf29)
 
-mymodel <- nf13
+mymodel <- nf24
 summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
@@ -376,67 +374,67 @@ plot(allEffects(mymodel))
 # MODEL GENERALISTS
 gen0 <- glmer(generalist ~ 1 + (1|natal) + (1|nestID),
               data = count_wide, family = binomial)
-gen1 <- glmer(generalist ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+gen1 <- glmer(generalist ~ size + ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen2 <- glmer(generalist ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal),
+gen2 <- glmer(generalist ~ size + ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen3 <- glmer(generalist ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal),
+gen3 <- glmer(generalist ~ size + ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen4 <- glmer(generalist ~ size + ovSavg + queen  + (1|nestID) + (1|natal),
+gen4 <- glmer(generalist ~ size + ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen5 <- glmer(generalist ~ size + ovSavg  + nBees + (1|nestID) + (1|natal),
+gen5 <- glmer(generalist ~ size + ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen6 <- glmer(generalist ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+gen6 <- glmer(generalist ~ size + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen7 <- glmer(generalist ~ size + ovRavg + queen  + (1|nestID) + (1|natal),
+gen7 <- glmer(generalist ~ size + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen8 <- glmer(generalist ~ size + ovRavg  + nBees + (1|nestID) + (1|natal),
+gen8 <- glmer(generalist ~ size + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen9 <- glmer(generalist ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal),
+gen9 <- glmer(generalist ~ ovSavg + ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen10 <- glmer(generalist ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal),
+gen10 <- glmer(generalist ~ ovSavg + ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen11 <- glmer(generalist ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal),
+gen11 <- glmer(generalist ~ ovSavg + ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen12 <- glmer(generalist ~ size + ovSavg + (1|nestID) + (1|natal),
+gen12 <- glmer(generalist ~ size + ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen13 <- glmer(generalist ~ size + ovRavg + (1|nestID) + (1|natal),
+gen13 <- glmer(generalist ~ size + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen14 <- glmer(generalist ~ ovSavg + ovRavg + (1|nestID) + (1|natal),
+gen14 <- glmer(generalist ~ ovSavg + ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen15 <- glmer(generalist ~ size + queen + nBees + (1|nestID) + (1|natal),
+gen15 <- glmer(generalist ~ size + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen16 <- glmer(generalist ~ size + queen  + (1|nestID) + (1|natal),
+gen16 <- glmer(generalist ~ size + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen17 <- glmer(generalist ~ size  + nBees + (1|nestID) + (1|natal),
+gen17 <- glmer(generalist ~ size  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen18 <- glmer(generalist ~ ovSavg + queen + nBees + (1|nestID) + (1|natal),
+gen18 <- glmer(generalist ~ ovSavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen19 <- glmer(generalist ~ ovSavg + queen  + (1|nestID) + (1|natal),
+gen19 <- glmer(generalist ~ ovSavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen20 <- glmer(generalist ~ ovSavg  + nBees + (1|nestID) + (1|natal),
+gen20 <- glmer(generalist ~ ovSavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen21 <- glmer(generalist ~ ovRavg + queen + nBees + (1|nestID) + (1|natal),
+gen21 <- glmer(generalist ~ ovRavg + queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen22 <- glmer(generalist ~ ovRavg + queen  + (1|nestID) + (1|natal),
+gen22 <- glmer(generalist ~ ovRavg + queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen23 <- glmer(generalist ~ ovRavg  + nBees + (1|nestID) + (1|natal),
+gen23 <- glmer(generalist ~ ovRavg  + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen24 <- glmer(generalist ~ size + (1|nestID) + (1|natal),
+gen24 <- glmer(generalist ~ size + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen25 <- glmer(generalist ~ ovSavg + (1|nestID) + (1|natal),
+gen25 <- glmer(generalist ~ ovSavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen26 <- glmer(generalist ~ ovRavg + (1|nestID) + (1|natal),
+gen26 <- glmer(generalist ~ ovRavg + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen27 <- glmer(generalist ~ queen + nBees + (1|nestID) + (1|natal),
+gen27 <- glmer(generalist ~ queen + nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen28 <- glmer(generalist ~ queen  + (1|nestID) + (1|natal),
+gen28 <- glmer(generalist ~ queen  + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
-gen29 <- glmer(generalist ~ nBees + (1|nestID) + (1|natal),
+gen29 <- glmer(generalist ~ nBees + (1|nestID) + (1|natal)+ (1|caste),
               data = count_wide, family = binomial)
 model.sel(gen0, gen2, gen5, gen6, gen7, gen8, gen10, gen11, gen13, gen14, gen15, gen16, gen17, gen18, gen19, gen20, gen21, gen22, gen23, gen24, gen25, gen26, gen27, gen28, gen29)
 
-mymodel <- gen13
+mymodel <- gen24
 summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
@@ -665,7 +663,7 @@ s30 <- glmer(ovSavg ~ nBees + (1|nestID) + (1|natal),
               data = count_data)
 model.sel(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24, s25, s26, s27, s28, s29, s30)
 
-mymodel <- s11
+mymodel <- s15
 summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
@@ -748,6 +746,9 @@ summary(mymodel)
 tab_model(mymodel)
 plot(allEffects(mymodel))
 ```
+
+
+
 
 # Highest Counts
 ## Analysis based on highest number of tasks workers perform 

@@ -188,12 +188,6 @@ s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestID) + (1|caste),
 s1 <- glmer(ovSavg ~ shannon + (1|nestID) + (1|natal) + (1|caste), data = count_bees)
 
 model.sel(s0, s1)
-
-
-
-
-
-
 ```
 
 # How does average specialization change with time point?
