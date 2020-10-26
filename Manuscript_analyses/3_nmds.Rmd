@@ -114,8 +114,6 @@ ggplot() +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
 ggsave("../figures/nmdstime.jpg")
 
-
-
 ```
 
 
