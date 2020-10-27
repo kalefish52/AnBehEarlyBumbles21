@@ -48,7 +48,7 @@ elbow <- plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
-ggsave("elbow.jpg")
+ggsave("../figures/elbow.jpg")
 ```
 
 run k means analysis
