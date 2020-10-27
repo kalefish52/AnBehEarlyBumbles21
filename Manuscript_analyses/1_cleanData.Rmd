@@ -1786,7 +1786,7 @@ p2 <- ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste
 ggsave("../figures/shanDist.jpg")
 
 ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
-ggsave("../figures/shannonBeeTime.jpg")
+ggsave("../figures/shannonBeeTime.jpg", width=4.5, height=6.5)
 
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
 print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "known bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
@@ -2083,7 +2083,7 @@ p2 <- ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
 ggsave("../figures/taskShanVSnBehavs.jpg")
 
 ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
-ggsave("../figures/taskShanPanel.jpg")
+ggsave("../figures/taskShanPanel.jpg", height=6.5, width=4.5)
 
 # print the number of nests that meet the shannon threshold
 print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
