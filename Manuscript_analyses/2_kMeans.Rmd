@@ -79,7 +79,7 @@ plot_ly(x = count_data$feedsbrood,
         z = count_data$egglaying, 
         type="scatter3d", 
         mode="markers",
-        #symbol = count_data$caste, symbols = c('square', 'circle'),
+        symbol = count_data$caste, symbols = c('square', 'circle'),
         color = count_data$cluster) %>%
   layout(
     title = "k means clustering",
