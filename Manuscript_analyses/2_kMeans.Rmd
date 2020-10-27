@@ -48,7 +48,6 @@ elbow <- plot(1:k.max, wss,
      type="b", pch = 19, frame = FALSE, 
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
-ggsave("../figures/elbow.jpg")
 ```
 
 run k means analysis
@@ -181,7 +180,7 @@ model.sel(k4, k5)
 
 library(gridExtra)
 p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
-  stat_summary(fun = mean, geom = "point", size = 5) +
+  stat_summary(fun = mean, geom = "point", size = 5) + ylab("Body Size") +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
@@ -189,7 +188,7 @@ p1
 ggsave("../figures/kmeansBS.jpg")
 
 
-p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) +
+p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) + ylab("Average Ovary \n Stage") + 
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) + 
@@ -197,7 +196,7 @@ p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) +
 p2
 ggsave("../figures/kmeansOv.jpg")
 
-ggarrange(p1, p2, labels = c("A", "B"))
+ggarrange(p1, p2, labels = c("A", "B"), common.legend = TRUE, legend="right")
 ggsave("../figures/kmeansBSov.jpg")
 ```
 
