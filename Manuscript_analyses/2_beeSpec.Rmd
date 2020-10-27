@@ -800,7 +800,7 @@ ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) 
 ggsave("../figures/highcountBS.jpg")
 
 FinalBehavRank %>% dplyr::select(BehavAssign, beeID, avgOvS)
-ggplot(FinalBehavRank, aes(BehavAssign, avgOvS, color = caste, shape = nestTYPE)) +
+ggplot(FinalBehavRank, aes(BehavAssign, ovSavg, color = caste, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
   stat_summary(fun = mean, geom = "point", size = 5)
 ggsave("../figures/highcountOV.jpg")

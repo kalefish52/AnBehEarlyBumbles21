@@ -43,20 +43,52 @@ library(dplyr)
 
 # load data and filter so that all bees have >= 3 observations
 ```{r}
-rptdata<-read.csv("../Data/filtData/count_time.csv") %>% dplyr::select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav)
-head(rptdata)
+rptdata<-read.csv("../Data/filtData/count_time.csv") %>% dplyr::select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav, lazy)%>% filter(lazy=="notLazy")
 
-#Make sure all bees have >=3 behavioral observations
-rpt_data<-rptdata %>% filter(nBehavs>=3)
-print(paste0("We filtered out", nrow(rptdata)-nrow(rpt_data) , " bees that did not have >=3 behaviors, with" , nrow(rpt_data) , "bees used in the final analysis"))
+
+#Filter so that we only include bees that have observations at both timepoints
+# add column for Dist
+rpttime<-rptdata %>% 
+  dplyr::select(timepoint, nestTYPE, nestID, beeID, feedsbrood, 
+                nectarforaging, pollenforaging) %>% 
+  pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
+
+rpttime$Dist <- NA
+# calculate change in proportion over time and add to Dist column
+for (i in 1:nrow(rpttime)) {              # for each row in the dataset
+  if(rpttime$timepoint[i] == "late") {                # look at the the late bees only
+    for (j in 1:nrow(rpttime)) {                     # then iterate back through the dataset
+      if(rpttime$timepoint[j] == "early" & 
+         rpttime$beeID[j] == rpttime$beeID[i]
+         & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
+        # and find the early entry with the same behav
+        rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
+        # calculate the difference across time
+      }
+    }
+  }
+}
+
+#Filter out individuals that do not have observations at both timepoints
+rpttime<-rpttime[complete.cases(rpttime),]
+# Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
+beestime<-rpttime %>% dplyr::select(beeID) %>% unique()
+
+namesbeesfilt<-as.list(beestime)
+rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
+
+rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
+
+#pivot longer for graphs :) 
+rpt_graphs<-rpt_data %>% pivot_longer(!c(nestID, nestTYPE, beeID, caste, timepoint, specBehav, lazy, shanDist, nBehavs), names_to="Behavior", values_to="Counts")
 ```
 
 # Repeatability Analyses on scaled counts 
 ## Repeatability brood feeding 
 ```{r}
 hist(rpt_data$feedsbrood) # try gaussian
-repfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_data, 
+repfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
 summary(repfb)
 print(repfb)
@@ -77,11 +109,12 @@ lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
 
 ## Repeatability nectar foraging
 ```{r}
-repnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_data, 
+hist(rpt_data$nectarforaging)
+repnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
 summary(repnf)
-print(repnf)
+print(repnf) 
 plot(repnf, cex.main = 1)
 
 #Check model fit - nectar foraging
@@ -98,8 +131,8 @@ head(rpt_data)
 ## Repeatability pollen foraging
 ```{r}
 hist(rpt_data$pollenforaging)
-repf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID),
-            grname = c("beeID", "nestID"), data = rpt_data, 
+repf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
 summary(repf)
 print(repf)
@@ -122,53 +155,22 @@ lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
 
 # Plot nest data for rpt proportions
 ```{r}
-read.csv("../Data/filtData/taskShanTime.csv")
-head(rpt_data)
-
-rptDist<-rpt_data %>% 
-  dplyr::select(timepoint, nestTYPE, beeID, feedsbrood, 
-                nectarforaging, pollenforaging) %>% 
-  pivot_longer(!c(timepoint, beeID, nestTYPE), names_to="Behavior", values_to="Counts")  
-
-rptDist$nestTYPE <- as.factor(rptDist$nestTYPE)
-
-
-
-ggplot(rptDist, aes(Counts, Behavior, shape=timepoint)) +
+ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
              aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) + 
   labs(x="Scaled Behavioral Observations on a Particular Behavior")
+("../figures/rptnest.jpg")
 ```
 
 
 # Plot difference in distance between individuals from timepoint one to timepoint two 
 ```{r}
-# add column for Dist
-rpttime<-rptDist
-rpttime$Dist <- NA
-# calculate change in proportion over time and add to Dist column
-for (i in 1:nrow(rpttime)) {              # for each row in the dataset
-  if(rpttime$timepoint[i] == "late") {                # look at the the late bees only
-    for (j in 1:nrow(rpttime)) {                     # then iterate back through the dataset
-      if(rpttime$timepoint[j] == "early" & 
-         rpttime$beeID[j] == rpttime$beeID[i]
-         & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
-        # and find the early entry with the same behav
-        rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
-        # calculate the difference across time
-      }
-    }
-  }
-}
-
-#Filter out individuals that do not have observations at both timepoints
-rpttime<-rpttime[complete.cases(rpttime), ]
-rpttime
-
 # plot the change from early to late
+rpttime
 avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(Dist, na.rm = T)) %>% dplyr::pull(avg)
+
 
 rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 R1<-ggplot(rpttime, aes(Dist, Behavior)) +
@@ -177,20 +179,15 @@ R1<-ggplot(rpttime, aes(Dist, Behavior)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
   labs(x = "change in number of behaviors performed from early to late timepoint")
+R1
 
 ggsave("../figures/rptDistBehav.jpg")
 ```
 
 
 ```{r}
-# Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
-beestime<-rpttime %>% dplyr::select(beeID) %>% unique()
-
-namesbeesfilt<-as.list(beestime)
-rpt_filt_graph<-rptDist %>% filter(beeID %in% namesbeesfilt$beeID)
-
-rpt_filt_graph$nestTYPE <- ordered(rpt_filt_graph$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-R2<-ggplot(rpt_filt_graph, aes(Counts, Behavior, shape=timepoint)) +
+rpt_graphs$nestTYPE <- ordered(rpt_graphs$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+R2<-ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
              aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +

@@ -248,8 +248,7 @@ tab_model(mymodel)
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-posthoc1 <- glht(mymodel, linfct = mcp(queen + nBees = "Tukey"))
-summary(posthoc1)
+
 
 ```
 
@@ -365,7 +364,6 @@ qqp(shanspec$shanDist, "norm")
 
 
 
-# need to add natal colony as random effect
 cs0 <- glmer(shanDist ~ 1 + (1|nestID) + (1|natal),
               data = shanspec)
 cs1 <- glmer(shanDist ~ queen + nBees + caste + (1|nestID) + (1|natal),
@@ -377,9 +375,7 @@ cs3 <- glmer(shanDist ~ caste + (1|nestID) + (1|natal),
 model.sel(cs0, cs1, cs2, cs3)
 
 mymodel <- cs0
-tab_model(mymodel)
-posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
-summary(posthoc1)
+
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")

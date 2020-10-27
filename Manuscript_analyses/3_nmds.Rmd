@@ -64,19 +64,52 @@ ggsave("../figures/nmdsAll.jpg")
 ```
 
 # Does clustering change with time? 
-Look at NMDS at two time points and then 
+Look at NMDS at two time points 
 ```{r}
 # Look at NMDS at two points
 nmds_time<-read.csv("../Data/filtData/count_time.csv") %>% 
   dplyr::select(nestID, nestTYPE, beeID, caste,  
-         shannon, specBehav, timepoint, nectarforaging, feedsbrood, pollenforaging)
+         specBehav, timepoint, nectarforaging, feedsbrood, pollenforaging, lazy)
 
 # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_time<- nmds_time[!is.na(nmds_time$shannon),]
-nmds_time
+nmds_time<- nmds_time %>% filter(lazy=="notLazy")
+
+#Filter so that we only use beeIDs that have observations at both time points 
+
+timen<-nmds_time %>% 
+  dplyr::select(timepoint, nestTYPE, nestID, beeID, feedsbrood, 
+                nectarforaging, pollenforaging) %>% 
+  pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
+
+timen$Dist <- NA
+# calculate change in proportion over time and add to Dist column
+for (i in 1:nrow(timen)) {              # for each row in the dataset
+  if(timen$timepoint[i] == "late") {                # look at the the late bees only
+    for (j in 1:nrow(timen)) {                     # then iterate back through the dataset
+      if(timen$timepoint[j] == "early" & 
+         timen$beeID[j] == timen$beeID[i]
+         & timen$Behavior[j] == timen$Behavior[i]) {   
+        # and find the early entry with the same behav
+        timen$Dist[i] <- timen$Counts[i] - timen$Counts[j] 
+        # calculate the difference across time
+      }
+    }
+  }
+}
+
+#Filter out individuals that do not have observations at both timepoints
+timen<-timen[complete.cases(timen),]
+# Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
+beestime<-timen %>% dplyr::select(beeID) %>% unique()
+
+namesbeesfilt<-as.list(beestime)
+nmdsTIME<-nmds_time %>% filter(beeID %in% namesbeesfilt$beeID)
+
+nmdsTIME %>% dplyr::select(beeID) %>% unique() %>% nrow()
+
 
 # make matrix of all behaviors except egg laying counts for all timepoints
-nmds_mT <- as.matrix(nmds_time[, c("feedsbrood", "nectarforaging", "pollenforaging")])
+nmds_mT <- as.matrix(nmdsTIME[, c("feedsbrood", "nectarforaging", "pollenforaging")])
 nmds_mT
 
 # Run NMDS with euclidean distance
@@ -90,7 +123,7 @@ behav_scoresT$behav <- rownames(behav_scoresT)
 
 # merge bee NMDS info into nmds_data
 nmds_scoresT <- as.data.frame(scores(nmds_scoresT))
-nmds_dataT <- cbind(nmds_time, nmds_scoresT)
+nmds_dataT <- cbind(nmdsTIME, nmds_scoresT)
 
 nmds_dataT$nestTYPE <- ordered(nmds_dataT$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 nmds_dataT
@@ -99,9 +132,6 @@ nmds_dataT
 anotime = anosim(nmds_mT, nmds_dataT$timepoint, distance = "euclidean", permutations = 9999)
 #ANOSIM is significant - to see where run anosims between different groups 
 anotime
-
-#################################
-#Remove nectar foraging 
 
 
 
