@@ -1776,13 +1776,12 @@ for (i in 1:nrow(count_time)) {                                                 
 ggplot(count_time, aes(shanDist, fill = nestTYPE)) + 
   geom_density(alpha = 0.3)
 
-avgShannDist <- count_time %>% dplyr::summarize(avg = mean(shanDist, na.rm = T)) %>% dplyr::pull(avg)
+avgShannDist <- mean(count_time$shanDist, na.rm = T)
 
-p2 <- ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) +
+p2 <- ggplot(count_time, aes(shanDist, nestTYPE, color = nestTYPE, shape = caste)) + geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.5) +
   scale_shape_manual(values = c(21, 16)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
-  geom_vline(aes(xintercept = avgShannDist), color = "gray70", size = 0.6) +
   labs(x = "change in shannon index from early to late timepoint")
 ggsave("../figures/shanDist.jpg")
 
