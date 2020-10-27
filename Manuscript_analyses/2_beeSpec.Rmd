@@ -787,24 +787,36 @@ p2 <- ggplot(data = count_data, aes(ovSavg, specBehav, color = shannon)) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_color_gradient(low="dark blue", high="yellow") +
   # scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
-  labs(x = "ovary stage", y = "behavioral specialization", color = "shannon")
+  labs(x = "ovary stage", y = "behavioral specialization", color = "shannon") 
 
 
 ggsave("../figures/highcountdistribution.jpg")
 
 #Run GLMMs using BehavAssign as a grouping variable 
 
-ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
+B1<-ggplot(FinalBehavRank, aes(BehavAssign, size, color = caste, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  stat_summary(fun = mean, geom = "point", size = 5) + scale_color_manual(values = c("aquamarine3", "darkslateblue")) + xlab("Most Frequently Performed Task") + 
+  ylab("Body Size")
+B1
 ggsave("../figures/highcountBS.jpg")
 
-FinalBehavRank %>% dplyr::select(BehavAssign, beeID, avgOvS)
-ggplot(FinalBehavRank, aes(BehavAssign, ovSavg, color = caste, shape = nestTYPE)) +
+FinalBehavRank %>% dplyr::select(BehavAssign, beeID, ovSavg)
+B2<-ggplot(FinalBehavRank, aes(BehavAssign, ovSavg, color = caste, shape = nestTYPE)) +
   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  stat_summary(fun = mean, geom = "point", size = 5) +scale_color_manual(values = c("aquamarine3", "darkslateblue"))+ xlab("Most Frequently Performed Task") + 
+  ylab("Average Ovary \n Development")
+
+B3<-ggplot(FinalBehavRank, aes(BehavAssign, ovRavg, color = caste, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  stat_summary(fun = mean, geom = "point", size = 5) +scale_color_manual(values = c("aquamarine3", "darkslateblue"))+ xlab("Most Frequently Performed Task") + 
+  ylab("Average Ovary Resporption")
+
+
 ggsave("../figures/highcountOV.jpg")
 
+ggarrange(B1, B2, labels = c("A", "B"), ncol=1, common.legend=TRUE, legend="right") 
+ggsave("../figures/highcountsAll.jpg")
 
 
 ```
@@ -896,11 +908,11 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
 posthoc<-glht(s1, linfct = mcp(specBehav = "Tukey"))
 summary(posthoc)
+perfSpec$nestTYPE=as.factor(perfSpec$nestTYPE)
+perfSpec$caste=as.factor(perfSpec$caste)
 
-ggplot(data = perfSpec, aes(specBehav, ovSavg, color = nestTYPE)) +
-  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
-  labs(x = "Behavior", y = "Average Ovary Stage", color = "Nest Configuration")
+C1<-ggplot(data = perfSpec, aes(specBehav, ovSavg, color = caste, shape=nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +labs(x = "Perfectly Specialized Behavior", y = "Average Ovary \n Stage", shape = "Nest Configuration")+ stat_summary(fun = mean, geom = "point", size = 5)+ scale_color_manual(values = c("aquamarine3", "darkslateblue"))
 ggsave("../figures/osperfectlyspecialized.jpg")
 
 
@@ -997,11 +1009,13 @@ summary(posthoc)
 
 # plot size against behavioral specialization 
 
-ggplot(data = perfSpec, aes(specBehav, size, color = nestTYPE)) +
-  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#8c8c8c", "#ffc425")) +
-  labs(x = "Behavior", y = "Body Size", color = "Nest Configuration")
+C2<-ggplot(data = perfSpec, aes(specBehav, size, color = caste, shape=nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +labs(x = "Perfectly Specialized Behavior", y = "Body Size", shape = "Nest Configuration")+ stat_summary(fun = mean, geom = "point", size = 5)+ scale_color_manual(values = c("aquamarine3", "darkslateblue"))
 ggsave("../figures/bsperfectlyspecialized.jpg")
+
+ggarrange(C2, C1, labels = c("A", "B"), ncol=1, common.legend=TRUE, legend="right")
+ggsave("../figures/perfectcountsAll.jpg")
+
 
 ```
 
