@@ -866,6 +866,20 @@ nrow(perfSpec[perfSpec$specBehav == "pollenforaging",])
 nrow(perfSpec[perfSpec$specBehav == "feedsbrood",])
 nrow(perfSpec[perfSpec$specBehav == "egglaying",])
 
+perfgraph<-perfSpec %>% dplyr::select(specBehav, beeID, ovSavg)
+perfgraph <-perfgraph[complete.cases(perfgraph),]
+
+graphperfSpec<-perfgraph %>% group_by(specBehav) %>% 
+  mutate(aov=mean(ovSavg))  %>% 
+  mutate(sdov=sd(ovSavg)) %>% 
+  dplyr::select(specBehav, aov, sdov) %>% unique()
+graphperfSpec
+
+perfov<-ggplot(graphperfSpec, aes(x=specBehav, y=aov)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") + 
+  geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
+perfov
+
 ```
 
 
