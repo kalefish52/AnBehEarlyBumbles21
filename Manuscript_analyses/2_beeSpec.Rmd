@@ -859,7 +859,8 @@ model.sel(s0, s1)
 ```{r}
 # subset to look only at perfectly specialized individuals
 perfSpec <- count_data %>% filter(lazy=="notLazy") %>% filter(shannon=="0")
-nrow(perfSpec)
+# How many bees perform more than one task? 
+1-nrow(perfSpec)/nrow(count_data)
 
 nrow(perfSpec[perfSpec$specBehav == "nectarforaging",])
 nrow(perfSpec[perfSpec$specBehav == "pollenforaging",])
