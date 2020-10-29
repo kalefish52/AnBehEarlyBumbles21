@@ -24,9 +24,8 @@ library(ggpubr)
 # pooled data across timepoints, values are counts
 # includes all bees,including unknown and low counts
 count_data <- read.csv("../Data/filtData/count_data.csv")
+nrow(count_data)
 
-#Filter out lazy bees
-count_data<-count_data %>% filter(lazy=="notLazy") 
 ```
 
 # K Means Cluster Analyses -- determine whether points cluster into two or more groups
@@ -96,9 +95,13 @@ kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster, egglayi
 
 #How many in each group
 one<-kcounts %>% filter(cluster=="1") 
+nrow(one)
+one
 two<-kcounts %>% filter(cluster=="2") 
+nrow(two)
 two %>% arrange(egglaying)
 three<-kcounts %>% filter(cluster=="3") 
+nrow(three)
 three %>% arrange(nectarforaging)
 
 kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
