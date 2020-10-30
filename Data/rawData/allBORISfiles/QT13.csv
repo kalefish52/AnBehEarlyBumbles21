@@ -1,0 +1,22 @@
+,,Worker 1 (3),Worker 1 (3),Worker 1 (3),Worker 1 (3),Worker 1 (3),Worker 2 (47),Worker 2 (47),Worker 2 (47),Worker 2 (47),Worker 2 (47),Worker 3 (99),Worker 3 (99),Worker 3 (99),Worker 3 (99),Worker 3 (99)
+,,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood,feedsbrood
+,Total length (s),Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time,Total duration,Number of occurrences,Duration mean,Duration std dev,Proportion of time
+for	QT13	20181108	0,1895.760,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181108	22,1765.520,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181108	9,1851.120,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181109	13,782.720,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181109	14,722.080,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181109	4,1890.880,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181109	9,889.280,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181110	19,1075.240,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+for	QT13	20181110	21,1195.120,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181108	0,1891.960,0,0,0,0,0,0,0,0,0,0,0.000,1,0.000,0,0.000
+nest	QT13	20181108	22,1761.560,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181108	9,1851.960,0,0,0,0,0,0.000,1,0.000,0,0.000,0.000,1,0.000,0,0.000
+nest	QT13	20181109	0,1807.440,0.000,2,0.000,0.000,0.000,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181109	13,796.800,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181109	14,746.240,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181109	4,1825.600,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181109	9,1122.520,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+nest	QT13	20181110	19,1093.240,0,0,0,0,0,0.000,2,0.000,0.000,0.000,0.000,1,0.000,0,0.000
+nest	QT13	20181110	21,1196.960,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
