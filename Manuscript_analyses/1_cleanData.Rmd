@@ -2318,6 +2318,18 @@ sumNests <- count_data %>% dplyr::group_by(nestID) %>% dplyr::summarise(nectarfo
 sumNests$nBehavs <- rowSums(sumNests[2:5], na.rm = TRUE)
 sumNests$nestTYPE <- substr(sumNests$nestID, start = 1, stop = 2)
 sumNests <- subset(sumNests, nestID %in% count_nests$nestID)
+
+# look at how many bees fed brood out of total
+# remove lazy bees from calculation
+notLazy <- count_data[count_data$lazy == "notLazy",]
+# look at bees who fed brood
+notLazyBFers <- notLazy[notLazy$feedsbrood > 0,]
+notLazy
+notLazyBFers
+
+# look at all brood feeders, including lazy bees
+allBFers <- count_data[count_data$feedsbrood > 0,]
+allBFers
 ```
 
 
