@@ -979,6 +979,24 @@ print(paste("QT COLONIES: we watched an average of", round(avgQTnestH, digits = 
 for (i in 1:nrow(camDur)) {
   print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
+
+camDur
+sumVideo <- camDur
+sumVideo
+
+meanFor <- mean(camDur$forLen)
+semFor <- sd(camDur$forLen)/sqrt(length(camDur$forLen))
+meanNest <- mean(camDur$nestLen)
+semNest <- sd(camDur$nestLen)/sqrt(length(camDur$nestLen))               
+meanTotal <- mean(camDur$totalLen)
+semTotal <- sd(camDur$totalLen)/sqrt(length(camDur$totalLen))
+
+meanFor/60/60
+semFor/60/60
+meanNest/60/60
+semNest/60/60
+meanTotal/60/60
+semTotal
 ```
 ## calculate and graph total duration of video watched at each of the two timepoints (late and early) per nest
 ```{r}
