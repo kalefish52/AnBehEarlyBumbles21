@@ -67,7 +67,7 @@ length(as.factor(test$cluster))
 count_data$cluster <- as.factor(test$cluster)
 
 ## export as count_kmeans
-write.csv(count_data, "../Data/filtData/count_kmeans.csv")
+write.csv(count_data, "../Data/filtData/count_data.csv")
 
 ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
 

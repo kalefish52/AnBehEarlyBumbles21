@@ -763,7 +763,7 @@ highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging,
 hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
 
 #Sort each bee by which behavior they do the most and then assign that bee to that behavior
-BehavAssign<-hbdf %>% dplyr::group_by(beeID) %>% dplyr::arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
+BehavAssign<-hbdf %>% dplyr::group_by(beeID) %>% dplyr::arrange(beeID, desc(count)) %>% dplyr::slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
 
 #Merge back into original dataframe
 FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
@@ -775,11 +775,10 @@ nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "pollenforaging",])
 nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "feedsbrood",])
 nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "egglaying",])
 
+#add highest count to count_data
+count_data <- left_join(count_data, BehavAssign, by="beeID")
 
-
-
-
-
+#plot
 ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
 
 p2 <- ggplot(data = count_data, aes(ovSavg, specBehav, color = shannon)) +
@@ -869,6 +868,20 @@ nrow(perfSpec[perfSpec$specBehav == "egglaying",])
 
 perfgraph<-perfSpec %>% dplyr::select(specBehav, beeID, ovSavg)
 perfgraph <-perfgraph[complete.cases(perfgraph),]
+
+perfSpec
+
+# add perfSpec to count_data
+count_data$perfSpec <- NA
+for (i in 1:nrow(count_data)) {
+  if (is.na(count_data$specProp[i])) {
+  } else if (count_data$specProp[i] == 1) {
+    count_data$perfSpec[i] <- count_data$specBehav[i] 
+    }
+}
+count_data
+# write count_data for nmds graphs
+write.csv(count_data, "../Data/filtData/count_data.csv")
 
 graphperfSpec<-perfgraph %>% group_by(specBehav) %>% 
   mutate(aov=mean(ovSavg))  %>% 

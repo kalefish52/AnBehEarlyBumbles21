@@ -28,8 +28,9 @@ library(MuMIn)    # model.sel
 ```{r}
 # pooled data across timepoints, values are counts
 # includes only known bees
-count_kmeans <- read.csv("../Data/filtData/count_kmeans.csv") 
-nrow(count_kmeans)
+count_kmeans <- read.csv("../Data/filtData/count_data.csv") 
+count_kmeans <- count_kmeans[count_kmeans$lazy == "notLazy",]
+count_kmeans
 ```
 
 # NMDS on all pooled data
@@ -37,7 +38,7 @@ nrow(count_kmeans)
 
 # make matrix of only behavior counts for all timepoints
 nmds_m <- as.matrix(count_kmeans[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
-
+nmds_m
 # Run NMDS with euclidean distance
 nmds_scores <- metaMDS(nmds_m)
 plot(nmds_scores)
@@ -151,18 +152,27 @@ ggsave("../figures/nmdstime.jpg")
 # plot specialists and kmeans clusters onto nmds plot
 ```{r}
 nmds_data$specBehav <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+nmds_data$perfSpec <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+nmds_data$BehavAssign <- ordered(nmds_data$BehavAssign, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 nmds_data$cluster <- as.factor(nmds_data$cluster)
 behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 
+#add highest counts behavAssign to nmds
+nmds_data$BehavAssign <- NA
+nmds_data$BehavAssign <- colnames(nmds_data[nmds_data$nBehavs > 0, c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging")])[max.col(nmds_data[nmds_data$nBehavs > 0, c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging")], ties.method = "first")] 
 
 # Plot it using ggplot
 ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = specBehav), size = 3, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
-  scale_shape_manual(values = c(20, 9, 10)) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "grey")) +
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = BehavAssign, fill = specBehav), size = 3, position = position_jitter(width=0.05, height=0.05), alpha = 0.9) + 
+  # scale_shape_manual(values = c(15, 17, 19, 21, 22, 24, 19)) +
+  # scale_fill_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "lightgrey")) +
+  # scale_color_manual(values = c("firebrick4", "darkgreen", "blue4", "gray88")) +
+  scale_shape_manual(values = c(8, 21, 24)) +
+  scale_fill_manual(values = c("#F8766D", "#7CAE00", "grey88", "#00BFC4")) +
+  #scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "gray60")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.2, 1.1)) +
-  labs(color = "specialist")
+  labs(color = "highest counts", fill = "shannon-based", shape = "kmeans cluster")
 ggsave("../figures/nmdsSpec.jpg")
 
 nmds_data
@@ -171,33 +181,33 @@ nmds_data
 
 # plot nmds with heat map of ovary stage WORKERS ONLY
 ```{r}
-# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_worker <- count_data[!is.na(count_data$shannon),]
-nmds_worker <- nmds_worker[nmds_worker$caste == "W",]
+# # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
+# nmds_worker <- count_data[!is.na(count_data$shannon),]
+# 
+# # make matrix of only behavior counts for all timepoints
+# nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+# 
+# # Run NMDS with euclidean distance
+# nmds_Wscores <- metaMDS(nmds_wM)
+# plot(nmds_Wscores)
+# 
+# # Gets NMDS info for each behavior
+# behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
+# behav_Wscores$behav <- rownames(behav_Wscores)
+# behav_Wscores
+# 
+# # merge bee NMDS info into nmds_worker
+# nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
+# nmds_worker <- cbind(nmds_worker, nmds_Wscores)
+# 
+# nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+# nmds_worker
 
-# make matrix of only behavior counts for all timepoints
-nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
-
-# Run NMDS with euclidean distance
-nmds_Wscores <- metaMDS(nmds_wM)
-plot(nmds_Wscores)
-
-# Gets NMDS info for each behavior
-behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
-behav_Wscores$behav <- rownames(behav_Wscores)
-behav_Wscores
-
-# merge bee NMDS info into nmds_worker
-nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
-nmds_worker <- cbind(nmds_worker, nmds_Wscores)
-
-nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-nmds_worker
 # plot ovary stage onto nmds
 ggplot() + 
-  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = ovSavg), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, color = ovSavg), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
   scale_colour_gradient(low = "yellow", high = "blue") + 
-  geom_text(data=behav_Wscores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
 ggsave("../figures/nmdsOVARY.jpg")
 
