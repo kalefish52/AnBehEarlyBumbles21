@@ -826,29 +826,58 @@ ggsave("../figures/highcountsAll.jpg")
 hist(FinalBehavRank$size)
 head(FinalBehavRank)
 
-s0 <- glmer(size ~ 1 + (1|natal:nestID) + (1|caste), data = FinalBehavRank)
-s1 <- glmer(size ~ BehavAssign + (1|natal:nestID) + (BehavAssign|caste), data = FinalBehavRank)
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = FinalBehavRank)
+s1 <- glmer(size ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID) + (BehavAssign|caste), data = FinalBehavRank)
 
 model.sel(s0, s1)
 # Behavioral group not included in best model 
 
 #Ovary Resporbtion 
 hist(FinalBehavRank$ovRavg)
-s0 <- glmer(ovRavg ~ 1 + (1|natal:nestID) + (1|caste), data = FinalBehavRank)
-s1 <- glmer(ovRavg ~ BehavAssign + (1|natal:nestID) + (BehavAssign|caste), data = FinalBehavRank)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = FinalBehavRank)
+s1 <- glmer(ovRavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID) + (BehavAssign|caste), data = FinalBehavRank)
 
 model.sel(s0, s1)
 
 #Ovary Stage 
 hist(FinalBehavRank$ovSavg)
-s0 <- glmer(ovSavg ~ 1 + (1|natal:nestID) + (1|caste), data = FinalBehavRank)
-s1 <- glmer(ovSavg ~ BehavAssign + (1|natal:nestID) + (BehavAssign|caste), data = FinalBehavRank)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = FinalBehavRank)
+s1 <- glmer(ovSavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID) + (BehavAssign|caste), data = FinalBehavRank)
 
 model.sel(s0, s1)
 
 #Behaviorlal assign not included in any of the best models 
 ```
+## Models for workers only
+```{r}
+# remove queens
+FinalBehavRankW <- FinalBehavRank[FinalBehavRank$caste == "W",]
 
+#Body Size 
+hist(FinalBehavRankW$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+s1 <- glmer(size ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+
+model.sel(s0, s1)
+# Behavioral group not included in best model 
+
+#Ovary Resporbtion 
+hist(FinalBehavRankW$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+s1 <- glmer(ovRavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(FinalBehavRankW$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+s1 <- glmer(ovSavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRankW)
+
+model.sel(s0, s1)
+
+#Behaviorlal assign not included in any of the best models 
+```
 
 
 # Perfectly specialized counts- size and ovaries 
@@ -899,22 +928,22 @@ perfov
 #Body Size 
 hist(perfSpec$size)
 
-s0 <- glmer(size ~ 1 + (1|natal:nestID) + (1|caste), data = perfSpec)
-s1 <- glmer(size ~ specBehav + (1|natal:nestID) + (specBehav|caste), data = perfSpec)
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = perfSpec)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = perfSpec)
 
 model.sel(s0, s1)
 
 #Ovary Resporbtion 
 hist(perfSpec$ovRavg)
-s0 <- glmer(ovRavg ~ 1 + (1|natal:nestID) + (1|caste), data = perfSpec)
-s1 <- glmer(ovRavg ~ specBehav + (1|natal:nestID) + (specBehav|caste), data = perfSpec)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = perfSpec)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = perfSpec)
 
 model.sel(s0, s1)
 
 #Ovary Stage 
 hist(perfSpec$ovSavg)
-s0 <- glmer(ovSavg ~ 1 + (1|natal:nestID) + (1|caste), data = perfSpec)
-s1 <- glmer(ovSavg ~ specBehav + (1|natal:nestID) + (specBehav|caste), data = perfSpec)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = perfSpec)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = perfSpec)
 
 model.sel(s0, s1)
 
@@ -939,8 +968,32 @@ ggsave("../figures/osperfectlyspecialized.jpg")
 
 
 ```
+## Models for workers only
+```{r}
+perfSpecW <- perfSpec[perfSpec$caste == "W",]
 
+#Body Size 
+hist(perfSpecW$size)
 
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+hist(perfSpecW$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(perfSpecW$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+```
 
 
 

@@ -157,26 +157,27 @@ count_data$cluster <- as.factor(count_data$cluster)
 head(count_data)
 #Does ovary size change with cluster? 
 hist(count_data$ovSavg)
-k0 <- glmer(ovSavg ~ 1 + (1|nestTYPE) + (1|natal),
+k0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), 
             data = count_data)
 
-k1 <- lmer(ovSavg ~ cluster + (1|nestTYPE) + (1|natal),
+k1 <- lmer(ovSavg ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
             data = count_data)
 model.sel(k0, k1)
 
-k2 <- lmer(size ~ 1 + (1|nestTYPE) + (1|natal),
+k2 <- lmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste),
             data = count_data)
 
-k3 <- lmer(size ~ cluster + (1|nestTYPE) + (1|natal) + (1|caste),
+k3 <- lmer(size ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
             data = count_data)
 model.sel(k2, k3)
-posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
-summary(posthoc)
 
-k4<-lmer(ovRavg~1+(1|nestTYPE) + (1|natal) + (1|caste),
+#posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
+#summary(posthoc)
+
+k4<-lmer(ovRavg~1+ (1|natal) + (1|nestTYPE:nestID) + (1|caste),
             data = count_data)
   
-k5<-lmer(ovRavg~cluster+(1|nestTYPE) + (1|natal) + (1|caste),
+k5<-lmer(ovRavg~cluster+ (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
             data = count_data)
 model.sel(k4, k5)
 
@@ -204,7 +205,162 @@ ggsave("../figures/kmeansBSov.jpg")
 ```
 
 
+# WORKERS ONLY RERUN
+# K Means Cluster Analyses -- determine whether points cluster into two or more groups
+Elbow Method for finding the optimal number of clusters. optimal number of clusters = elbow of the graph. (in this case 3)
+```{r find number of clusters in k means}
+# look only at workers
+count_workers <- count_data[count_data$caste == "W",]
+
+## set seed of random number generator for reproducibility
+set.seed(123)
+
+## compute and plot total within sum of squares for 2-10 clusters
+k.max <- 10
+## make sure the subset of count_workers here includes feedsbrood, nectarforage, pollenforage, egglaying
+data <- count_workers[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")] 
+
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
+wss
+## plot and look to find the elbow. here it is at 3
+elbow <- plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+run k means analysis
+```{r}
+## set random number generator seed for reproducibility
+set.seed(124)
+
+## set k based on where elbow is in above graph
+k <- 2
+
+## run k means test
+test <- kmeans(data, k, nstart = 20)
+length(as.factor(test$cluster))
+```
+ graph k means analysis
+```{r} 
+## make cluster a factor so we can graph with it
+count_workers$cluster <- as.factor(test$cluster)
+
+## export as count_kmeans
+write.csv(count_workers, "../Data/filtData/count_workers")
+
+## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
+
+## make egg laying workers x 
+plot_ly(x = count_workers$feedsbrood, 
+        y = count_workers$allforaging, 
+        z = count_workers$egglaying, 
+        type="scatter3d", 
+        mode="markers",
+        symbol = count_workers$caste, symbols = c('square', 'circle'),
+        color = count_workers$cluster) %>%
+  layout(
+    title = "k means clustering",
+    scene = list(
+      xaxis = list(title = "feedsbrood"),
+      yaxis = list(title = "allforaging"),
+      zaxis = list(title = "egglaying"))
+  )
 
 
+
+#Plot counts of each cluster for each specBehav
+count_workers
+kcounts<-count_workers %>% dplyr::select(nestID, beeID, specBehav, cluster, egglaying, nectarforaging, feedsbrood, pollenforaging)
+
+#How many in each group
+one<-kcounts %>% filter(cluster=="1") 
+nrow(one)
+one
+two<-kcounts %>% filter(cluster=="2") 
+nrow(two)
+two %>% arrange(egglaying)
+three<-kcounts %>% filter(cluster=="3") 
+nrow(three)
+three %>% arrange(nectarforaging)
+
+kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
+
+kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% dplyr::select(specBehav, cluster, frequency) %>% unique()
+
+ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black")
+
+ggplot(count_workers, aes(x = allforaging, y = cluster)) +
+  geom_point()
+ggplot(count_workers, aes(x = nectarforaging, y = cluster)) +
+  geom_point()
+ggplot(count_workers, aes(x = pollenforaging, y = cluster)) +
+  geom_point()
+ggplot(count_workers, aes(x = feedsbrood, y = cluster)) +
+  geom_point()
+ggplot(count_workers, aes(x = egglaying, y = cluster)) +
+  geom_point()
+min(count_workers[count_workers$cluster == 1, "pollenforaging"])
+max(count_workers[count_workers$cluster == 2, "pollenforaging"])
+count_workers[count_workers$cluster == 2,]
+```
+# Do groups correspond to ovary/body size data?  
+```{r}
+count_workers
+
+kmeanstrends<-count_workers %>% dplyr::select(size, ovSavg, cluster) %>% na.omit()
+count_workers
+head(kmeanstrends)
+graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
+  mutate(asize=mean(size)) %>%  
+  mutate(sdsize=sd(size)) %>% 
+  mutate(aov=mean(ovSavg))  %>% 
+  mutate(sdov=sd(ovSavg)) %>% 
+  dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
+
+BSk<-ggplot(count_workers, aes(x=cluster, y=size)) +
+    geom_point() # + 
+  geom_errorbar(graphkmeans, aes(ymin=asize-sdsize,  ymax=asize+sdsize))
+BSk
+
+OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") + 
+  geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
+OVk
+
+library(lme4)
+library(sjPlot)  # tab_model
+library(MuMIn)    # model.sel
+
+count_workers$cluster <- as.factor(count_workers$cluster)
+head(count_workers)
+#Does ovary size change with cluster? 
+hist(count_workers$ovSavg)
+k0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), 
+            data = count_workers)
+
+k1 <- lmer(ovSavg ~ cluster + (1|natal) + (1|nestTYPE:nestID),
+            data = count_workers)
+model.sel(k0, k1)
+
+k2 <- lmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID),
+            data = count_workers)
+
+k3 <- lmer(size ~ cluster + (1|natal) + (1|nestTYPE:nestID),
+            data = count_workers)
+model.sel(k2, k3)
+
+posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
+summary(posthoc)
+
+k4<-lmer(ovRavg~1+ (1|natal) + (1|nestTYPE:nestID),
+            data = count_workers)
+  
+k5<-lmer(ovRavg~cluster+ (1|natal) + (1|nestTYPE:nestID),
+            data = count_workers)
+model.sel(k4, k5)
+```
 
 
