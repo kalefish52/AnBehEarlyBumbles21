@@ -69,6 +69,7 @@ for (i in 1:nrow(rpttime)) {              # for each row in the dataset
   }
 }
 
+
 #Filter out individuals that do not have observations at both timepoints
 rpttime<-rpttime[complete.cases(rpttime),]
 # Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
@@ -80,7 +81,11 @@ rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
 rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
 
 #pivot longer for graphs :) 
-rpt_graphs<-rpt_data %>% pivot_longer(!c(nestID, nestTYPE, beeID, caste, timepoint, specBehav, lazy, shanDist, nBehavs), names_to="Behavior", values_to="Counts")
+rpt_graphs<-rpt_data %>% pivot_longer(!c(nestID, nestTYPE, beeID, caste, timepoint, specBehav, lazy,  nBehavs), names_to="Behavior", values_to="Counts")
+
+rpt_queens<-rpt_data %>% filter(caste=="Q")
+rpt_queens 
+rpt_workers<-rpt_data %>% filter(caste=="W")
 ```
 
 # Repeatability Analyses on scaled counts 
@@ -105,6 +110,25 @@ plot(fitted(lmfb), residuals(lmfb), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
 
+######### Only look at repeatability for queens - not really enough? 
+hist(rpt_queens$feedsbrood)
+queenfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_queens, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(queenfb)
+print(queenfb)
+plot(queenfb, cex.main = 1)
+
+######## Only look at repeatability for workers 
+hist(rpt_workers$feedsbrood)
+wfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(wfb)
+print(wfb)
+plot(wfb, cex.main = 1)
+
+
 ```
 
 ## Repeatability nectar foraging
@@ -127,6 +151,18 @@ plot(fitted(lmnf), residuals(lmnf), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmnf), residuals(lmnf)))
 head(rpt_data)
+
+## workers 
+hist(rpt_workers$nectarforaging)
+wnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(wnf)
+print(wnf) 
+plot(wnf, cex.main = 1)
+
+
+
 ```
 ## Repeatability pollen foraging
 ```{r}
@@ -148,6 +184,16 @@ hist(residuals(lmpf))
 plot(fitted(lmpf), residuals(lmpf), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
+
+## workers
+hist(rpt_workers$pollenforaging)
+wf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
+            datatype = "Gaussian", nboot = 1000, npermut = 0)
+summary(wf)
+print(wf)
+plot(wf, cex.main = 1)
+
 
 
 ```
