@@ -510,9 +510,63 @@ ggsave("../figures/behavSpecBSov.jpg")
 <!-- plot(allEffects(mymodel)) -->
 <!-- ``` -->
 
-<!-- ## size -->
+# Shannon Threshold
+## Models
+```{r}
+#Body Size 
+hist(count_data$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = count_data)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = count_data)
+
+model.sel(s0, s1)
+# Behavioral group not included in best model 
+
+#Ovary Resporbtion 
+hist(count_data$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = count_data)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = count_data)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(count_data$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = count_data)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID) + (specBehav|caste), data = count_data)
+
+model.sel(s0, s1)
+```
+## Models for workers only
+```{r}
+# look only at workers
+count_workers <- count_data[count_data$caste == "W",]
+
+#Body Size 
+hist(count_workers$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+
+model.sel(s0, s1)
+# Behavioral group not included in best model 
+
+#Ovary Resporbtion 
+hist(count_data$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(count_data$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = count_workers)
+
+model.sel(s0, s1)
+```
+
 <!-- ```{r} -->
-<!-- # MODEL SIZE  -->
+<!-- # MODEL SIZE -->
 <!-- hist(count_data$size) -->
 
 <!-- s0 <- glmer(size ~ 1 + (1|natal) + (1|nestID), -->

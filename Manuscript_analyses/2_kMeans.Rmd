@@ -259,7 +259,7 @@ plot_ly(x = count_workers$feedsbrood,
         type="scatter3d", 
         mode="markers",
         symbol = count_workers$caste, symbols = c('square', 'circle'),
-        color = count_workers$cluster) %>%
+        color = count_workers$nestTYPE) %>%
   layout(
     title = "k means clustering",
     scene = list(

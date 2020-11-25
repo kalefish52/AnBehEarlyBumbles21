@@ -179,7 +179,7 @@ nmds_data
 ```
 
 
-# plot nmds with heat map of ovary stage WORKERS ONLY
+# plot nmds with heat map of ovary stage
 ```{r}
 # # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
 # nmds_worker <- count_data[!is.na(count_data$shannon),]
@@ -230,6 +230,62 @@ ggsave("../figures/nmdsSIZE.jpg")
 ggplot() +
   geom_point(data = nmds_worker, aes(x = egglaying, y = size, color = size), 
              size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.2) + 
+    scale_colour_gradient(low = "yellow", high = "red")
+ggsave("../figures/eggSIZE.jpg")
+```
+
+# rerun Workers Only
+```{r}
+# we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
+nmds_worker <- count_data[!is.na(count_data$shannon),]
+nmds_worker <- nmds_worker[nmds_worker$caste == "W",]
+
+# make matrix of only behavior counts for all timepoints
+nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")])
+
+# Run NMDS with euclidean distance
+nmds_Wscores <- metaMDS(nmds_wM)
+plot(nmds_Wscores)
+
+# Gets NMDS info for each behavior
+behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
+behav_Wscores$behav <- rownames(behav_Wscores)
+behav_Wscores
+
+# merge bee NMDS info into nmds_worker
+nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
+nmds_worker <- cbind(nmds_worker, nmds_Wscores)
+
+nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_worker
+
+# plot ovary stage onto nmds
+ggplot() + 
+  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = ovSavg), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "blue") + 
+  geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsOVARY.jpg")
+
+# plot ovary stage by egg laying
+ggplot() +
+  geom_point(data = nmds_worker, aes(x = egglaying, y = ovSavg, color = ovSavg), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.8) +
+    scale_colour_gradient(low = "yellow", high = "blue") 
+ggsave("../figures/eggOVARY.jpg")
+
+# plot body size onto nmds
+ggplot() + 
+  geom_point(data=nmds_worker, aes(x=NMDS1, y=NMDS2, color = size), size = 2, position = position_jitter(width=0.05, height=0.05), alpha = 0.6) + 
+  scale_colour_gradient(low = "yellow", high = "red") + 
+  geom_text(data=behav_Wscores, aes(x=NMDS1, y=NMDS2, label=behav)) +
+  coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.5, 1.5))
+ggsave("../figures/nmdsSIZE.jpg")
+
+# plot body size by egg laying
+ggplot() +
+  geom_point(data = nmds_worker, aes(x = egglaying, y = size, color = size), 
+             size = 2, position = position_jitter(width = 0.2, height = 0.2), alpha = 0.8) + 
     scale_colour_gradient(low = "yellow", high = "red")
 ggsave("../figures/eggSIZE.jpg")
 ```
