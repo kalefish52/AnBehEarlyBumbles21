@@ -9,7 +9,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# knitr::opts_chunk$set(fig.width=3, fig.height=5) # use only to create multipanel shannon individual plot
+#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel shannon task plot
+#knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
 # knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel change in shannon plot
 ```
 # Load Packages
@@ -1696,19 +1697,28 @@ ggplot(count_data, aes(shannon, fill = nestTYPE)) +
   geom_density(alpha = 0.3)
 
 p1 <- ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
-  geom_histogram(color = "black", alpha = 0.4)
+  geom_histogram(color = "black", alpha = 0.4) +
+  labs(x= "Bee Shannon Diversity Index", y = "Count", fill = "Social Configuration") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5"))
+p1
 
 # plot nestTYPE vs. shannon scatterplot
 p2 <- ggplot(count_data, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.5) +
-  scale_shape_manual(values = c(21, 16)) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  geom_point(position = position_jitter(width=0.02, height=0.2), alpha = 0.5) +
+  scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  scale_y_discrete(labels=c("NT" = "W3", "NF" = "W5", "QT" = "QW3", "QF" = "QW5")) +
+  labs(x = "Bee Shannon Diversity Index", y = "Social Configuration", color = "Social Configuration", shape = "Caste")
+p2
 ggsave("../figures/shannon.jpg")
 
 # plot number of behaviors vs. shannon scatterplot
 p3 <- ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.05, height=1), alpha = 0.8, size = 2) +
-  scale_shape_manual(values = c(21, 16))
+  geom_point(position = position_jitter(width=0.02, height=3), alpha = 0.7, size = 2) +
+  scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(x = "Bee Shannon Diversity Index", y = "Number of Observed Behaviors", color = "Social Configuration", shape = "Caste")
 ggsave("../figures/shannonVSnBehavs.jpg")
 
 ggarrange(p1, p2, p3, nrow = 3, labels = c("A", "B", "C"))
@@ -2072,13 +2082,14 @@ for(index in 1:length(unique(count_nests$nestID))) {            # for each uniqu
   nestShan$nestID <- unique(count_nests$nestID)[index]              # copy nestID into the nestShan df
   taskShan <- rbind(taskShan, nestShan)                             # add the nest-specific df to the overall task df
 }
+taskShan
 
 # add nestTYPE column
 taskShan$nestTYPE <- substr(taskShan$nestID, start = 1, stop = 2)
 # remove na row
 taskShan <- taskShan[!is.na(taskShan$shannon),]
 max(taskShan$shannon)
-count_data[count_data$nestID == "QF06",]
+# count_data[count_data$nestID == "QF06",]
 #add natalcolony column 
 nataladd<-count_nests %>% dplyr::select(nestID, natal)
 write.csv(nataladd, "../Data/nataladd.csv")
@@ -2090,18 +2101,28 @@ write.csv(taskshanNatal, "../Data/filtData/taskShan.csv")
 taskShan$nestTYPE <- ordered(taskShan$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot it
 p1 <- ggplot(taskShan, aes(shannon, behav)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.9, aes(color = nestTYPE)) +
-  stat_summary(fun = mean, geom = "point", size = 5)
+  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(shape = nestTYPE, color = behav)) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 4) +
+  theme(axis.text.y=element_text(angle=90, vjust=0.5, hjust=0.5)) +
+  labs(shape = "Social Configuration", color = "Task", x = "Task Shannon Diversity Index", y = "Task") +
+  scale_y_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "pollenforaging" = "Pollen\n Collection")) + 
+  scale_color_discrete(labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection"))
+p1
 ggsave("../figures/taskShan.jpg")
 
 # plot degree of specialization against number of observations
 p2 <- ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.1, height=0.1), alpha = 0.9, size = 1.8) +
-  scale_shape_manual(values = c(16, 15, 21, 22))
+  geom_point(position = position_jitter(width=0.05, height=3), alpha = 0.8) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(shape = "Social Configuration", color = "Task", x = "Task Shannon Diversity Index", y = "Number Of Times Task Was Observed") +
+  scale_color_discrete(labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection"))
+
+p2
 ggsave("../figures/taskShanVSnBehavs.jpg")
 
 ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
-ggsave("../figures/taskShanPanel.jpg", height=6.5, width=4.5)
+ggsave("../figures/taskShanPanel.jpg")
 
 # print the number of nests that meet the shannon threshold
 print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
@@ -2330,6 +2351,16 @@ notLazyBFers
 # look at all brood feeders, including lazy bees
 allBFers <- count_data[count_data$feedsbrood > 0,]
 allBFers
+
+# look at body size distributions
+workers <- count_data[count_data$caste == "W",]
+workers$size <- as.numeric(workers$size)
+
+hist(workers$size, binsize = 0.1)
+
+min(workers$size, na.rm = TRUE)
+max(workers$size, na.rm = TRUE)
+
 ```
 
 

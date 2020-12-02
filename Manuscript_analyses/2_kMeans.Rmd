@@ -77,14 +77,16 @@ plot_ly(x = count_data$feedsbrood,
         z = count_data$egglaying, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_data$caste, symbols = c('square', 'circle'),
-        color = count_data$cluster) %>%
+        symbol = count_data$caste, symbols = c('circle-open', 'circle'),
+        color = count_data$cluster, colors = c('steelblue', 'goldenrod', 'maroon'), alpha = 0.9,
+        marker = list(size = 5)) %>%
+  #add_trace(marker = list(size = 5)) %>%
   layout(
-    title = "k means clustering",
+    title = "All Bees K Means Clustering",
     scene = list(
-      xaxis = list(title = "feedsbrood"),
-      yaxis = list(title = "allforaging"),
-      zaxis = list(title = "egglaying"))
+      xaxis = list(title = "Brood Feeding"),
+      yaxis = list(title = "Resource Collection"),
+      zaxis = list(title = "Egg Laying"))
   )
 
 
@@ -258,14 +260,15 @@ plot_ly(x = count_workers$feedsbrood,
         z = count_workers$egglaying, 
         type="scatter3d", 
         mode="markers",
-        symbol = count_workers$caste, symbols = c('square', 'circle'),
-        color = count_workers$nestTYPE) %>%
+        symbol = count_workers$caste, symbols = c('circle'),
+        color = count_workers$cluster, colors = c('maroon', 'steelblue'),
+        marker = list(size = 5)) %>%
   layout(
-    title = "k means clustering",
+    title = "Workers Only K Means Clustering",
     scene = list(
-      xaxis = list(title = "feedsbrood"),
-      yaxis = list(title = "allforaging"),
-      zaxis = list(title = "egglaying"))
+      xaxis = list(title = "Brood Feeding"),
+      yaxis = list(title = "Resource Collection"),
+      zaxis = list(title = "Egg Laying"))
   )
 
 
@@ -309,6 +312,7 @@ count_workers[count_workers$cluster == 2,]
 # Do groups correspond to ovary/body size data?  
 ```{r}
 count_workers
+count_workers[count_workers$cluster == 1,]
 
 kmeanstrends<-count_workers %>% dplyr::select(size, ovSavg, cluster) %>% na.omit()
 count_workers
@@ -320,9 +324,10 @@ graphkmeans<-kmeanstrends %>% group_by(cluster) %>%
   mutate(sdov=sd(ovSavg)) %>% 
   dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
 
-BSk<-ggplot(count_workers, aes(x=cluster, y=size)) +
-    geom_point() # + 
-  geom_errorbar(graphkmeans, aes(ymin=asize-sdsize,  ymax=asize+sdsize))
+ggplot(count_workers, aes(x=cluster, y=size)) +
+    geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) # + 
+ggsave("../figures/kmeansWorkers.jpg")  
+geom_errorbar(graphkmeans, aes(ymin=asize-sdsize,  ymax=asize+sdsize))
 BSk
 
 OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +

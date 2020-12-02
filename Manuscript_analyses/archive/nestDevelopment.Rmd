@@ -102,6 +102,51 @@ nest_data$totLarvae <- rowSums(nest_data[, c("larvae", "blackLarvae", "prePupae"
 # sum total number of eggs in nest_data
 nest_data$eggs <- rowSums(nest_data[, c("e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10", "e11", "e12")], na.rm = TRUE)
 ```
+# summarize
+```{r}
+nest_data
+wing_data
+
+sum_brood <- ddply(nest_data, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(nBrood, na.rm = TRUE), 
+                sd = sd(nBrood, na.rm = TRUE),
+                sem = sd(nBrood, na.rm = TRUE)/sqrt(length(nBrood)))
+sum_brood
+
+sum_size <- ddply(wing_data, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(beeAvg, na.rm = TRUE), 
+                sd = sd(beeAvg, na.rm = TRUE),
+                sem = sd(beeAvg, na.rm = TRUE)/sqrt(length(beeAvg)))
+sum_size
+
+sum_pupae <- ddply(nest_data, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(pupae, na.rm = TRUE), 
+                sd = sd(pupae, na.rm = TRUE),
+                sem = sd(pupae, na.rm = TRUE)/sqrt(length(pupae)))
+sum_pupae
+
+sum_larvae <- ddply(nest_data, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(totLarvae, na.rm = TRUE), 
+                sd = sd(totLarvae, na.rm = TRUE),
+                sem = sd(totLarvae, na.rm = TRUE)/sqrt(length(totLarvae)))
+sum_larvae
+
+sum_eggs <- ddply(nest_data, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(eggs, na.rm = TRUE), 
+                sd = sd(eggs, na.rm = TRUE),
+                sem = sd(eggs, na.rm = TRUE)/sqrt(length(eggs)))
+sum_eggs
+```
 
 # mixed models
 ```{r}

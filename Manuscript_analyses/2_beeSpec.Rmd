@@ -817,7 +817,7 @@ highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging,
 hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
 
 #Sort each bee by which behavior they do the most and then assign that bee to that behavior
-BehavAssign<-hbdf %>% group_by(beeID) %>% arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% select(beeID, BehavAssign)
+BehavAssign<-hbdf %>% group_by(beeID) %>% arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
 
 #Merge back into original dataframe
 FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
@@ -831,6 +831,7 @@ nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "egglaying",])
 
 #add highest count to count_data
 count_data <- left_join(count_data, BehavAssign, by="beeID")
+write.csv(count_data, "../Data/filtData/count_data.csv")
 
 #plot
 ggplot(FinalBehavRank, aes(BehavAssign)) + geom_bar()
