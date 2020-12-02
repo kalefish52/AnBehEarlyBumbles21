@@ -41,14 +41,16 @@ library(dplyr)
 ```
 
 
-# load data and filter so that all bees have >= 3 observations
+# load data and filter so that all bees have >= 3 observations and only include workers
 ```{r}
 rptdata<-read.csv("../Data/filtData/count_time.csv") %>% dplyr::select(nestID, nestTYPE, beeID, caste, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav, lazy)%>% filter(lazy=="notLazy")
 
 
 #Filter so that we only include bees that have observations at both timepoints
 # add column for Dist
-rpttime<-rptdata %>% 
+rptworkers<-rptdata %>% filter(caste=="W")
+
+rpttime<-rptworkers %>% 
   dplyr::select(timepoint, nestTYPE, nestID, beeID, feedsbrood, 
                 nectarforaging, pollenforaging) %>% 
   pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
@@ -81,69 +83,44 @@ rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
 rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
 
 #pivot longer for graphs :) 
-rpt_graphs<-rpt_data %>% pivot_longer(!c(nestID, nestTYPE, beeID, caste, timepoint, specBehav, lazy,  nBehavs), names_to="Behavior", values_to="Counts")
-
-rpt_queens<-rpt_data %>% filter(caste=="Q")
-rpt_queens 
-rpt_workers<-rpt_data %>% filter(caste=="W")
+rpt_graphs<-rptworkers %>% pivot_longer(!c(nestID, nestTYPE, beeID, caste, timepoint, specBehav, lazy,  nBehavs), names_to="Behavior", values_to="Counts")
 ```
-
+### DONT RUN THIS IT TAKES FOREVER 
 # Repeatability Analyses on scaled counts 
 ## Repeatability brood feeding 
 ```{r}
-hist(rpt_data$feedsbrood) # try gaussian
-repfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
+hist(rptworkers$feedsbrood)
+wfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rptworkers, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(repfb)
-print(repfb)
-plot(repfb, cex.main = 1)
-
+summary(wfb)
+print(wfb)
+plot(wfb, cex.main = 1)
 
 #Check model fit - residuals looks ok 
 lmfb<-lmer(feedsbrood~timepoint+(1|beeID)+(1|nestID),  
-           data=rpt_data)
+           data=rptworkers)
 
 summary(lmfb)
 hist(residuals(lmfb))
 plot(fitted(lmfb), residuals(lmfb), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
-
-######### Only look at repeatability for queens - not really enough? 
-hist(rpt_queens$feedsbrood)
-queenfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_queens, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(queenfb)
-print(queenfb)
-plot(queenfb, cex.main = 1)
-
-######## Only look at repeatability for workers 
-hist(rpt_workers$feedsbrood)
-wfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wfb)
-print(wfb)
-plot(wfb, cex.main = 1)
-
-
 ```
 
 ## Repeatability nectar foraging
 ```{r}
-hist(rpt_data$nectarforaging)
-repnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
+hist(rptworkers$nectarforaging)
+wnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rptworkers, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(repnf)
-print(repnf) 
-plot(repnf, cex.main = 1)
+summary(wnf)
+print(wnf) 
+plot(wnf, cex.main = 1)
 
 #Check model fit - nectar foraging
 lmnf<-lmer(nectarforaging~timepoint+(1|beeID)+(1|nestID),  
-           data=rpt_data)
+           data=rptworkers)
 
 summary(lmnf)
 hist(residuals(lmnf))
@@ -152,54 +129,30 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmnf), residuals(lmnf)))
 head(rpt_data)
 
-## workers 
-hist(rpt_workers$nectarforaging)
-wnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wnf)
-print(wnf) 
-plot(wnf, cex.main = 1)
-
-
-
 ```
 ## Repeatability pollen foraging
 ```{r}
-hist(rpt_data$pollenforaging)
-repf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_data, 
+hist(rptworkers$pollenforaging)
+wf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+            grname = c("beeID", "nestID", "nestTYPE"), data = rptworkers, 
             datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(repf)
-print(repf)
-plot(repf, cex.main = 1)
-
+summary(wf)
+print(wf)
+plot(wf, cex.main = 1)
 
 #Check model fit - pollen foraging - these look pretty off 
 lmpf<-lmer(pollenforaging~timepoint+(1|beeID)+(1|nestID),  
-           data=rpt_data)
+           data=rptworkers)
 
 summary(lmpf)
 hist(residuals(lmpf))
 plot(fitted(lmpf), residuals(lmpf), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
-
-## workers
-hist(rpt_workers$pollenforaging)
-wf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rpt_workers, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wf)
-print(wf)
-plot(wf, cex.main = 1)
-
-
-
 ```
 
 
-# Plot nest data for rpt proportions
+# Plot nest data for rpt proportions (only for workers)
 ```{r}
 ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
   geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
@@ -207,7 +160,8 @@ ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 5) + 
   labs(x="Scaled Behavioral Observations on a Particular Behavior")
-("../figures/rptnest.jpg")
+
+ggsave("../figures/rptnest.jpg")
 ```
 
 
