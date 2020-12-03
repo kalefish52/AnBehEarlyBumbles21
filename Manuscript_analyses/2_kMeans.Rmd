@@ -324,10 +324,15 @@ graphkmeans<-kmeanstrends %>% group_by(cluster) %>%
   mutate(sdov=sd(ovSavg)) %>% 
   dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
 
-ggplot(count_workers, aes(x=cluster, y=size)) +
-    geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) # + 
+ggplot(count_workers, aes(x=cluster, y=size, color = cluster)) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), size = 3, alpha = 0.5) + 
+  scale_color_manual(values = c("maroon", "steelblue")) +
+  scale_x_discrete(labels=c("1" = "One", "2" = "Two")) +
+  labs(x = "Worker Only K-Means Cluster", y = "Marginal Wing Cell Length (mm)") +
+  theme(legend.position = "none", text = element_text(size = 15))
 ggsave("../figures/kmeansWorkers.jpg")  
-geom_errorbar(graphkmeans, aes(ymin=asize-sdsize,  ymax=asize+sdsize))
+
+#geom_errorbar(graphkmeans, aes(ymin=asize-sdsize,  ymax=asize+sdsize))
 BSk
 
 OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +

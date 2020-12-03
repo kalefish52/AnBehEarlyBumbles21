@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel nmds plot
+knitr::opts_chunk$set(fig.width=3, fig.height=3.6) # use only to create multipanel nmds plot
 
 ```
 
@@ -175,15 +175,28 @@ nmds_data$BehavAssign <- colnames(nmds_data[nmds_data$nBehavs > 0, c("egglaying"
 
 # Plot it using ggplot
 p2 <- ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = BehavAssign, fill = specBehav), size = 2.5, position = position_jitter(width=0.05, height=0.05)) + 
-  scale_shape_manual(values = c(25, 24, 21), labels = c("1 - Generalist", "2 - Egg Laying", "3 - Nectar Collection")) +
-  scale_fill_manual(values = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "white"), 0.4), labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Generalist")) +
-  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"), labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection")) +
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = BehavAssign, fill = specBehav), 
+             size = 2.5, position = position_jitter(width=0.05, height=0.05)) + 
+  scale_shape_manual(values = c(25, 24, 21), 
+                     labels = c("3 - Resource Collection", "2 - Egg Laying", "1 - Generalist")) +
+  scale_fill_manual(values = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "white"), 0.4), 
+                    labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Generalist")) +
+  scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"), 
+                     labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection"))  +
+  geom_circle(data = as.data.frame(matrix(data = c(0.34, 0.91), nrow = 1)), # brood feeding 
+              aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
+  geom_circle(data = as.data.frame(matrix(data = c(-1.28, 0.08), nrow = 1)), # nectar collection
+              aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
+  geom_circle(data = as.data.frame(matrix(data = c(1.48, -0.63), nrow = 1)), # egg laying
+              aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2.5) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.3, 1.3)) +
   labs(color = "Most Frequent\nBehavior", fill = "Shannon-Based\nSpecialization", shape = "K-Means Cluster") +
   theme(text = element_text(size = 8)) +
-  guides(color = guide_legend(override.aes = list(shape = 22, size = 5)), fill = guide_legend(override.aes = list(shape = 15, size = 5, colors = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "grey88"), 0.4))))
+  guides(color = guide_legend(override.aes = list(shape = 22, size = 5)), 
+         fill = guide_legend(override.aes = list(shape = 22, size = 5, 
+                                                 colors = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "grey88"), 0.4))))
+
 p2
 ggsave("../figures/nmdsFrameworks.jpg")
 
