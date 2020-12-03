@@ -7,7 +7,7 @@ fig.height: 15
 #Need to run after Shannon Bees 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
+knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
 
 ```
 
@@ -175,23 +175,18 @@ avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(Dist, na.rm = T)) %>% dpl
 
 rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 
-errorBars <- rpttime %>% group_by(Behavior) %>% 
-  mutate(avg=mean(Dist))  %>% 
-  mutate(sem=sd(Dist)) %>% 
-  dplyr::select(Behavior, avg, sem) %>% unique()
-errorBars
-library(Hmisc)
+
 
 R1<-ggplot(rpttime, aes(Dist, Behavior)) +
   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
-  #stat_summary(fun = mean, geom = "point", size = 5) +
-  geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  #geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
   scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Change in Number of Behaviors Performed by Each Individual", y = "Task") +
+  labs(x = "Change in Number of Behaviors Performed by Each Individual", y = "Task", color = "Social\nConfiguration") +
   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding")) #+
-  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
-        geom="errorbar", width = 0.2) 
+  #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+        #geom="errorbar", width = 0.2) 
 R1
 
 ggsave("../figures/rptDistBehav.jpg")
@@ -200,16 +195,35 @@ ggsave("../figures/rptDistBehav.jpg")
 
 ```{r}
 rpt_graphs$nestTYPE <- ordered(rpt_graphs$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-R2<-ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
-  geom_point(position = position_jitter(width=0.1, height=0.2), alpha = 0.8, 
+rpttime
+rpt_graphs
+
+rptnest <- rpttime %>% group_by(Behavior, nestID, nestTYPE) %>% 
+  mutate(nestDist=sum(Dist))  %>% 
+  dplyr::select(Behavior, nestID, nestTYPE, nestDist) %>% unique()
+
+rptnest
+
+R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6,
              aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(17, 25)) +
   scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 4) + 
-  labs(x="Change in Number of Behaviors Performed in Each Nest", y = "Task") +
+  stat_summary(fun = mean, geom = "point", size = 3) + 
+  labs(x="Change in Number of Behaviors Performed in Each Nest", y = "Task", color = "Social\nConfiguration") +
   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding"))
 R2
 ggsave("../figures/rptNEST.jpg")
+
+# R2<-ggplot(rpt_graphs, aes(Counts, Behavior, shape=timepoint)) +
+#   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.8, 
+#              aes(color = nestTYPE)) +
+#   scale_shape_manual(values = c(17, 25)) +
+#   scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
+#   stat_summary(fun = mean, geom = "point", size = 4) + 
+#   labs(x="Number of Behaviors Performed in Each Nest", y = "Task") +
+#   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding"))
+# R2
+# ggsave("../figures/rptNEST.jpg")
 
 ggarrange(R1, R2, nrow=2, labels=c('A', 'B'))
 ggsave("../figures/repeatability.jpg")
