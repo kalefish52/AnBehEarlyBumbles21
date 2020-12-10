@@ -837,7 +837,7 @@ sumsTOTAL
 ## graph the number of observations per behavior per nest
 ```{r}
 # graph the number of behaviors we have per nest
-data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood) %>% arrange(nestID)
+data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, egglaying) %>% arrange(nestID)
 
 sumsTYPE<-data_sum %>% group_by(nestTYPE) 
 
@@ -866,6 +866,49 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=nectarforaging, fill=nestTYPE)) +
 ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
   geom_bar(stat="identity")+theme(axis.text.x=element_text(angle=90)) + 
   ggtitle("number of pollen foraging observations for all filtered nests, regardless of video duration")
+
+# summarize avg number of behaviors for each nestTYPE
+# first summarize by nestID
+data_sum
+sumBehav <- ddply(sumsTYPE, 
+                c("nestID", "nestTYPE"), 
+                summarise,
+                nf = sum(nectarforaging), 
+                pf = sum(pollenforaging),
+                fb = sum(feedsbrood),
+                el = sum(egglaying))
+                
+sumBehav                
+# then by nestTYPE for each behavior
+sumNF <- ddply(sumBehav, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(nf), 
+                sd = sd(nf),
+                sem = sd(nf)/sqrt(length(nf)))
+sumPF <- ddply(sumBehav, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(pf), 
+                sd = sd(pf),
+                sem = sd(pf)/sqrt(length(pf)))
+sumFB <- ddply(sumBehav, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(fb), 
+                sd = sd(fb),
+                sem = sd(fb)/sqrt(length(fb)))
+sumEL <- ddply(sumBehav, 
+                c("nestTYPE"), 
+                summarise,
+                mean = mean(el), 
+                sd = sd(el),
+                sem = sd(el)/sqrt(length(el)))
+sumNF
+sumPF
+sumFB
+sumEL
+
 ```
 ## calculate and graph total duration of video watched per nest
 ```{r}

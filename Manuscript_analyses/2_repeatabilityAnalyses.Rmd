@@ -7,7 +7,7 @@ fig.height: 15
 #Need to run after Shannon Bees 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
+#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
 
 ```
 
@@ -57,17 +57,24 @@ rpttime<-rptworkers %>%
                 nectarforaging, pollenforaging) %>% 
   pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
 
+rpttime
+
 rpttime$Dist <- NA
+rpttime$propDist <- NA
+
 # calculate change in number of behaviors over time and add to Dist column
-for (i in 1:nrow(rpttime)) {              # for each row in the dataset
-  if(rpttime$timepoint[i] == "late") {                # look at the the late bees only
-    for (j in 1:nrow(rpttime)) {                     # then iterate back through the dataset
-      if(rpttime$timepoint[j] == "early" & 
-         rpttime$beeID[j] == rpttime$beeID[i]
-         & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
-        # and find the early entry with the same behav
+for (i in 1:nrow(rpttime)) {              
+# for each row in the dataset
+  if(rpttime$timepoint[i] == "late") {                
+  # look at the the late bees only
+    for (j in 1:nrow(rpttime)) {                     
+    # then iterate back through the dataset
+      if(rpttime$timepoint[j] == "early" & rpttime$beeID[j] == rpttime$beeID[i] & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
+      # and find the early entry with the same behav
         rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
         # calculate the difference across time
+        rpttime$propDist[i] <- (rpttime$Counts[i] - rpttime$Counts[j]) / rpttime$Counts[j]
+        # calculate the percent change (early - late) / early
       }
     }
   }
@@ -171,19 +178,23 @@ ggsave("../figures/rptnest.jpg")
 ```{r}
 # plot the change from early to late
 rpttime
+rptworkers
+# add column for proportion change from early to late
+rpttime$propDist <- rpttime$propDist * 100
+
 avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(Dist, na.rm = T)) %>% dplyr::pull(avg)
 
 rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 
 
 
-R1<-ggplot(rpttime, aes(Dist, Behavior)) +
+R1<-ggplot(rpttime, aes(propDist, Behavior)) +
   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(17, 25)) +
   stat_summary(fun = mean, geom = "point", size = 3) +
   #geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
   scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Change in Number of Behaviors Performed by Each Individual", y = "Task", color = "Social\nConfiguration") +
+  labs(x = "Percent change in number of behaviors performed by each individual", y = "Task", color = "Social\nConfiguration") +
   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding")) #+
   #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
         #geom="errorbar", width = 0.2) 
