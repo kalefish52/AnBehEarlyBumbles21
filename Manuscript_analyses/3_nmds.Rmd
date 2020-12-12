@@ -333,6 +333,11 @@ ggsave("../figures/eggSIZE.jpg")
 
 # Graph distribution of each framework by nest type
 ```{r}
+library(car)      # qqp
+library(MuMIn)    # model.sel
+library(lme4)     # Linear mixed models
+library(multcomp)
+
 #How many specialists in each nest/nesttype for each framework? 
 specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, beeID, specBehav, BehavAssign, perfSpec, cluster)
 specialgroups
@@ -360,6 +365,29 @@ G1<-ggplot(highcounts, aes(BehavAssign, highcounts, color = nestTYPE)) + geom_po
   ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "pollenforaging" = "Pollen\n Collection")) 
 G1 
 
+head(highcounts)
+## Models 
+# Poisson
+ggdensity(highcounts$highcounts)
+qqp(highcounts$highcounts, "norm")
+hist(highcounts$highcounts)
+
+H0<-glmer(highcounts~ 1 + (1|nestID), data=highcounts, family=poisson)
+H1<-glmer(highcounts~ BehavAssign + (1|nestID), data=highcounts, family=poisson)
+H2<-glmer(highcounts~ nestTYPE + (1|nestID), data=highcounts, family=poisson)
+H3<-glmer(highcounts~ BehavAssign + nestTYPE + (1|nestID), data=highcounts, family=poisson)
+H4<-glmer(highcounts~ BehavAssign*nestTYPE + (1|nestID), data=highcounts, family=poisson)
+
+model.sel(H0, H1, H2, H3, H4)
+
+mymodel <- H1
+tab_model(mymodel)
+
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 ## Shannon 
@@ -387,6 +415,35 @@ G2<-ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + geom_poin
   ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist", "lazy"="Data\n Deficient")) 
 G2
 
+
+head(shancounts)
+## Models 
+# Poisson
+ggdensity(shancounts$shancounts)
+qqp(shancounts$shancounts, "norm")
+hist(shancounts$shancounts)
+
+s0<-glmer(shancounts~ 1 + (1|nestID), data=shancounts, family=poisson)
+s1<-glmer(shancounts~ specBehav + (1|nestID), data=shancounts, family=poisson)
+s2<-glmer(shancounts~ nestTYPE + (1|nestID), data=shancounts, family=poisson)
+s3<-glmer(shancounts~ specBehav + nestTYPE + (1|nestID), data=shancounts, family=poisson)
+s4<-glmer(shancounts~ specBehav*nestTYPE + (1|nestID), data=shancounts, family=poisson)
+
+model.sel(s0, s1, s2, s3, s4)
+
+mymodel <- s3
+tab_model(mymodel)
+
+posthoc<-glht(s3, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc)
+
+posthoc<-glht(s3, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 ## Perfect Specialization
@@ -410,8 +467,27 @@ G3<-ggplot(perfcounts, aes(BehavAssign, perfcounts, color = nestTYPE)) + geom_po
   scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Perfect Specialization") +
   ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist")) 
 G3
-```
 
+## Models 
+# Poisson
+ggdensity(perfcounts$perfcounts)
+qqp(perfcounts$perfcounts, "norm")
+hist(perfcounts$perfcounts)
+
+head(perfcounts)
+p0<-glmer(perfcounts~ 1 + (1|nestID), data=perfcounts, family=poisson)
+p1<-glmer(perfcounts~ BehavAssign + (1|nestID), data=perfcounts, family=poisson)
+p2<-glmer(perfcounts~ nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+p3<-glmer(perfcounts~ BehavAssign + nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+p4<-glmer(perfcounts~ BehavAssign*nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+
+model.sel(p0, p1, p2, p3, p4)
+
+mymodel <- p0
+tab_model(mymodel)
+
+```
+## K-means
 ```{r}
 # How many kmeans clusters? 
 specialgroups$cluster<-as.factor(specialgroups$cluster)
@@ -434,6 +510,27 @@ G4<-ggplot(kcounts, aes(cluster, kcounts, color = nestTYPE)) + geom_point(positi
   ylab("Number of Individuals per Nest") + xlab("Cluster")  
 G4
 
+## Models 
+# Poisson
+ggdensity(kcounts$kcounts)
+qqp(kcounts$kcounts, "norm")
+hist(kcounts$kcounts)
+
+head(kcounts)
+k0<-glmer(kcounts~ 1 + (1|nestID), data=kcounts, family=poisson)
+k1<-glmer(kcounts~ cluster + (1|nestID), data=kcounts, family=poisson)
+k2<-glmer(kcounts~ nestTYPE + (1|nestID), data=kcounts, family=poisson)
+k3<-glmer(kcounts~ cluster + nestTYPE + (1|nestID), data=kcounts, family=poisson)
+k4<-glmer(kcounts~ cluster*nestTYPE + (1|nestID), data=kcounts, family=poisson)
+
+model.sel(k0, k1, k2, k3, k4)
+
+mymodel <- k1
+tab_model(mymodel)
+```
+
+
+```{r}
 #Put all graphs in one figure 
 ggarrange(G1, G2, G3, G4, nrow = 2, ncol=2, common.legend = TRUE, legend="bottom")
 ggsave("../figures/specializationdistsgraph.jpg")
