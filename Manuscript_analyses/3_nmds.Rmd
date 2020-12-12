@@ -365,7 +365,9 @@ G1
 ## Shannon 
 ```{r}
 #How many specialists in shannon? 
-shancounts<-specialgroups %>% dplyr::select(nestID, specBehav) %>% filter(specBehav != "NA") %>% mutate(count=1) %>% group_by(nestID, specBehav) %>% 
+# Include lazies 
+count_data <- read.csv("../Data/filtData/count_data.csv")
+shancounts<-count_data %>% dplyr::select(nestID, specBehav) %>% filter(specBehav != "NA") %>% mutate(count=1) %>% group_by(nestID, specBehav) %>% 
   mutate(shancounts=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
 miss<-shancounts %>% tidyr::expand(nestID, specBehav) 
@@ -382,7 +384,7 @@ shancounts
 shancounts$nestTYPE <- ordered(shancounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 G2<-ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
   scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Shannon-threshold Specialization") +
-  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist")) 
+  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist", "lazy"="Data\n Deficient")) 
 G2
 
 ```
