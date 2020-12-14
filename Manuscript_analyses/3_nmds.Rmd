@@ -555,7 +555,7 @@ tab_model(mymodel)
 
 ```{r}
 #Put all graphs in one figure 
-ggarrange(G1, G2, G3, G4, nrow = 2, ncol=2, common.legend = TRUE, legend="bottom", labels=c("a", "b", "c", "d"))
+ggarrange(G1, G3, G4, G2, nrow = 2, ncol=2, common.legend = TRUE, legend="bottom", labels=c("a", "b", "c", "d"))
 ggsave("../figures/specializationdistsgraph.jpg")
 
 ```
