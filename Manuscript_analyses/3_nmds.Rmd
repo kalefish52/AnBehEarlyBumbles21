@@ -345,6 +345,13 @@ specialgroups
 
 ## Highest Counts
 ```{r}
+head(specialgroups)
+## How many nests? 
+specialgroups %>% filter(BehavAssign=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="pollenforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
 #How many specialists in highest counts? 
 highcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign) %>% filter(BehavAssign != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
   mutate(highcounts=sum(count)) %>% ungroup() %>% 
@@ -393,6 +400,12 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ## Shannon 
 ```{r}
 #How many specialists in shannon? 
+count_data %>% filter(specBehav=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="generalist") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="lazy") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
 # Include lazies 
 count_data <- read.csv("../Data/filtData/count_data.csv")
 shancounts<-count_data %>% dplyr::select(nestID, specBehav) %>% filter(specBehav != "NA") %>% mutate(count=1) %>% group_by(nestID, specBehav) %>% 
@@ -448,6 +461,11 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 
 ## Perfect Specialization
 ```{r}
+perfs<-specialgroups %>% filter(perfSpec!="NA")
+perfs %>% filter(BehavAssign=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+perfs %>% filter(BehavAssign=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+perfs %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
 #How many specialists in perfect specialization? 
 perfcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign, perfSpec) %>% filter(perfSpec != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
   mutate(perfcounts=sum(count)) %>% ungroup() %>% 
@@ -489,6 +507,11 @@ tab_model(mymodel)
 ```
 ## K-means
 ```{r}
+specialgroups %>% filter(cluster=="1") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(cluster=="2") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(cluster=="3") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
+
 # How many kmeans clusters? 
 specialgroups$cluster<-as.factor(specialgroups$cluster)
 kcounts<-specialgroups %>% dplyr::select(nestID, cluster) %>% filter(cluster != "NA") %>% mutate(count=1) %>% group_by(nestID, cluster) %>% 
