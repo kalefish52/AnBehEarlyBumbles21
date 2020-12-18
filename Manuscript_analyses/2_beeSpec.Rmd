@@ -1050,7 +1050,124 @@ s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpe
 model.sel(s0, s1)
 ```
 
+# Single instance of behavior 
+```{r}
+# subset to look only at perfectly specialized individuals
+single <- count_data %>% filter(lazy=="notLazy") 
 
+# add columns for presence/absence data
+single$NF <- "no"
+single$PF <- "no"
+single$FB <- "no"
+single$EL <- "no"
+single
+# go through each individual and update presence/absence data for each behavior
+for (i in 1:nrow(single)) {
+  if (single$nectarforaging[i] > 0) {
+    single$NF[i] <- "yes"
+  }
+  if (single$pollenforaging[i] > 0) {
+    single$PF[i] <- "yes"
+  }
+  if (single$feedsbrood[i] > 0) {
+    single$FB[i] <- "yes"
+  }
+  if (single$egglaying[i] > 0) {
+    single$EL[i] <- "yes"
+  }
+}
+
+# print the number of bees that performed each task
+print(paste(nrow(single[single$NF == "yes",]), "nectar foragers from", length(unique(single$nestID[single$NF == "yes"])), "nests"))
+print(paste(nrow(single[single$PF == "yes",]), "pollen foragers from", length(unique(single$nestID[single$PF == "yes"])), "nests"))
+print(paste(nrow(single[single$FB == "yes",]), "brood feeders from", length(unique(single$nestID[single$FB == "yes"])), "nests"))
+print(paste(nrow(single[single$EL == "yes",]), "egg layers from", length(unique(single$nestID[single$EL == "yes"])), "nests"))
+
+print(paste(length(unique(single$nestID)), "total nests"))
+
+graphSingleOv <- single %>% dplyr::select(NF, PF, FB, EL, beeID, ovSavg, caste)
+graphSingleOv <-graphSingleOv[complete.cases(graphSingleOv),]
+
+graphSingleSize <- single %>% dplyr::select(NF, PF, FB, EL, beeID, size, caste)
+graphSingleSize <-graphSingleSize[complete.cases(graphSingleSize),]
+
+
+ggplot(graphSingleSize) +
+  geom_point(aes(x = caste, y = size, size = EL, shape = FB, color = PF, fill = NF),
+             position = position_jitter(width = 0.4, height = 0.1),
+             alpha = 0.6) +
+  scale_shape_manual(values = c(21, 24))
+
+ggplot(graphSingleOv) +
+  geom_point(aes(x = caste, y = ovSavg, size = EL, shape = FB, color = PF, fill = NF),
+             position = position_jitter(width = 0.4, height = 0.1),
+             alpha = 0.6) +
+  scale_shape_manual(values = c(21, 24))
+```
+
+
+## Models 
+```{r}
+#Body Size 
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = single)
+s1 <- glmer(size ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID) + (EL|caste), data = single)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = single)
+s1 <- glmer(ovRavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID) + (EL|caste), data = single)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), data = single)
+s1 <- glmer(ovSavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID) + (EL|caste), data = single)
+
+model.sel(s0, s1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+posthoc<-glht(s1, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc)
+perfSpec$nestTYPE=as.factor(perfSpec$nestTYPE)
+perfSpec$caste=as.factor(perfSpec$caste)
+
+C1<-ggplot(data = perfSpec, aes(specBehav, ovSavg, color = caste, shape=nestTYPE)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 2, alpha = 0.7) +labs(x = "Perfectly Specialized Behavior", y = "Average Ovary \n Stage", shape = "Nest Configuration")+ stat_summary(fun = mean, geom = "point", size = 5)+ scale_color_manual(values = c("aquamarine3", "darkslateblue"))
+ggsave("../figures/osperfectlyspecialized.jpg")
+
+
+```
+## Models for workers only
+```{r}
+perfSpecW <- perfSpec[perfSpec$caste == "W",]
+
+#Body Size 
+hist(perfSpecW$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+hist(perfSpecW$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(perfSpecW$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpecW)
+
+model.sel(s0, s1)
+```
 
 
 <!-- ## Body Size  -->

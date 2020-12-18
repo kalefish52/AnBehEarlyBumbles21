@@ -7,7 +7,7 @@ fig.height: 15
 #Need to run after Shannon Bees 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
+knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel rptr plot
 
 ```
 
@@ -72,17 +72,21 @@ for (i in 1:nrow(rpttime)) {
       if(rpttime$timepoint[j] == "early" & rpttime$beeID[j] == rpttime$beeID[i] & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
       # and find the early entry with the same behav
         rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
-        # calculate the difference across time
+        # calculate distance
         rpttime$propDist[i] <- (rpttime$Counts[i] - rpttime$Counts[j]) / rpttime$Counts[j]
-        # calculate the percent change (early - late) / early
+        # calculate the percent change (late - early) / early
       }
     }
   }
 }
 
+rpttime
 
-#Filter out individuals that do not have observations at both timepoints
+# Filter out individuals that do not have observations at both timepoints
 rpttime<-rpttime[complete.cases(rpttime),]
+
+
+
 # Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
 beestime<-rpttime %>% dplyr::select(beeID) %>% unique()
 
@@ -178,27 +182,58 @@ ggsave("../figures/rptnest.jpg")
 ```{r}
 # plot the change from early to late
 rpttime
-rptworkers
-# add column for proportion change from early to late
+#rptworkers
+
+# make inf 18.1 (larger than any others)
+# add a new value for graphing infinities separately
+rpttime$inf <- "no"
+for(i in 1:nrow(rpttime)) {
+  if(rpttime$propDist[i] == Inf) {
+    rpttime$propDist[i] <- 1
+    rpttime$inf[i] <- "yes"
+  }
+  if(rpttime$propDist[i] == -Inf) {
+    rpttime$propDist[i] <- -1
+    rpttime$inf[i] <- "yes"
+  }
+  # make -100% change also be infinity 
+  if(rpttime$Counts[i] == 0) {
+    rpttime$inf[i] <- "yes"
+  }
+}
+rpttime
 rpttime$propDist <- rpttime$propDist * 100
 
-avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(Dist, na.rm = T)) %>% dplyr::pull(avg)
+#avgPropDist <- rpttime %>% dplyr::summarize(avg = mean(Dist, na.rm = T)) %>% dplyr::pull(avg)
 
 rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 
+# recode propDist
 
-
-R1<-ggplot(rpttime, aes(propDist, Behavior)) +
-  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(17, 25)) +
-  stat_summary(fun = mean, geom = "point", size = 3) +
-  #geom_vline(aes(xintercept = avgPropDist), color = "gray70", size = 0.6) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Percent change in number of behaviors performed by each individual", y = "Task", color = "Social\nConfiguration") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding")) #+
+R1<-ggplot(rpttime, aes(Dist, Behavior)) +
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE, size = abs(propDist), shape = inf)) +
+  scale_shape_manual(values = c(19, 21)) +
+  #stat_summary(fun = mean, geom = "point", size = 3) +
+  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
+       color = "Social\nconfiguration", size = "Percent change", shape = "Zero observations\nin one timeframe") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) #+
   #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
         #geom="errorbar", width = 0.2) 
 R1
+
+# R1<-ggplot(rpttime, aes(Dist, Behavior)) +
+#   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE)) +
+#   scale_shape_manual(values = c(17, 25)) +
+#   #stat_summary(fun = mean, geom = "point", size = 3) +
+#   geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
+#   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+#   labs(x = "Change in number of behaviors performed by each individual", y = "Task", color = "Social\nConfiguration") +
+#   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding")) #+
+#   #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+#         #geom="errorbar", width = 0.2) 
+# R1
 
 ggsave("../figures/rptDistBehav.jpg")
 ```
@@ -209,19 +244,54 @@ rpt_graphs$nestTYPE <- ordered(rpt_graphs$nestTYPE, levels = c("NT", "NF", "QT",
 rpttime
 rpt_graphs
 
+# summarize by nest
 rptnest <- rpttime %>% group_by(Behavior, nestID, nestTYPE) %>% 
-  mutate(nestDist=sum(Dist))  %>% 
-  dplyr::select(Behavior, nestID, nestTYPE, nestDist) %>% unique()
-
+  mutate(nestDist=sum(Dist),
+         nestCounts=sum(Counts))  %>% 
+  dplyr::select(Behavior, nestID, nestTYPE, nestDist, nestCounts) %>% unique()
 rptnest
+# calculate nestPropDist on summary data
+rptnest$nestPropDist <- NA
+for(i in 1:nrow(rptnest)) {
+  rptnest$nestPropDist[i] <- rptnest$nestDist[i] / (rptnest$nestCounts[i] - rptnest$nestDist[i])
+  # dist / (counts-dist) = (late-early) / early
+}
+rptnest
+
+
+rptnest$inf <- "no"
+for(i in 1:nrow(rptnest)) {
+  # make +infinity change infinity
+  if(rptnest$nestPropDist[i] == Inf) {
+    rptnest$nestPropDist[i] <- 1
+    rptnest$inf[i] <- "yes"
+  }
+  if(rptnest$nestPropDist[i] == -Inf) {
+    rptnest$nestPropDist[i] <- -1
+    rptnest$inf[i] <- "yes"
+  }
+  # make -100% change also be infinity 
+  if(rptnest$nestCounts[i] == 0) {
+    rptnest$inf[i] <- "yes"
+  }
+}
+rptnest$nestPropDist <- rptnest$nestPropDist * 100
+
+# rptnest <- rpttime %>% group_by(Behavior, nestID, nestTYPE) %>%
+#   mutate(nestDist=sum(Dist))  %>%
+#   dplyr::select(Behavior, nestID, nestTYPE, nestDist) %>% unique()
+# 
+# rptnest
 
 R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6,
-             aes(color = nestTYPE)) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 3) + 
-  labs(x="Change in Number of Behaviors Performed in Each Nest", y = "Task", color = "Social\nConfiguration") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding"))
+             aes(color = nestTYPE, size = abs(nestPropDist), shape = inf)) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  scale_shape_manual(values = c(19, 21)) +
+  #stat_summary(fun = mean, geom = "point", size = 3) + 
+  labs(x="Change in number of behaviors performed in each nest", y = "Task", 
+       size = "Percent change", color = "Social\nconfiguration", shape = "Zero observations\nin one timeframe") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding"))
 R2
 ggsave("../figures/rptNEST.jpg")
 
@@ -229,7 +299,7 @@ ggsave("../figures/rptNEST.jpg")
 #   geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.8, 
 #              aes(color = nestTYPE)) +
 #   scale_shape_manual(values = c(17, 25)) +
-#   scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) +
+#   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
 #   stat_summary(fun = mean, geom = "point", size = 4) + 
 #   labs(x="Number of Behaviors Performed in Each Nest", y = "Task") +
 #   scale_y_discrete(labels=c("pollenforaging" = "Pollen\nCollection", "nectarforaging" = "Nectar\nCollection", "feedsbrood" = "Brood\nFeeding"))
