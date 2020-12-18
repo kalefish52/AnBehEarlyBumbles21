@@ -14,6 +14,7 @@ knitr::opts_chunk$set(fig.width=3, fig.height=3.6) # use only to create multipan
 # load packages
 ```{r}
 library(tidyverse)
+library(tidyr)
 library(dplyr)
 library(plyr)
 library(ggplot2)
@@ -163,7 +164,7 @@ ggsave("../figures/nmdstime.jpg")
 
 # plot specialists and kmeans clusters onto nmds plot
 ```{r}
-nmds_datanmds_data$specBehav <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+nmds_data$specBehav <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 nmds_data$perfSpec <- ordered(nmds_data$specBehav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 nmds_data$BehavAssign <- ordered(nmds_data$BehavAssign, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 nmds_data$cluster <- as.factor(nmds_data$cluster)
@@ -208,26 +209,26 @@ nmds_data
 # plot nmds with heat map of ovary stage
 ```{r}
 # # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-# nmds_worker <- count_data[!is.na(count_data$shannon),]
+nmds_worker <- count_data[!is.na(count_data$shannon),]
 # 
 # # make matrix of only behavior counts for all timepoints
-# nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
+nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
 # 
 # # Run NMDS with euclidean distance
-# nmds_Wscores <- metaMDS(nmds_wM)
-# plot(nmds_Wscores)
+nmds_Wscores <- metaMDS(nmds_wM)
+plot(nmds_Wscores)
 # 
 # # Gets NMDS info for each behavior
-# behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
-# behav_Wscores$behav <- rownames(behav_Wscores)
-# behav_Wscores
+behav_Wscores <- as.data.frame(scores(nmds_Wscores, "species"))
+behav_Wscores$behav <- rownames(behav_Wscores)
+behav_Wscores
 # 
 # # merge bee NMDS info into nmds_worker
-# nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
-# nmds_worker <- cbind(nmds_worker, nmds_Wscores)
+nmds_Wscores <- as.data.frame(scores(nmds_Wscores))
+nmds_worker <- cbind(nmds_worker, nmds_Wscores)
 # 
-# nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-# nmds_worker
+nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+nmds_worker
 
 # plot ovary stage onto nmds
 p3 <- ggplot() + 
@@ -330,8 +331,234 @@ ggplot() +
 ggsave("../figures/eggSIZE.jpg")
 ```
 
+# Graph distribution of each framework by nest type
+```{r}
+library(car)      # qqp
+library(MuMIn)    # model.sel
+library(lme4)     # Linear mixed models
+library(multcomp)
+
+#How many specialists in each nest/nesttype for each framework? 
+specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, beeID, specBehav, BehavAssign, perfSpec, cluster)
+specialgroups
+```
+
+## Highest Counts
+```{r}
+head(specialgroups)
+## How many nests? 
+specialgroups %>% filter(BehavAssign=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(BehavAssign=="pollenforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
+#How many specialists in highest counts? 
+highcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign) %>% filter(BehavAssign != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
+  mutate(highcounts=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+miss<-highcounts %>% tidyr::expand(nestID, BehavAssign) 
+highcounts<-left_join(miss, highcounts)
+#Replace Nas with 0 
+highcounts[is.na(highcounts)]<-0
+#Make a new nestTYPE column 
+highcounts$nestTYPE <- substr(highcounts$nestID, start = 1, stop = 2)
+highcounts <- highcounts %>% group_by(nestTYPE, BehavAssign) %>% 
+  mutate(highcountsavg=mean(highcounts)) %>% ungroup() %>% unique()
 
 
+highcounts$nestTYPE <- ordered(highcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+G1<-ggplot(highcounts, aes(BehavAssign, highcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Most Frequently Performed Task") +
+  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "pollenforaging" = "Pollen\n Collection")) 
+G1 
+
+head(highcounts)
+## Models 
+# Poisson
+ggdensity(highcounts$highcounts)
+qqp(highcounts$highcounts, "norm")
+hist(highcounts$highcounts)
+
+H0<-glmer(highcounts~ 1 + (1|nestID), data=highcounts, family=poisson)
+H1<-glmer(highcounts~ BehavAssign + (1|nestID), data=highcounts, family=poisson)
+H2<-glmer(highcounts~ nestTYPE + (1|nestID), data=highcounts, family=poisson)
+H3<-glmer(highcounts~ BehavAssign + nestTYPE + (1|nestID), data=highcounts, family=poisson)
+H4<-glmer(highcounts~ BehavAssign*nestTYPE + (1|nestID), data=highcounts, family=poisson)
+
+model.sel(H0, H1, H2, H3, H4)
+
+mymodel <- H1
+tab_model(mymodel)
+
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+## Shannon 
+```{r}
+#How many specialists in shannon? 
+count_data %>% filter(specBehav=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="generalist") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+count_data  %>% filter(specBehav=="lazy") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
+# Include lazies 
+count_data <- read.csv("../Data/filtData/count_data.csv")
+shancounts<-count_data %>% dplyr::select(nestID, specBehav) %>% filter(specBehav != "NA") %>% mutate(count=1) %>% group_by(nestID, specBehav) %>% 
+  mutate(shancounts=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+miss<-shancounts %>% tidyr::expand(nestID, specBehav) 
+shancounts<-left_join(miss, shancounts)
+#Replace Nas with 0 
+shancounts[is.na(shancounts)]<-0
+#Make a new nestTYPE column 
+shancounts$nestTYPE <- substr(shancounts$nestID, start = 1, stop = 2)
+shancounts <- shancounts %>% group_by(nestTYPE, specBehav) %>% 
+  mutate(shancountsavg=mean(shancounts)) %>% ungroup() %>% unique()
+shancounts
+
+
+shancounts$nestTYPE <- ordered(shancounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+G2<-ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Shannon-threshold Specialization") +
+  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist", "lazy"="Data\n Deficient")) 
+G2
+
+
+head(shancounts)
+## Models 
+# Poisson
+ggdensity(shancounts$shancounts)
+qqp(shancounts$shancounts, "norm")
+hist(shancounts$shancounts)
+
+s0<-glmer(shancounts~ 1 + (1|nestID), data=shancounts, family=poisson)
+s1<-glmer(shancounts~ specBehav + (1|nestID), data=shancounts, family=poisson)
+s2<-glmer(shancounts~ nestTYPE + (1|nestID), data=shancounts, family=poisson)
+s3<-glmer(shancounts~ specBehav + nestTYPE + (1|nestID), data=shancounts, family=poisson)
+s4<-glmer(shancounts~ specBehav*nestTYPE + (1|nestID), data=shancounts, family=poisson)
+
+model.sel(s0, s1, s2, s3, s4)
+
+mymodel <- s3
+tab_model(mymodel)
+
+posthoc<-glht(s3, linfct = mcp(specBehav = "Tukey"))
+summary(posthoc)
+
+posthoc<-glht(s3, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+## Perfect Specialization
+```{r}
+perfs<-specialgroups %>% filter(perfSpec!="NA")
+perfs %>% filter(BehavAssign=="feedsbrood") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+perfs %>% filter(BehavAssign=="nectarforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+perfs %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
+#How many specialists in perfect specialization? 
+perfcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign, perfSpec) %>% filter(perfSpec != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
+  mutate(perfcounts=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+miss<-perfcounts %>% tidyr::expand(nestID, BehavAssign) 
+perfcounts<-left_join(miss, perfcounts)
+#Replace Nas with 0 
+perfcounts[is.na(perfcounts)]<-0
+#Make a new nestTYPE column 
+perfcounts$nestTYPE <- substr(perfcounts$nestID, start = 1, stop = 2)
+perfcounts <- perfcounts %>% group_by(nestTYPE, perfSpec) %>% 
+  mutate(perfcountsavg=mean(perfcounts)) %>% ungroup() %>% unique()
+perfcounts
+
+perfcounts$nestTYPE <- ordered(perfcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+G3<-ggplot(perfcounts, aes(BehavAssign, perfcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Perfect Specialization") +
+  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist")) 
+G3
+
+## Models 
+# Poisson
+ggdensity(perfcounts$perfcounts)
+qqp(perfcounts$perfcounts, "norm")
+hist(perfcounts$perfcounts)
+
+head(perfcounts)
+p0<-glmer(perfcounts~ 1 + (1|nestID), data=perfcounts, family=poisson)
+p1<-glmer(perfcounts~ BehavAssign + (1|nestID), data=perfcounts, family=poisson)
+p2<-glmer(perfcounts~ nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+p3<-glmer(perfcounts~ BehavAssign + nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+p4<-glmer(perfcounts~ BehavAssign*nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+
+model.sel(p0, p1, p2, p3, p4)
+
+mymodel <- p0
+tab_model(mymodel)
+
+```
+## K-means
+```{r}
+specialgroups %>% filter(cluster=="1") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(cluster=="2") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(cluster=="3") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+
+
+# How many kmeans clusters? 
+specialgroups$cluster<-as.factor(specialgroups$cluster)
+kcounts<-specialgroups %>% dplyr::select(nestID, cluster) %>% filter(cluster != "NA") %>% mutate(count=1) %>% group_by(nestID, cluster) %>% 
+  mutate(kcounts=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+miss<-kcounts %>% tidyr::expand(nestID, cluster) 
+kcounts<-left_join(miss, kcounts)
+#Replace Nas with 0 
+kcounts[is.na(kcounts)]<-0
+#Make a new nestTYPE column 
+kcounts$nestTYPE <- substr(kcounts$nestID, start = 1, stop = 2)
+kcounts <- kcounts %>% group_by(nestTYPE, cluster) %>% 
+  mutate(kcountsavg=mean(kcounts)) %>% ungroup() %>% unique()
+kcounts
+
+kcounts$nestTYPE <- ordered(kcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+G4<-ggplot(kcounts, aes(cluster, kcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("K-means Clustering") +
+  ylab("Number of Individuals per Nest") + xlab("Cluster")  
+G4
+
+## Models 
+# Poisson
+ggdensity(kcounts$kcounts)
+qqp(kcounts$kcounts, "norm")
+hist(kcounts$kcounts)
+
+head(kcounts)
+k0<-glmer(kcounts~ 1 + (1|nestID), data=kcounts, family=poisson)
+k1<-glmer(kcounts~ cluster + (1|nestID), data=kcounts, family=poisson)
+k2<-glmer(kcounts~ nestTYPE + (1|nestID), data=kcounts, family=poisson)
+k3<-glmer(kcounts~ cluster + nestTYPE + (1|nestID), data=kcounts, family=poisson)
+k4<-glmer(kcounts~ cluster*nestTYPE + (1|nestID), data=kcounts, family=poisson)
+
+model.sel(k0, k1, k2, k3, k4)
+
+mymodel <- k1
+tab_model(mymodel)
+```
+
+
+```{r}
+#Put all graphs in one figure 
+ggarrange(G1, G3, G4, G2, nrow = 2, ncol=2, common.legend = TRUE, legend="bottom", labels=c("a", "b", "c", "d"))
+ggsave("../figures/specializationdistsgraph.jpg")
+
+```
 
 
 
