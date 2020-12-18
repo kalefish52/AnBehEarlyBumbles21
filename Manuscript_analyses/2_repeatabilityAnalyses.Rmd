@@ -211,14 +211,18 @@ rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF")
 # recode propDist
 
 R1<-ggplot(rpttime, aes(Dist, Behavior)) +
-  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6, aes(color = nestTYPE, size = abs(propDist), shape = inf)) +
-  scale_shape_manual(values = c(19, 21)) +
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7, aes(color = nestTYPE, size = abs(propDist), shape = inf)) +
+  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
   #stat_summary(fun = mean, geom = "point", size = 3) +
   geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
-       color = "Social\nconfiguration", size = "Percent change", shape = "Zero observations\nin one timeframe") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) #+
+       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
+  theme(legend.position="bottom", legend.box = "vertical") + 
+  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
+         size = guide_legend(order=2),
+         shape = guide_legend(order = 3))#+
   #stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
         #geom="errorbar", width = 0.2) 
 R1
@@ -284,14 +288,19 @@ rptnest$nestPropDist <- rptnest$nestPropDist * 100
 # rptnest
 
 R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
-  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.6,
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7,
              aes(color = nestTYPE, size = abs(nestPropDist), shape = inf)) +
+  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
+  #stat_summary(fun = mean, geom = "point", size = 3) +
+  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  scale_shape_manual(values = c(19, 21)) +
-  #stat_summary(fun = mean, geom = "point", size = 3) + 
-  labs(x="Change in number of behaviors performed in each nest", y = "Task", 
-       size = "Percent change", color = "Social\nconfiguration", shape = "Zero observations\nin one timeframe") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding"))
+  labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
+       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
+  theme(legend.position="bottom", legend.box = "vertical") + 
+  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
+         size = guide_legend(order=2),
+         shape = guide_legend(order = 3))#+
 R2
 ggsave("../figures/rptNEST.jpg")
 
@@ -306,7 +315,8 @@ ggsave("../figures/rptNEST.jpg")
 # R2
 # ggsave("../figures/rptNEST.jpg")
 
-ggarrange(R1, R2, nrow=2, labels=c('A', 'B'))
+ggarrange(R1, R2, nrow=2, common.legend = TRUE, legend="bottom", labels=c('A', 'B'))
+
 ggsave("../figures/repeatability.jpg")
 ```
 
