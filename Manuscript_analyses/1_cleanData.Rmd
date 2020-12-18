@@ -10,7 +10,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 #knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel shannon task plot
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
+knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
 # knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel change in shannon plot
 ```
 # Load Packages
@@ -1740,28 +1740,29 @@ ggplot(count_data, aes(shannon, fill = nestTYPE)) +
   geom_density(alpha = 0.3)
 
 p1 <- ggplot(count_data, aes(shannon, fill = nestTYPE)) + 
-  geom_histogram(color = "black", alpha = 0.4) +
-  labs(x= "Bee shannon diversity index", y = "Count", fill = "Social Configuration") +
-  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  geom_histogram(color = "black", alpha = 0.7) +
+  labs(x= "Bee Shannon diversity index", y = "Count", fill = "Social configuration") +
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5"))
 p1
 
 # plot nestTYPE vs. shannon scatterplot
 p2 <- ggplot(count_data, aes(shannon, nestTYPE, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.02, height=0.2), alpha = 0.5) +
+  geom_point(position = position_jitter(width=0.02, height=0.2), alpha = 0.7) +
   scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 5) +
   scale_y_discrete(labels=c("NT" = "W3", "NF" = "W5", "QT" = "QW3", "QF" = "QW5")) +
-  labs(x = "Bee Shannon Diversity Index", y = "Social Configuration", color = "Social Configuration", shape = "Caste")
+  labs(x = "Bee Shannon diversity index", y = "Social configuration", color = "Social configuration", shape = "Caste")
 p2
 ggsave("../figures/shannon.jpg")
 
 # plot number of behaviors vs. shannon scatterplot
 p3 <- ggplot(count_data, aes(shannon, nBehavs, color = nestTYPE, shape = caste)) +
-  geom_point(position = position_jitter(width=0.02, height=3), alpha = 0.7, size = 2) +
+  geom_point(position = position_jitter(width=0.02, height=3), alpha = 0.7) +
   scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Bee Shannon Diversity Index", y = "Number of Observed Behaviors", color = "Social Configuration", shape = "Caste")
+  labs(x = "Bee Shannon diversity index", y = "Number of observed behaviors", color = "Social configuration", shape = "Caste")
+p3
 ggsave("../figures/shannonVSnBehavs.jpg")
 
 ggarrange(p1, p2, p3, nrow = 3, labels = c("A", "B", "C"))
@@ -2144,23 +2145,21 @@ write.csv(taskshanNatal, "../Data/filtData/taskShan.csv")
 taskShan$nestTYPE <- ordered(taskShan$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot it
 p1 <- ggplot(taskShan, aes(shannon, behav)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(shape = nestTYPE, color = behav)) +
-  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) +
+  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.7, aes(color = nestTYPE)) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4) +
   theme(axis.text.y=element_text(angle=90, vjust=0.5, hjust=0.5)) +
-  labs(shape = "Social Configuration", color = "Task", x = "Task Shannon Diversity Index", y = "Task") +
-  scale_y_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "pollenforaging" = "Pollen\n Collection")) + 
-  scale_color_discrete(labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection"))
+  labs(color = "Social configuration", x = "Task Shannon diversity index", y = "Task") +
+  scale_y_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) 
 p1
 ggsave("../figures/taskShan.jpg")
 
 # plot degree of specialization against number of observations
 p2 <- ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
-  geom_point(position = position_jitter(width=0.05, height=3), alpha = 0.8) +
+  geom_point(position = position_jitter(width=0.05, height=3), alpha = 0.9) +
   scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(shape = "Social Configuration", color = "Task", x = "Task Shannon Diversity Index", y = "Number Of Times Task Was Observed") +
-  scale_color_discrete(labels = c("Egg Laying", "Brood Feeding", "Nectar Collection", "Pollen Collection"))
-
+  labs(shape = "Social configuration", color = "Task", x = "Task Shannon diversity index", y = "Number of times task was observed") +
+  scale_color_discrete(labels = c("Egg laying", "Brood feeding", "Nectar collection", "Pollen collection"))
 p2
 ggsave("../figures/taskShanVSnBehavs.jpg")
 
