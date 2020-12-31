@@ -374,9 +374,9 @@ highcounts$BehavAssign <- ordered(highcounts$BehavAssign, levels = c("egglaying"
 
 G1 <- ggplot(highcounts, aes(BehavAssign, highcounts, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
   ggtitle("Most frequently performed task") +
   scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
@@ -438,9 +438,9 @@ shancounts$specBehav <- ordered(shancounts$specBehav, levels = c("egglaying", "n
 
 G2 <- ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
   ggtitle("Shannon-threshold categorization") +
   scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "generalist" = "Generalist", "lazy" = "Data\ndeficient")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
@@ -503,9 +503,9 @@ perfcounts$BehavAssign <- ordered(perfcounts$BehavAssign, levels = c("egglaying"
 
 G3 <- ggplot(perfcounts, aes(BehavAssign, perfcounts, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
   ggtitle("Perfect specialization") +
   scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
@@ -557,9 +557,9 @@ kcounts$nestTYPE <- ordered(kcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF")
 
 G4 <- ggplot(kcounts, aes(cluster, kcounts, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
   ggtitle("K-means categorization") +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Cluster") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))  
@@ -618,14 +618,14 @@ single
 
 # order nesttype as a factor for graphing consistency
 single$nestTYPE <- ordered(single$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-single$behav <- ordered(single$behav, levels = c("FB", "NF", "PF", "EL"))
+single$behav <- ordered(single$behav, levels = c("EL", "PF", "NF", "FB"))
 
 # plot number of individuals carrying out each behavior in each nest
 G5 <- ggplot(single, aes(behav, instance, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
   ggtitle("Tasks performed at least once") +
   scale_x_discrete(labels=c("NF" = "Nectar\ncollection", "PF" = "Pollen\ncollection", "FB" = "Brood\nfeeding", "EL" = "Egg\nlaying")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
