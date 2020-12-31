@@ -1060,7 +1060,7 @@ single$NF <- "no"
 single$PF <- "no"
 single$FB <- "no"
 single$EL <- "no"
-single
+
 # go through each individual and update presence/absence data for each behavior
 for (i in 1:nrow(single)) {
   if (single$nectarforaging[i] > 0) {
@@ -1076,6 +1076,25 @@ for (i in 1:nrow(single)) {
     single$EL[i] <- "yes"
   }
 }
+
+count_data$NF <- NA
+count_data$PF <- NA
+count_data$FB <- NA
+count_data$EL <- NA
+
+for(i in 1:nrow(count_data)) {
+  for(j in 1:nrow(single)) {
+    if(count_data$beeID[i] == single$beeID[j]) {
+      count_data$NF[i] <- single$NF[j]
+      count_data$PF[i] <- single$PF[j]
+      count_data$FB[i] <- single$FB[j]
+      count_data$EL[i] <- single$EL[j]
+    }
+  }
+}
+
+write.csv(count_data, "../Data/filtData/count_data.csv")
+count_data
 
 # print the number of bees that performed each task
 print(paste(nrow(single[single$NF == "yes",]), "nectar foragers from", length(unique(single$nestID[single$NF == "yes"])), "nests"))

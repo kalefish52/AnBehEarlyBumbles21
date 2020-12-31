@@ -294,7 +294,7 @@ R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
   #stat_summary(fun = mean, geom = "point", size = 3) +
   geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
+  labs(x = "Change in number of behaviors performed by each nest", y = "Task", 
        size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
   scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
   theme(legend.position="bottom", legend.box = "vertical") + 

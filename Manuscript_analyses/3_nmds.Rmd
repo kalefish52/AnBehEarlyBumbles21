@@ -7,8 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.width=3, fig.height=3.6) # use only to create multipanel nmds plot
-
+#knitr::opts_chunk$set(fig.width=3, fig.height=3.6) # use only to create multipanel nmds plot
+knitr::opts_chunk$set(fig.width=3.6, fig.height=5.5) # use only to create multipanel individuals per nest plot
 ```
 
 # load packages
@@ -26,6 +26,7 @@ library(plotly)
 library(effects)  # plot output of glmm
 library(MuMIn)    # model.sel
 library(ggforce)  # circles on graphs
+library(ggpubr)
 ```
 
 # load data
@@ -34,6 +35,8 @@ library(ggforce)  # circles on graphs
 # includes only known bees
 count_kmeans <- read.csv("../Data/filtData/count_data.csv") 
 count_kmeans <- count_kmeans[count_kmeans$lazy == "notLazy",]
+single <- read.csv("../Data/filtData/single.csv")
+single <- single[single$lazy == "notLazy",]
 count_kmeans
 ```
 
@@ -209,7 +212,7 @@ nmds_data
 # plot nmds with heat map of ovary stage
 ```{r}
 # # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_worker <- count_data[!is.na(count_data$shannon),]
+nmds_worker <- count_kmeans[!is.na(count_kmeans$shannon),]
 # 
 # # make matrix of only behavior counts for all timepoints
 nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
@@ -339,7 +342,7 @@ library(lme4)     # Linear mixed models
 library(multcomp)
 
 #How many specialists in each nest/nesttype for each framework? 
-specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, beeID, specBehav, BehavAssign, perfSpec, cluster)
+specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, beeID, specBehav, BehavAssign, perfSpec, cluster, NF, PF, EL, FB)
 specialgroups
 ```
 
@@ -367,10 +370,18 @@ highcounts <- highcounts %>% group_by(nestTYPE, BehavAssign) %>%
 
 
 highcounts$nestTYPE <- ordered(highcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-G1<-ggplot(highcounts, aes(BehavAssign, highcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Most Frequently Performed Task") +
-  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "pollenforaging" = "Pollen\n Collection")) 
-G1 
+highcounts$BehavAssign <- ordered(highcounts$BehavAssign, levels = c("egglaying", "pollenforaging", "nectarforaging", "feedsbrood"))
+
+G1 <- ggplot(highcounts, aes(BehavAssign, highcounts, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  ggtitle("Most frequently performed task") +
+  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
+G1
 
 head(highcounts)
 ## Models 
@@ -423,11 +434,18 @@ shancounts
 
 
 shancounts$nestTYPE <- ordered(shancounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-G2<-ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Shannon-threshold Specialization") +
-  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist", "lazy"="Data\n Deficient")) 
-G2
+shancounts$specBehav <- ordered(shancounts$specBehav, levels = c("egglaying", "nectarforaging", "feedsbrood", "generalist", "lazy"))
 
+G2 <- ggplot(shancounts, aes(specBehav, shancounts, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  ggtitle("Shannon-threshold categorization") +
+  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "generalist" = "Generalist", "lazy" = "Data\ndeficient")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
+G2
 
 head(shancounts)
 ## Models 
@@ -481,9 +499,17 @@ perfcounts <- perfcounts %>% group_by(nestTYPE, perfSpec) %>%
 perfcounts
 
 perfcounts$nestTYPE <- ordered(perfcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-G3<-ggplot(perfcounts, aes(BehavAssign, perfcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("Perfect Specialization") +
-  ylab("Number of Individuals per Nest") + xlab("Behavior") + scale_x_discrete(labels=c("egglaying" = "Egg\n Laying", "feedsbrood" = "Brood\n Feeding", "nectarforaging" = "Nectar\n Collection", "generalist"="Generalist")) 
+perfcounts$BehavAssign <- ordered(perfcounts$BehavAssign, levels = c("egglaying", "nectarforaging", "feedsbrood"))
+
+G3 <- ggplot(perfcounts, aes(BehavAssign, perfcounts, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  ggtitle("Perfect specialization") +
+  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
 G3
 
 ## Models 
@@ -528,9 +554,15 @@ kcounts <- kcounts %>% group_by(nestTYPE, cluster) %>%
 kcounts
 
 kcounts$nestTYPE <- ordered(kcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-G4<-ggplot(kcounts, aes(cluster, kcounts, color = nestTYPE)) + geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.6, aes(color = nestTYPE)) +
-  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) + labs(color="Social Configuration") +  stat_summary(fun = mean, geom = "point", size = 4) +scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + ggtitle("K-means Clustering") +
-  ylab("Number of Individuals per Nest") + xlab("Cluster")  
+
+G4 <- ggplot(kcounts, aes(cluster, kcounts, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  ggtitle("K-means categorization") +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Cluster") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))  
 G4
 
 ## Models 
@@ -551,11 +583,59 @@ model.sel(k0, k1, k2, k3, k4)
 mymodel <- k1
 tab_model(mymodel)
 ```
+## Performed Task
+```{r}
+head(specialgroups)
+# count number of nests with a bee that carried out each behavior
+specialgroups %>% filter(NF=="yes") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(PF=="yes") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(FB=="yes") %>% dplyr::select(nestID) %>% unique() %>% nrow()
+specialgroups %>% filter(EL=="yes") %>% dplyr::select(nestID) %>% unique() %>% nrow()
 
+# count number of bees that perform each behavior in each nest
+singleNF <- specialgroups %>% dplyr::select(nestTYPE, nestID, NF) %>% mutate(count=1) %>% group_by(nestID, NF) %>% 
+  mutate(NF=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+singlePF <- specialgroups %>% dplyr::select(nestTYPE, nestID, PF) %>% mutate(count=1) %>% group_by(nestID, PF) %>% 
+  mutate(PF=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+singleFB <- specialgroups %>% dplyr::select(nestTYPE, nestID, FB) %>% mutate(count=1) %>% group_by(nestID, FB) %>% 
+  mutate(FB=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
+singleEL <- specialgroups %>% dplyr::select(nestTYPE, nestID, EL) %>% mutate(count=1) %>% group_by(nestID, EL) %>% 
+  mutate(EL=sum(count)) %>% ungroup() %>% 
+  dplyr::select(!count)
 
+single <- cbind(singleNF, singlePF[,3], singleFB[,3], singleEL[,3])
+single
+
+# gather behaviors into a single column for graphing
+single <- single %>%
+  gather(NF, PF, FB, EL, 
+         key = "behav", 
+         value = "instance")
+single
+
+# order nesttype as a factor for graphing consistency
+single$nestTYPE <- ordered(single$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+single$behav <- ordered(single$behav, levels = c("FB", "NF", "PF", "EL"))
+
+# plot number of individuals carrying out each behavior in each nest
+G5 <- ggplot(single, aes(behav, instance, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_brewer(palette = "PuOr", labels = c("W3", "W5", "QW3", "QW5")) + 
+  ggtitle("Tasks performed at least once") +
+  scale_x_discrete(labels=c("NF" = "Nectar\ncollection", "PF" = "Pollen\ncollection", "FB" = "Brood\nfeeding", "EL" = "Egg\nlaying")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))  
+G5
+```
+## Graph Together
 ```{r}
 #Put all graphs in one figure 
-ggarrange(G1, G3, G4, G2, nrow = 2, ncol=2, common.legend = TRUE, legend="bottom", labels=c("A", "B", "C", "D"))
+ggarrange(G1, G3, G5, G4, G2, nrow = 3, ncol=2, common.legend = TRUE, legend="bottom", labels=c("A", "B", "C", "D", "E"))
 ggsave("../figures/specializationdistsgraph.jpg")
 
 ```
