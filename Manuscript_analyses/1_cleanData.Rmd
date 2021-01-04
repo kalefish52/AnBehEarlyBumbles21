@@ -2405,6 +2405,21 @@ max(workers$size, na.rm = TRUE)
 
 ```
 
+```{r}
+# How many bees forage?
+head(count_data)
+totalforagers<-count_data %>% filter(allforaging>0) %>% nrow()
+
+# How many bees collect only nectar?
+(count_data %>% filter(nectarforaging>0 & pollenforaging==0) %>% nrow()) / totalforagers
+
+# How many bees collect only pollen? 
+(count_data %>% filter(nectarforaging==0 & pollenforaging>0) %>% nrow()) / totalforagers 
+
+How many bees collected both? 
+(count_data %>% filter(nectarforaging>0 & pollenforaging>0) %>% nrow()) / totalforagers   
+```
+
 
 
 ggplot(sumNests, aes(x = nestTYPE, y = nectarforaging/nBehavs)) +
