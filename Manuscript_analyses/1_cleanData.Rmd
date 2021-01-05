@@ -2416,7 +2416,7 @@ totalforagers<-count_data %>% filter(allforaging>0) %>% nrow()
 # How many bees collect only pollen? 
 (count_data %>% filter(nectarforaging==0 & pollenforaging>0) %>% nrow()) / totalforagers 
 
-How many bees collected both? 
+# How many bees collected both? 
 (count_data %>% filter(nectarforaging>0 & pollenforaging>0) %>% nrow()) / totalforagers   
 ```
 
