@@ -9,8 +9,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel shannon task plot
-knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
+knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel shannon task plot
+#knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
 # knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel change in shannon plot
 ```
 # Load Packages
@@ -2145,9 +2145,9 @@ write.csv(taskshanNatal, "../Data/filtData/taskShan.csv")
 taskShan$nestTYPE <- ordered(taskShan$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 # plot it
 p1 <- ggplot(taskShan, aes(shannon, behav)) +
-  geom_point(position = position_jitter(width=0.05, height=0.2), alpha = 0.7, aes(color = nestTYPE)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3, jitter.height = .05), alpha = 0.7, aes(color = nestTYPE)) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 4) +
+  stat_summary(fun = mean, geom = "point", size = 4, position = position_dodge(width = 0.75)) +
   theme(axis.text.y=element_text(angle=90, vjust=0.5, hjust=0.5)) +
   labs(color = "Social configuration", x = "Task Shannon diversity index", y = "Task") +
   scale_y_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) 
