@@ -35,8 +35,8 @@ library(ggpubr)
 # includes only known bees
 count_kmeans <- read.csv("../Data/filtData/count_data.csv") 
 count_kmeans <- count_kmeans[count_kmeans$lazy == "notLazy",]
-single <- read.csv("../Data/filtData/single.csv")
-single <- single[single$lazy == "notLazy",]
+#single <- read.csv("../Data/filtData/single.csv")
+#single <- single[single$lazy == "notLazy",]
 count_kmeans
 ```
 
@@ -342,7 +342,7 @@ library(lme4)     # Linear mixed models
 library(multcomp)
 
 #How many specialists in each nest/nesttype for each framework? 
-specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, beeID, specBehav, BehavAssign, perfSpec, cluster, NF, PF, EL, FB)
+specialgroups<-count_kmeans %>% dplyr::select(nestID, nestTYPE, natal, beeID, specBehav, BehavAssign, perfSpec, cluster, NF, PF, EL, FB)
 specialgroups
 ```
 
@@ -356,10 +356,10 @@ specialgroups %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>%
 specialgroups %>% filter(BehavAssign=="pollenforaging") %>% dplyr::select(nestID) %>% unique() %>% nrow()
 
 #How many specialists in highest counts? 
-highcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign) %>% filter(BehavAssign != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
+highcounts<-specialgroups %>% dplyr::select(nestID, natal, BehavAssign) %>% filter(BehavAssign != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
   mutate(highcounts=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-miss<-highcounts %>% tidyr::expand(nestID, BehavAssign) 
+miss<-highcounts %>% tidyr::expand(nestID, natal, BehavAssign) 
 highcounts<-left_join(miss, highcounts)
 #Replace Nas with 0 
 highcounts[is.na(highcounts)]<-0
@@ -368,7 +368,7 @@ highcounts$nestTYPE <- substr(highcounts$nestID, start = 1, stop = 2)
 highcounts <- highcounts %>% group_by(nestTYPE, BehavAssign) %>% 
   mutate(highcountsavg=mean(highcounts)) %>% ungroup() %>% unique()
 
-
+highcounts
 highcounts$nestTYPE <- ordered(highcounts$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
 highcounts$BehavAssign <- ordered(highcounts$BehavAssign, levels = c("egglaying", "pollenforaging", "nectarforaging", "feedsbrood"))
 
@@ -390,17 +390,20 @@ ggdensity(highcounts$highcounts)
 qqp(highcounts$highcounts, "norm")
 hist(highcounts$highcounts)
 
-H0<-glmer(highcounts~ 1 + (1|nestID), data=highcounts, family=poisson)
-H1<-glmer(highcounts~ BehavAssign + (1|nestID), data=highcounts, family=poisson)
-H2<-glmer(highcounts~ nestTYPE + (1|nestID), data=highcounts, family=poisson)
-H3<-glmer(highcounts~ BehavAssign + nestTYPE + (1|nestID), data=highcounts, family=poisson)
-H4<-glmer(highcounts~ BehavAssign*nestTYPE + (1|nestID), data=highcounts, family=poisson)
+H0<-glmer(highcounts~ 1 + (1|nestTYPE:nestID), data=highcounts, family=poisson)
+H1<-glmer(highcounts~ BehavAssign + (1|nestTYPE:nestID), data=highcounts, family=poisson)
+H2<-glmer(highcounts~ nestTYPE + (1|nestTYPE:nestID), data=highcounts, family=poisson)
+H3<-glmer(highcounts~ BehavAssign + nestTYPE + (1|nestTYPE:nestID), data=highcounts, family=poisson)
+H4<-glmer(highcounts~ BehavAssign*nestTYPE + (1|nestTYPE:nestID), data=highcounts, family=poisson)
 
 model.sel(H0, H1, H2, H3, H4)
 
-mymodel <- H1
+mymodel <- H3
+summary(mymodel)
 tab_model(mymodel)
 
+posthoc1 <- glht(mymodel, linfct = mcp(BehavAssign = "Tukey"))
+summary(posthoc1)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
@@ -454,16 +457,17 @@ ggdensity(shancounts$shancounts)
 qqp(shancounts$shancounts, "norm")
 hist(shancounts$shancounts)
 
-s0<-glmer(shancounts~ 1 + (1|nestID), data=shancounts, family=poisson)
-s1<-glmer(shancounts~ specBehav + (1|nestID), data=shancounts, family=poisson)
-s2<-glmer(shancounts~ nestTYPE + (1|nestID), data=shancounts, family=poisson)
-s3<-glmer(shancounts~ specBehav + nestTYPE + (1|nestID), data=shancounts, family=poisson)
-s4<-glmer(shancounts~ specBehav*nestTYPE + (1|nestID), data=shancounts, family=poisson)
+s0<-glmer(shancounts~ 1 + (1|nestTYPE:nestID), data=shancounts, family=poisson)
+s1<-glmer(shancounts~ specBehav + (1|nestTYPE:nestID), data=shancounts, family=poisson)
+s2<-glmer(shancounts~ nestTYPE + (1|nestTYPE:nestID), data=shancounts, family=poisson)
+s3<-glmer(shancounts~ specBehav + nestTYPE + (1|nestTYPE:nestID), data=shancounts, family=poisson)
+s4<-glmer(shancounts~ specBehav*nestTYPE + (1|nestTYPE:nestID), data=shancounts, family=poisson)
 
 model.sel(s0, s1, s2, s3, s4)
 
 mymodel <- s3
 tab_model(mymodel)
+summary(mymodel)
 
 posthoc<-glht(s3, linfct = mcp(specBehav = "Tukey"))
 summary(posthoc)
@@ -485,10 +489,10 @@ perfs %>% filter(BehavAssign=="nectarforaging") %>% dplyr::select(nestID) %>% un
 perfs %>% filter(BehavAssign=="egglaying") %>% dplyr::select(nestID) %>% unique() %>% nrow()
 
 #How many specialists in perfect specialization? 
-perfcounts<-specialgroups %>% dplyr::select(nestID, BehavAssign, perfSpec) %>% filter(perfSpec != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
+perfcounts<-specialgroups %>% dplyr::select(nestID, natal, BehavAssign, perfSpec) %>% filter(perfSpec != "NA") %>% mutate(count=1) %>% group_by(nestID, BehavAssign) %>% 
   mutate(perfcounts=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-miss<-perfcounts %>% tidyr::expand(nestID, BehavAssign) 
+miss<-perfcounts %>% tidyr::expand(nestID, natal, BehavAssign) 
 perfcounts<-left_join(miss, perfcounts)
 #Replace Nas with 0 
 perfcounts[is.na(perfcounts)]<-0
@@ -519,11 +523,11 @@ qqp(perfcounts$perfcounts, "norm")
 hist(perfcounts$perfcounts)
 
 head(perfcounts)
-p0<-glmer(perfcounts~ 1 + (1|nestID), data=perfcounts, family=poisson)
-p1<-glmer(perfcounts~ BehavAssign + (1|nestID), data=perfcounts, family=poisson)
-p2<-glmer(perfcounts~ nestTYPE + (1|nestID), data=perfcounts, family=poisson)
-p3<-glmer(perfcounts~ BehavAssign + nestTYPE + (1|nestID), data=perfcounts, family=poisson)
-p4<-glmer(perfcounts~ BehavAssign*nestTYPE + (1|nestID), data=perfcounts, family=poisson)
+p0<-glmer(perfcounts~ 1  + (1|nestTYPE:nestID), data=perfcounts, family=poisson)
+p1<-glmer(perfcounts~ BehavAssign + (1|nestTYPE:nestID), data=perfcounts, family=poisson)
+p2<-glmer(perfcounts~ nestTYPE + (1|nestTYPE:nestID), data=perfcounts, family=poisson)
+p3<-glmer(perfcounts~ BehavAssign + nestTYPE  + (1|nestTYPE:nestID), data=perfcounts, family=poisson)
+p4<-glmer(perfcounts~ BehavAssign*nestTYPE  + (1|nestTYPE:nestID), data=perfcounts, family=poisson)
 
 model.sel(p0, p1, p2, p3, p4)
 
@@ -540,10 +544,10 @@ specialgroups %>% filter(cluster=="3") %>% dplyr::select(nestID) %>% unique() %>
 
 # How many kmeans clusters? 
 specialgroups$cluster<-as.factor(specialgroups$cluster)
-kcounts<-specialgroups %>% dplyr::select(nestID, cluster) %>% filter(cluster != "NA") %>% mutate(count=1) %>% group_by(nestID, cluster) %>% 
+kcounts<-specialgroups %>% dplyr::select(nestID, natal, cluster) %>% filter(cluster != "NA") %>% mutate(count=1) %>% group_by(nestID, cluster) %>% 
   mutate(kcounts=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-miss<-kcounts %>% tidyr::expand(nestID, cluster) 
+miss<-kcounts %>% tidyr::expand(nestID, natal, cluster) 
 kcounts<-left_join(miss, kcounts)
 #Replace Nas with 0 
 kcounts[is.na(kcounts)]<-0
@@ -572,16 +576,20 @@ qqp(kcounts$kcounts, "norm")
 hist(kcounts$kcounts)
 
 head(kcounts)
-k0<-glmer(kcounts~ 1 + (1|nestID), data=kcounts, family=poisson)
-k1<-glmer(kcounts~ cluster + (1|nestID), data=kcounts, family=poisson)
-k2<-glmer(kcounts~ nestTYPE + (1|nestID), data=kcounts, family=poisson)
-k3<-glmer(kcounts~ cluster + nestTYPE + (1|nestID), data=kcounts, family=poisson)
-k4<-glmer(kcounts~ cluster*nestTYPE + (1|nestID), data=kcounts, family=poisson)
+k0<-glmer(kcounts~ 1 + (1|natal) + (1|nestTYPE:nestID), data=kcounts, family=poisson)
+k1<-glmer(kcounts~ cluster + (1|natal) + (1|nestTYPE:nestID), data=kcounts, family=poisson)
+k2<-glmer(kcounts~ nestTYPE + (1|natal) + (1|nestTYPE:nestID), data=kcounts, family=poisson)
+k3<-glmer(kcounts~ cluster + nestTYPE + (1|natal) + (1|nestTYPE:nestID), data=kcounts, family=poisson)
+k4<-glmer(kcounts~ cluster*nestTYPE + (1|natal) + (1|nestTYPE:nestID), data=kcounts, family=poisson)
 
 model.sel(k0, k1, k2, k3, k4)
 
-mymodel <- k1
+mymodel <- k3
+summary(mymodel)
 tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
 ```
 ## Performed Task
 ```{r}
@@ -593,24 +601,24 @@ specialgroups %>% filter(FB=="yes") %>% dplyr::select(nestID) %>% unique() %>% n
 specialgroups %>% filter(EL=="yes") %>% dplyr::select(nestID) %>% unique() %>% nrow()
 
 # count number of bees that perform each behavior in each nest
-singleNF <- specialgroups %>% dplyr::select(nestTYPE, nestID, NF) %>% mutate(count=1) %>% group_by(nestID, NF) %>% 
+singleNF <- specialgroups %>% dplyr::select(nestTYPE, natal, nestID, NF) %>% mutate(count=1) %>% group_by(nestID, NF) %>% 
   mutate(NF=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-singlePF <- specialgroups %>% dplyr::select(nestTYPE, nestID, PF) %>% mutate(count=1) %>% group_by(nestID, PF) %>% 
+singlePF <- specialgroups %>% dplyr::select(nestTYPE, natal, nestID, PF) %>% mutate(count=1) %>% group_by(nestID, PF) %>% 
   mutate(PF=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-singleFB <- specialgroups %>% dplyr::select(nestTYPE, nestID, FB) %>% mutate(count=1) %>% group_by(nestID, FB) %>% 
+singleFB <- specialgroups %>% dplyr::select(nestTYPE, natal, nestID, FB) %>% mutate(count=1) %>% group_by(nestID, FB) %>% 
   mutate(FB=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
-singleEL <- specialgroups %>% dplyr::select(nestTYPE, nestID, EL) %>% mutate(count=1) %>% group_by(nestID, EL) %>% 
+singleEL <- specialgroups %>% dplyr::select(nestTYPE, natal, nestID, EL) %>% mutate(count=1) %>% group_by(nestID, EL) %>% 
   mutate(EL=sum(count)) %>% ungroup() %>% 
   dplyr::select(!count)
 
-single <- cbind(singleNF, singlePF[,3], singleFB[,3], singleEL[,3])
-single
+singles <- cbind(singleNF, singlePF[,4], singleFB[,4], singleEL[,4])
+singles
 
 # gather behaviors into a single column for graphing
-single <- single %>%
+single <- singles %>%
   gather(NF, PF, FB, EL, 
          key = "behav", 
          value = "instance")
@@ -631,6 +639,26 @@ G5 <- ggplot(single, aes(behav, instance, color = nestTYPE)) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))  
 G5
+
+
+
+k0<-glmer(instance ~ 1 + (1|nestTYPE:nestID), data=single, family=poisson)
+k1<-glmer(instance~ behav + (1|nestTYPE:nestID), data=single, family=poisson)
+k2<-glmer(instance~ nestTYPE + (1|nestTYPE:nestID), data=single, family=poisson)
+k3<-glmer(instance~ behav + nestTYPE + (1|nestTYPE:nestID), data=single, family=poisson)
+k4<-glmer(instance~ behav*nestTYPE + (1|nestTYPE:nestID), data=single, family=poisson)
+
+model.sel(k0, k1, k2, k3, k4)
+
+mymodel <- k2
+summary(mymodel)
+library(sjPlot)
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
+
+
 ```
 ## Graph Together
 ```{r}
