@@ -30,11 +30,12 @@ taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
 taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique()
 
 #How many task shans are 0? 
-taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique() %>% filter(shannon=="0") %>% nrow()
+taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique() %>% filter(shannon==0) %>% nrow()
 
 #What is the mask task shan? 
 max(taskShan$shannon)
 
+taskShan
 ```
 
 # How specialized are tasks? 
@@ -47,7 +48,9 @@ qqp(taskShan$shannon, "norm")
 
 ps0 <- glmer(shannon ~1 + (1|nestID) + (1|natal),
               data = taskShan)
-ps1 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID) + (1|natal),
+ps1 <- glmer(shannon ~ behav*nestTYPE + nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+ps8 <- glmer(shannon ~ behav + nestTYPE + nBehav + (1|nestID) + (1|natal),
               data = taskShan)
 ps2 <- glmer(shannon ~ behav + nestTYPE + (1|nestID) + (1|natal),
               data = taskShan)
@@ -61,30 +64,19 @@ ps6 <- glmer(shannon ~ nestTYPE + (1|nestID) + (1|natal),
               data = taskShan)
 ps7 <- glmer(shannon ~ nBehav + (1|nestID) + (1|natal),
               data = taskShan)
-ps8 <- glmer(shannon ~ behav*nestTYPE*nBehav + (1|nestID) + (1|natal),
-              data = taskShan)
-ps9 <- glmer(shannon ~ behav*nestTYPE + nBehav + (1|nestID) + (1|natal),
-              data = taskShan)
-ps10 <- glmer(shannon ~ behav + nestTYPE*nBehav + (1|nestID) + (1|natal),
-              data = taskShan)
-ps11 <- glmer(shannon ~ behav*nBehav + nestTYPE + (1|nestID) + (1|natal),
-              data = taskShan)
-ps12 <- glmer(shannon ~ behav*nestTYPE + (1|nestID) + (1|natal),
-              data = taskShan)
-ps13 <- glmer(shannon ~  nestTYPE*nBehav + (1|nestID) + (1|natal),
-              data = taskShan)
-ps14 <- glmer(shannon ~ behav*nBehav + (1|nestID) + (1|natal),
-              data = taskShan)
-model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14)
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8)
 
-mymodel <- ps9
-tab_model(mymodel)
+mymodel <- ps1
+summary(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
 
 pairwisePosthoc1 <- lsmeans(mymodel, pairwise ~ behav:nestTYPE, adjust = "tukey")
 summary(pairwisePosthoc1)
+
+posthoc2 <- lsmeans(mymodel, pairwise ~ nestTYPE|behav, adjust = "tukey")
+summary(posthoc2)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
