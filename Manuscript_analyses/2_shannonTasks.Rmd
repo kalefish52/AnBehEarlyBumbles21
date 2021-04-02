@@ -61,20 +61,41 @@ ps6 <- glmer(shannon ~ nestTYPE + (1|nestID) + (1|natal),
               data = taskShan)
 ps7 <- glmer(shannon ~ nBehav + (1|nestID) + (1|natal),
               data = taskShan)
-model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7)
+ps8 <- glmer(shannon ~ behav*nestTYPE*nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+ps9 <- glmer(shannon ~ behav*nestTYPE + nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+ps10 <- glmer(shannon ~ behav + nestTYPE*nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+ps11 <- glmer(shannon ~ behav*nBehav + nestTYPE + (1|nestID) + (1|natal),
+              data = taskShan)
+ps12 <- glmer(shannon ~ behav*nestTYPE + (1|nestID) + (1|natal),
+              data = taskShan)
+ps13 <- glmer(shannon ~  nestTYPE*nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+ps14 <- glmer(shannon ~ behav*nBehav + (1|nestID) + (1|natal),
+              data = taskShan)
+model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14)
 
-mymodel <- ps3
+mymodel <- ps9
 tab_model(mymodel)
 
-posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
+
+pairwisePosthoc1 <- lsmeans(mymodel, pairwise ~ behav:nestTYPE, adjust = "tukey")
+summary(pairwisePosthoc1)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
-
+#.
+#.
+#.
+#.
+#XXXXXXXX
 # How does average specialization change with time point? 
 ## glmms on early vs. late shannons
 ```{r}

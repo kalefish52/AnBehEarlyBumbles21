@@ -52,6 +52,7 @@ nrow(shanzero)
 #Max shannon
 max(count_bees$shannon)
 ```
+## WORKERS + QUEENS
 ## two part model on pooled shannon across nestTYPES
 ### Bees with shannon=0
 ```{r}
@@ -152,6 +153,69 @@ ps16 <- glmer(shan1 ~ caste + (1|nestID) + (1|natal),
 model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8, ps9, ps10, ps11, ps12, ps13, ps14, ps15, ps16)
 
 mymodel <- ps15
+tab_model(mymodel)
+summary(mymodel)
+# plot model residuals
+modelResiduals <- resid(mymodel, type = "pearson") # Extract standardized residuals 
+hist(modelResiduals)
+
+## Graph 
+
+```
+## WORKERS ONLY
+## two part model on pooled shannon across nestTYPES
+### Bees with shannon=0
+```{r}
+count_workers <- count_bees[count_bees$caste == "W",]
+nrow(count_workers)
+
+# model 0 vs. >0 shannon values
+# need to add natal colony as random effect
+ps0 <- glmer(shan0 ~ 1 + (1|nestID) + (1|natal),
+              data = count_workers, family = binomial(link = "logit"))
+ps1 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = count_workers, family = binomial(link = "logit"))
+ps2 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = count_workers, family = binomial(link = "logit"))
+ps3 <- glmer(shan0 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = count_workers, family = binomial(link = "logit"))
+
+model.sel(ps0, ps1, ps2, ps3)
+#Best model is ps11: AIC==105.9
+mymodel <- ps1
+tab_model(mymodel)
+summary(mymodel)
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+
+
+```
+
+### Bees with shannon >0
+```{r}
+
+# make a new column that contains only shannon for bees with shannon > 0
+count_workers$shan1 <- NA
+count_workers$shan1[count_workers$shannon > 0] <- count_workers$shannon[count_workers$shannon > 0]
+# it's mostly normal
+qqp(count_workers$shan1, "norm")
+
+# model 0 vs. >0 shannon values
+# need to add natal colony as random effect
+ps0 <- glmer(shan1 ~ 1 + (1|nestID)  + (1|natal),
+              data = count_workers)
+ps1 <- glmer(shan1 ~ nestTYPE + nBehavs + (1|nestID) + (1|natal),
+              data = count_workers)
+ps2 <- glmer(shan1 ~ nestTYPE + (1|nestID) + (1|natal),
+              data = count_workers)
+ps3 <- glmer(shan1 ~ nBehavs + (1|nestID) + (1|natal),
+              data = count_workers)
+
+model.sel(ps0, ps1, ps2, ps3)
+
+mymodel <- ps0
 tab_model(mymodel)
 summary(mymodel)
 # plot model residuals
