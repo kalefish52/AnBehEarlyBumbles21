@@ -1103,6 +1103,7 @@ print(paste(nrow(single[single$FB == "yes",]), "brood feeders from", length(uniq
 print(paste(nrow(single[single$EL == "yes",]), "egg layers from", length(unique(single$nestID[single$EL == "yes"])), "nests"))
 
 print(paste(length(unique(single$nestID)), "total nests"))
+41/21
 
 graphSingleOv <- single %>% dplyr::select(NF, PF, FB, EL, beeID, ovSavg, caste)
 graphSingleOv <-graphSingleOv[complete.cases(graphSingleOv),]
@@ -1122,6 +1123,11 @@ ggplot(graphSingleOv) +
              position = position_jitter(width = 0.4, height = 0.1),
              alpha = 0.6) +
   scale_shape_manual(values = c(21, 24))
+
+egglayers <- single[single$EL == "yes",]
+egglayers[egglayers$caste == "Q",]
+46
+
 ```
 
 
