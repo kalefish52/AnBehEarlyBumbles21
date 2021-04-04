@@ -24,6 +24,7 @@ library(ggpubr)
 # pooled data across timepoints, values are counts
 # includes all bees,including unknown and low counts
 count_data <- read.csv("../Data/filtData/count_data.csv")
+count_data <- count_data[count_data$caste == "W",]
 nrow(count_data)
 
 ```
@@ -33,188 +34,188 @@ K Means Cluster Analyses -- determine whether points cluster into two or more gr
 
 Elbow Method for finding the optimal number of clusters. optimal number of clusters = elbow of the graph. (in this case 3)
 ```{r find number of clusters in k means}
-# ## set seed of random number generator for reproducibility
-# set.seed(123)
-# 
-# ## compute and plot total within sum of squares for 2-10 clusters
-# k.max <- 10
-# ## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglaying
-# data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")] 
-# 
-# wss <- sapply(1:k.max, 
-#               function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
-# wss
-# ## plot and look to find the elbow. here it is at 3
-# elbow <- plot(1:k.max, wss,
-#      type="b", pch = 19, frame = FALSE, 
-#      xlab="Number of clusters K",
-#      ylab="Total within-clusters sum of squares")
+## set seed of random number generator for reproducibility
+set.seed(123)
+
+## compute and plot total within sum of squares for 2-10 clusters
+k.max <- 10
+## make sure the subset of count_data here includes feedsbrood, nectarforage, pollenforage, egglaying
+data <- count_data[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]
+
+wss <- sapply(1:k.max,
+              function(k){kmeans(data, k, nstart=50, iter.max = 20)$tot.withinss})
+wss
+## plot and look to find the elbow. here it is at 3
+elbow <- plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
 ```
 
 run k means analysis
 ```{r}
-# ## set random number generator seed for reproducibility
-# set.seed(124)
-# 
-# ## set k based on where elbow is in above graph
-# k <- 3
-# 
-# ## run k means test
-# test <- kmeans(data, k, nstart = 20)
-# length(as.factor(test$cluster))
+## set random number generator seed for reproducibility
+set.seed(124)
+
+## set k based on where elbow is in above graph
+k <- 3
+
+## run k means test
+test <- kmeans(data, k, nstart = 20)
+length(as.factor(test$cluster))
 ```
  graph k means analysis
 ```{r} 
-# count_data$cluster <- test$cluster
-# 
-# ## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles. 
-# ## first reorder cluster numbers for plot: 3->1 = generalists, 1->2 = foragers, 2->3 = egg layers
-# count_data$cluster[count_data$cluster == 1] <- 4
-# count_data$cluster[count_data$cluster == 2] <- 5
-# count_data$cluster[count_data$cluster == 3] <- 6
-# count_data$cluster[count_data$cluster == 6] <- 1
-# count_data$cluster[count_data$cluster == 4] <- 2
-# count_data$cluster[count_data$cluster == 5] <- 3
-# 
-# ## make cluster a factor so we can graph with it
-# count_data$cluster <- as.factor(count_data$cluster)
-# count_data$cluster
-# ## export as count_kmeans
-# write.csv(count_data, "../Data/filtData/count_data.csv")
-# count_data
-# ## make egg laying workers x 
-# plot_ly(x = count_data$feedsbrood, 
-#         y = count_data$allforaging, 
-#         z = count_data$egglaying, 
-#         type="scatter3d", 
-#         mode="markers",
-#         symbol = count_data$caste, symbols = c('circle-open', 'circle'),
-#         color = count_data$cluster, colors = c('maroon', 'steelblue', 'goldenrod'),
-#         marker = list(size = 4)) %>%
-#   #add_trace(marker = list(size = 5)) %>%
-#   layout(
-#     title = "All bees k-means clustering",
-#     scene = list(
-#       xaxis = list(title = "Brood feeding"),
-#       yaxis = list(title = "Resource collection"),
-#       zaxis = list(title = "Egg laying"))
-#   )
-# 
-# 
-# 
-# #Plot counts of each cluster for each specBehav
-# count_data
-# kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster, egglaying, nectarforaging, feedsbrood, pollenforaging)
-# 
-# #How many in each group
-# one<-kcounts %>% filter(cluster=="1") 
-# nrow(one)
-# one
-# two<-kcounts %>% filter(cluster=="2") 
-# nrow(two)
-# two %>% arrange(egglaying)
-# three<-kcounts %>% filter(cluster=="3") 
-# nrow(three)
-# three %>% arrange(nectarforaging)
-# 
-# kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
-# 
-# kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% dplyr::select(specBehav, cluster, frequency) %>% unique()
-# 
-# ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
-#     geom_bar(stat="identity", position=position_dodge(), colour="black")
-# 
-# ggplot(count_data, aes(x = allforaging, y = cluster)) +
-#   geom_point()
-# ggplot(count_data, aes(x = nectarforaging, y = cluster)) +
-#   geom_point()
-# ggplot(count_data, aes(x = pollenforaging, y = cluster)) +
-#   geom_point()
-# ggplot(count_data, aes(x = feedsbrood, y = cluster)) +
-#   geom_point()
-# ggplot(count_data, aes(x = egglaying, y = cluster)) +
-#   geom_point()
-# min(count_data[count_data$cluster == 1, "pollenforaging"])
-# max(count_data[count_data$cluster == 2, "pollenforaging"])
-# count_data[count_data$cluster == 1,]
+count_data$cluster <- test$cluster
+
+## graph the data in 3d. color code based on cluster, make queens solid circles and workers open circles.
+## first reorder cluster numbers for plot: 3->1 = generalists, 1->2 = foragers, 2->3 = egg layers
+count_data$cluster[count_data$cluster == 1] <- 4
+count_data$cluster[count_data$cluster == 2] <- 5
+count_data$cluster[count_data$cluster == 3] <- 6
+count_data$cluster[count_data$cluster == 6] <- 1
+count_data$cluster[count_data$cluster == 4] <- 2
+count_data$cluster[count_data$cluster == 5] <- 3
+
+## make cluster a factor so we can graph with it
+count_data$cluster <- as.factor(count_data$cluster)
+count_data$cluster
+## export as count_kmeans
+write.csv(count_data, "../Data/filtData/count_data.csv")
+count_data
+## make egg laying workers x
+plot_ly(x = count_data$feedsbrood,
+        y = count_data$allforaging,
+        z = count_data$egglaying,
+        type="scatter3d",
+        mode="markers",
+        symbol = count_data$caste, symbols = c('circle-open', 'circle'),
+        color = count_data$cluster, colors = c('maroon', 'steelblue', 'goldenrod'),
+        marker = list(size = 4)) %>%
+  #add_trace(marker = list(size = 5)) %>%
+  layout(
+    title = "All bees k-means clustering",
+    scene = list(
+      xaxis = list(title = "Brood feeding"),
+      yaxis = list(title = "Resource collection"),
+      zaxis = list(title = "Egg laying"))
+  )
+
+
+
+#Plot counts of each cluster for each specBehav
+count_data
+kcounts<-count_data %>% dplyr::select(nestID, beeID, specBehav, cluster, egglaying, nectarforaging, feedsbrood, pollenforaging)
+
+#How many in each group
+one<-kcounts %>% filter(cluster=="1")
+nrow(one)
+one
+two<-kcounts %>% filter(cluster=="2")
+nrow(two)
+two %>% arrange(egglaying)
+three<-kcounts %>% filter(cluster=="3")
+nrow(three)
+three %>% arrange(nectarforaging)
+
+kcounts %>% dplyr::select(feedsbrood, nectarforaging, egglaying, cluster) %>% arrange(feedsbrood)
+
+kSUM<-kcounts %>% group_by(specBehav, cluster) %>% mutate(count=1) %>% mutate(frequency=sum(count)) %>% dplyr::select(specBehav, cluster, frequency) %>% unique()
+
+ggplot(kSUM, aes(x=specBehav, y=frequency, fill=cluster)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black")
+
+ggplot(count_data, aes(x = allforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = nectarforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = pollenforaging, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = feedsbrood, y = cluster)) +
+  geom_point()
+ggplot(count_data, aes(x = egglaying, y = cluster)) +
+  geom_point()
+min(count_data[count_data$cluster == 1, "pollenforaging"])
+max(count_data[count_data$cluster == 2, "pollenforaging"])
+count_data[count_data$cluster == 1,]
 ```
  Do groups correspond to ovary/body size data?  
 ```{r}
-# count_data
-# 
-# kmeanstrends<-count_data %>% dplyr::select(size, ovSavg, cluster) %>% na.omit()
-# 
-# head(kmeanstrends)
-# graphkmeans<-kmeanstrends %>% group_by(cluster) %>% 
-#   mutate(asize=mean(size)) %>%  
-#   mutate(sdsize=sd(size)) %>% 
-#   mutate(aov=mean(ovSavg))  %>% 
-#   mutate(sdov=sd(ovSavg)) %>% 
-#   dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
-# 
-# BSk<-ggplot(graphkmeans, aes(x=cluster, y=asize)) +
-#     geom_bar(stat="identity", position=position_dodge(), colour="black") + 
-#   geom_errorbar(aes(ymin=asize-sdsize,  ymax=asize+sdsize))
-# BSk
-# 
-# OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +
-#     geom_bar(stat="identity", position=position_dodge(), colour="black") + 
-#   geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
-# OVk
-# 
-# library(lme4)
-# library(sjPlot)  # tab_model
-# library(MuMIn)    # model.sel
-# 
-# count_data$cluster <- as.factor(count_data$cluster)
-# head(count_data)
-# #Does ovary size change with cluster? 
-# hist(count_data$ovSavg)
-# k0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste), 
-#             data = count_data)
-# 
-# k1 <- lmer(ovSavg ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
-#             data = count_data)
-# model.sel(k0, k1)
-# 
-# k2 <- lmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste),
-#             data = count_data)
-# 
-# k3 <- lmer(size ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
-#             data = count_data)
-# model.sel(k2, k3)
-# 
-# #posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
-# #summary(posthoc)
-# 
-# k4<-lmer(ovRavg~1+ (1|natal) + (1|nestTYPE:nestID) + (1|caste),
-#             data = count_data)
-#   
-# k5<-lmer(ovRavg~cluster+ (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
-#             data = count_data)
-# model.sel(k4, k5)
-# 
-# 
-# library(gridExtra)
-# p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
-#   stat_summary(fun = mean, geom = "point", size = 5) + ylab("Body Size") +
-#   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-#   scale_shape_manual(values = c(21, 16)) +
-#   scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
-# p1
-# ggsave("../figures/kmeansBS.jpg")
-# 
-# 
-# p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) + ylab("Average Ovary \n Stage") + 
-#   stat_summary(fun = mean, geom = "point", size = 5) +
-#   geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
-#   scale_shape_manual(values = c(21, 16)) + 
-#   scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
-# p2
-# ggsave("../figures/kmeansOv.jpg")
-# 
-# ggarrange(p1, p2, labels = c("A", "B"), common.legend = TRUE, legend="right")
-# ggsave("../figures/kmeansBSov.jpg")
+count_data
+
+kmeanstrends<-count_data %>% dplyr::select(size, ovSavg, cluster) %>% na.omit()
+
+head(kmeanstrends)
+graphkmeans<-kmeanstrends %>% group_by(cluster) %>%
+  mutate(asize=mean(size)) %>%
+  mutate(sdsize=sd(size)) %>%
+  mutate(aov=mean(ovSavg))  %>%
+  mutate(sdov=sd(ovSavg)) %>%
+  dplyr::select(cluster, asize, sdsize, aov, sdov) %>% unique()
+
+BSk<-ggplot(graphkmeans, aes(x=cluster, y=asize)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=asize-sdsize,  ymax=asize+sdsize))
+BSk
+
+OVk<-ggplot(graphkmeans, aes(x=cluster, y=aov)) +
+    geom_bar(stat="identity", position=position_dodge(), colour="black") +
+  geom_errorbar(aes(ymin=aov-sdov,  ymax=aov+sdov))
+OVk
+
+library(lme4)
+library(sjPlot)  # tab_model
+library(MuMIn)    # model.sel
+
+count_data$cluster <- as.factor(count_data$cluster)
+head(count_data)
+#Does ovary size change with cluster?
+hist(count_data$ovSavg)
+k0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste),
+            data = count_data)
+
+k1 <- lmer(ovSavg ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
+            data = count_data)
+model.sel(k0, k1)
+
+k2 <- lmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID) + (1|caste),
+            data = count_data)
+
+k3 <- lmer(size ~ cluster + (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
+            data = count_data)
+model.sel(k2, k3)
+
+#posthoc<-glht(k3, linfct = mcp(cluster = "Tukey"))
+#summary(posthoc)
+
+k4<-lmer(ovRavg~1+ (1|natal) + (1|nestTYPE:nestID) + (1|caste),
+            data = count_data)
+
+k5<-lmer(ovRavg~cluster+ (1|natal) + (1|nestTYPE:nestID) + (cluster|caste),
+            data = count_data)
+model.sel(k4, k5)
+
+
+library(gridExtra)
+p1 <- ggplot(count_data, aes(cluster, size, shape = caste, color = cluster)) +
+  stat_summary(fun = mean, geom = "point", size = 5) + ylab("Body Size") +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  scale_shape_manual(values = c(21, 16)) +
+  scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
+p1
+ggsave("../figures/kmeansBS.jpg")
+
+
+p2 <- ggplot(count_data, aes(cluster, ovSavg, shape = caste, color = cluster)) + ylab("Average Ovary \n Stage") +
+  stat_summary(fun = mean, geom = "point", size = 5) +
+  geom_point(position = position_jitter(width=0.1, height=0.05), alpha = 0.5) +
+  scale_shape_manual(values = c(21, 16)) +
+  scale_color_manual(values = c("aquamarine3", "darkslateblue", "red"))
+p2
+ggsave("../figures/kmeansOv.jpg")
+
+ggarrange(p1, p2, labels = c("A", "B"), common.legend = TRUE, legend="right")
+ggsave("../figures/kmeansBSov.jpg")
 ```
 
 
