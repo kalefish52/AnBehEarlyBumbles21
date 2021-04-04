@@ -36,7 +36,7 @@ max(taskShan$shannon)
 taskShan
 ```
 
-# does behavior or nest type predict shannon?
+# behavior & nest type models
  glmms on pooled shannon across nestTYPEs
 ```{r}
 # much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 

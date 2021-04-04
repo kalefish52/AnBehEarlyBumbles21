@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # # multipanel nmds plot
 # knitr::opts_chunk$set(fig.width=3, fig.height=3.6) 
 
-# # multipanel individuals per nest categorical frameowrks plot
+# # multipanel counts of specialists per nest for categorical frameworks plot
 # knitr::opts_chunk$set(fig.width=3.6, fig.height=5.5) 
 
 # # multipanel rptr plot
@@ -172,108 +172,7 @@ s1 <- glmer(ovSavg ~ shannon + (1|natal) + (1|nestTYPE:nestID), data = count_3)
 model.sel(s0, s1)
 ```
 
-## average timepoint models
- two part glmm on early vs. late shannons:
 
-Pt. 1: nothing significant
-```{r}
-#How many bees meet the criteria? 
-count_3Time %>% dplyr::select(beeID) %>% unique() %>% nrow()
-# two part model
-# make a new column for over or under 0
-count_3Time$shan0 <- NA
-# if shannon = 0, shan0 = 1
-count_3Time$shan0[count_3Time$shannon == 0] <- 1
-# if shannon > 0, shan0 = 0
-count_3Time$shan0[count_3Time$shannon > 0] <- 0
-
-hist(count_3Time$shannon)
-count_3Time
-
-# model 0 vs. >0 shannon values
-ps1 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps4 <- glmer(shan0 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps2 <- glmer(shan0 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps3 <- glmer(shan0 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps0 <- glmer(shan0 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-
-model.sel(ps0, ps1, ps2, ps3, ps4)
-
-mymodel <- ps3
-tab_model(mymodel)
-summary(mymodel)
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
-
-Pt. 2: timepoint significantly predicts degree of specialization
-        -bees become more specialized over time
-```{r}
-# make a new column that contains only shannon for bees with shannon > 0
-count_3Time$shan1 <- NA
-count_3Time$shan1[count_3Time$shannon > 0] <- count_3Time$shannon[count_3Time$shannon > 0]
-# it's mostly normal  - i think so!
-hist(count_3Time$shan1)
-qqp(count_3Time$shan1, "norm")
-
-# model >0 shannon values
-ps1 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps4 <- glmer(shan1 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps2 <- glmer(shan1 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps3 <- glmer(shan1 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps0 <- glmer(shan1 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-
-model.sel(ps0, ps1, ps2, ps3, ps4)
-
-mymodel <- ps2
-tab_model(mymodel)
-summary(mymodel)
-plot_model(mymodel)
-
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
-
-
-## change in shannon models
- null model fits best
-```{r}
-#how many bees are at both early and late timepoints? 
-shanspec<-count_3Time %>% filter(shanDist!="NA")
-nrow(shanspec)
-# pretty normal
-ggdensity(shanspec$shanDist)
-qqp(shanspec$shanDist, "norm")
-
-cs0 <- glmer(shanDist ~ 1 + (1|nestTYPE:nestID) + (1|natal),
-              data = shanspec)
-cs1 <- glmer(shanDist ~ nestTYPE + (1|nestTYPE:nestID) + (1|natal),
-              data = shanspec)
-
-model.sel(cs0, cs1)
-mymodel <- cs0
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
 
 #.
 
@@ -1142,6 +1041,111 @@ ggsave("../figures/nmdsPanelAll.jpg")
 #.
 
 # -REPEATABILITY-
+
+# SHANNON VALUES
+
+## average timepoint models
+ two part glmm on early vs. late shannons:
+
+Pt. 1: nothing significant
+```{r}
+#How many bees meet the criteria? 
+count_3Time %>% dplyr::select(beeID) %>% unique() %>% nrow()
+# two part model
+# make a new column for over or under 0
+count_3Time$shan0 <- NA
+# if shannon = 0, shan0 = 1
+count_3Time$shan0[count_3Time$shannon == 0] <- 1
+# if shannon > 0, shan0 = 0
+count_3Time$shan0[count_3Time$shannon > 0] <- 0
+
+hist(count_3Time$shannon)
+count_3Time
+
+# model 0 vs. >0 shannon values
+ps1 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time, family = binomial(link = "logit"))
+ps4 <- glmer(shan0 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time, family = binomial(link = "logit"))
+ps2 <- glmer(shan0 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time, family = binomial(link = "logit"))
+ps3 <- glmer(shan0 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time, family = binomial(link = "logit"))
+ps0 <- glmer(shan0 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time, family = binomial(link = "logit"))
+
+model.sel(ps0, ps1, ps2, ps3, ps4)
+
+mymodel <- ps3
+tab_model(mymodel)
+summary(mymodel)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+Pt. 2: timepoint significantly predicts degree of specialization
+        -bees become more specialized over time
+```{r}
+# make a new column that contains only shannon for bees with shannon > 0
+count_3Time$shan1 <- NA
+count_3Time$shan1[count_3Time$shannon > 0] <- count_3Time$shannon[count_3Time$shannon > 0]
+# it's mostly normal  - i think so!
+hist(count_3Time$shan1)
+qqp(count_3Time$shan1, "norm")
+
+# model >0 shannon values
+ps1 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time)
+ps4 <- glmer(shan1 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time)
+ps2 <- glmer(shan1 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time)
+ps3 <- glmer(shan1 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time)
+ps0 <- glmer(shan1 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+              data = count_3Time)
+
+model.sel(ps0, ps1, ps2, ps3, ps4)
+
+mymodel <- ps2
+tab_model(mymodel)
+summary(mymodel)
+plot_model(mymodel)
+
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+
+## change in shannon models
+ null model fits best
+```{r}
+#how many bees are at both early and late timepoints? 
+shanspec<-count_3Time %>% filter(shanDist!="NA")
+nrow(shanspec)
+# pretty normal
+ggdensity(shanspec$shanDist)
+qqp(shanspec$shanDist, "norm")
+
+cs0 <- glmer(shanDist ~ 1 + (1|nestTYPE:nestID) + (1|natal),
+              data = shanspec)
+cs1 <- glmer(shanDist ~ nestTYPE + (1|nestTYPE:nestID) + (1|natal),
+              data = shanspec)
+
+model.sel(cs0, cs1)
+mymodel <- cs0
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
 
 # ANOSIM
 Look at NMDS at two time points 
