@@ -5,6 +5,9 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# # multipanel shannon task plot
+# knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) 
 ```
 
 # load packages
@@ -133,6 +136,9 @@ tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
+
+posthoc12 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc12)
 
 posthoc2 <- lsmeans(mymodel, pairwise ~ nestTYPE|behav, adjust = "tukey")
 summary(posthoc2)
