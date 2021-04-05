@@ -21,22 +21,85 @@ library(MuMIn)    # model.sel
 
 # load data
 ```{r}
-taskShan <- read.csv("../Data/filtData/taskShan.csv")
-taskShanTime <- read.csv("../Data/filtData/taskShanTime.csv")
+count_nests <- read.csv("../Data/filtData/count_nests.csv")
+```
 
-#How many task shans do we have?
-taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique()
+# calculate task shannon
+add shannon column to count_nests df
+```{r}
+count_nests
 
-#How many task shans are 0? 
-taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique() %>% filter(shannon==0) %>% nrow()
+# make df to put shannon values into
+taskShan <- matrix(NA, ncol = 4)
+taskShan <- as.data.frame(taskShan)
+colnames(taskShan) <- c("nestID", "behav", "shannon", "nBehav")
+taskShan$shannon <- NA
 
-#What is the mask task shan? 
+# make submatrix for each nest, transpose it so that behaviors are rows and individuals are columns, and calculate shannon for each behavior for each nest
+for(index in 1:length(unique(count_nests$nestID))) {            # for each unique nestID in the dataset
+  nest_df <- count_nests[count_nests$nestID == unique(count_nests$nestID)[index], ]   # subset to look only at that nestID
+  nest_m <- as.matrix(nest_df[,c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) # convert to matrix of behaviors for that nest ID
+  if (nrow(nest_df) < 2) {                                          # if there are less than 2 rows in the matrix (i.e. fewer than 2 individuals carrying out a given behavior)
+    nest_m <- rbind(nest_m, c(0, 0, 0, 0))                          # add a row of zeros so that when you transpose it, it stays as a matrix with multiple columns
+  }
+  nest_m <- t(nest_m)                                               # transpose the matrix so that behaviors are now rows and individuals are columns
+  nest_m <- nest_m[rowSums(nest_m) > 0,, drop = FALSE]              # remove behaviors without any observations
+  nestShan <- matrix(NA, ncol = 4, nrow = nrow(nest_m))             # make a nest-specific matrix to put shannon values into
+  nestShan <- as.data.frame(nestShan)                               # turn it into a df
+  colnames(nestShan) <- colnames(taskShan)                          # name columns same as the taskShan df
+  shannon <- diversity(nest_m, index = "shannon")                   # calculate shannon for each behavior in the nest
+  nestShan$behav <- rownames(nest_m)                                # add the name of each behavior to the nestShan df
+  nestShan$shannon <- shannon                                       # add the corresponding shannon score for each behavior
+  nestShan$nBehav <- rowSums(nest_m)                                # sum the number of observations of each behavior
+  nestShan$nestID <- unique(count_nests$nestID)[index]              # copy nestID into the nestShan df
+  taskShan <- rbind(taskShan, nestShan)                             # add the nest-specific df to the overall task df
+}
+taskShan
+
+# add nestTYPE column
+taskShan$nestTYPE <- substr(taskShan$nestID, start = 1, stop = 2)
+# remove na row
+taskShan <- taskShan[!is.na(taskShan$shannon),]
 max(taskShan$shannon)
+#add natalcolony column 
+nataladd<-count_nests %>% dplyr::select(nestID, natal)
+taskShan <-left_join(taskShan, nataladd,  by="nestID")
+
+taskShan$nestTYPE <- ordered(taskShan$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+
+# plot it
+p1 <- ggplot(taskShan, aes(shannon, behav)) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3, jitter.height = .05), alpha = 0.7, aes(color = nestTYPE)) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 4, position = position_dodge(width = 0.75)) +
+  theme(axis.text.y=element_text(angle=90, vjust=0.5, hjust=0.5)) +
+  labs(color = "Social configuration", x = "Task Shannon diversity index", y = "Task") +
+  scale_y_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) 
+p1
+ggsave("../figures/taskShan.jpg")
+
+# plot degree of specialization against number of observations
+p2 <- ggplot(taskShan, aes(shannon, nBehav, color = behav, shape = nestTYPE)) +
+  geom_point(position = position_jitter(width=0.05, height=3), alpha = 0.9) +
+  scale_shape_manual(values = c(16, 15, 21, 22), labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(shape = "Social configuration", color = "Task", x = "Task Shannon diversity index", y = "Number of times task was observed") +
+  scale_color_discrete(labels = c("Egg laying", "Brood feeding", "Nectar collection", "Pollen collection"))
+p2
+ggsave("../figures/taskShanVSnBehavs.jpg")
+
+ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
+ggsave("../figures/taskShanPanel.jpg")
+
+# print the number of nests that meet the shannon threshold
+print(paste(length(unique(taskShan$nestID)), "nests have over the threshold number of behaviors and will therefore be included in task shannon analyses", sep = " "))
+
+# print the number of perfectly specialized tasks (shannon = 0)
+print(paste("there are", nrow(taskShan[taskShan$shannon == 0, ]), "perfectly specialized tasks with a shannon value of 0 out of", nrow(taskShan), "total task-nest combinations", sep = " "))
 
 taskShan
 ```
 
-# behavior & nest type models
+## behavior & nest type models
  full model significant (intx between behavior and nest type + number of behaviors)
 ```{r}
 # much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 
@@ -77,4 +140,18 @@ summary(posthoc2)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
+```
+
+## summary
+```{r}
+#How many task shans do we have?
+taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique()
+
+#How many task shans are 0? 
+taskShan %>% dplyr::select(nestID, behav, shannon) %>% unique() %>% filter(shannon==0) %>% nrow()
+
+#What is the mask task shan? 
+max(taskShan$shannon)
+
+taskShan
 ```
