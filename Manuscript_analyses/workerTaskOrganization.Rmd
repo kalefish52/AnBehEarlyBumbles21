@@ -7,20 +7,23 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# # multipanel single task framework plots
+# # multipanel shannon value plot
+# knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5)
+
+# # multipanel single task frameworks
 # knitr::opts_chunk$set(fig.width=3, fig.height=5) 
     
 # # multipanel nmds plot
-# knitr::opts_chunk$set(fig.width=3, fig.height=3.6) 
+# knitr::opts_chunk$set(fig.width=3, fig.height=3.6)
 
 # # multipanel counts of specialists per nest for categorical frameworks plot
-# knitr::opts_chunk$set(fig.width=3.6, fig.height=5.5) 
+# knitr::opts_chunk$set(fig.width=3.6, fig.height=5.5)
+
+# # multipanel change in shannon value plot
+# knitr::opts_chunk$set(fig.width=3, fig.height=3.5) 
 
 # # multipanel rptr plot
-# knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) 
-
-
-
+knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) 
 ```
 
 # load packages
@@ -62,6 +65,7 @@ count_time <- count_time[count_time$caste == "W",]
 #.
 
 # SHANNON VALUE
+use count_data (include workers with <3 obs as shannon = NA)
  shannon calcluated in cleanData script
 
 ## calculate shannon
@@ -149,7 +153,7 @@ count number of specialists per nest
 shannonSpecialist <- 0.6
 
 # define number of columns before behaviors in the count_data df
-skip <- 8
+skip <- 9
 # make a column for behavioral specialization
 count_data$specBehav <- NA
 count_data$specProp <- NA
@@ -205,6 +209,7 @@ specCat <- count_known %>% dplyr::group_by(specBehav) %>% dplyr::summarise(nSpec
 
 # remove unknown workers
 count_data <- count_data[!grepl("unknown", count_data$beeID),]
+count_data
 
 ####
 
@@ -263,6 +268,14 @@ count_3Time <- count_time[count_time$lazy == "notLazy",]
 ```{r}
 # use workers with >=3 behaviors only
 nrow(count_3)
+nrow(count_data)
+
+# how many individuals are perfectly speciailzed?
+nrow(count_3[count_3$shannon == 0, ])
+
+#Max shannon
+max(count_3$shannon)
+
 # make a new column for over or under 0
 count_3$shan0 <- NA
 # if shannon = 0, shan0 = 1
@@ -274,8 +287,7 @@ shanzero<-count_3 %>% filter(shan0=="1")
 #How many are perfectly specialized? 
 nrow(shanzero)
 
-#Max shannon
-max(count_3$shannon)
+
 ```
 
 Pt 1. Bees with shannon=0
@@ -366,6 +378,440 @@ model.sel(s0, s1)
 #.
 
 # -CATEGORICAL TASK FRAMEWORKS-
+
+# MOST FREQUENTLY PERFORMED TASK
+use count_3 (exclude workers with <3 obs)
+
+ Analysis based on highest number of tasks workers perform 
+
+## establish categories
+```{r}
+#filter so all bees have >= 3 behaviors (exclude lazies)
+high_behav<-count_3
+
+highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging, 
+                                 feedsbrood, pollenforaging, egglaying)
+
+hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
+
+#Sort each bee by which behavior they do the most and then assign that bee to that behavior
+BehavAssign<-hbdf %>% group_by(beeID) %>% arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
+
+#Merge back into original dataframe
+FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
+FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
+
+#add highest count to count_data
+count_data <- left_join(count_data, BehavAssign, by="beeID")
+```
+
+## body size & ovary development models
+ null models fit best
+```{r}
+#Body Size 
+hist(FinalBehavRank$size)
+head(FinalBehavRank)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+s1 <- glmer(size ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+
+model.sel(s0, s1)
+# Behavioral group not included in best model 
+
+#Ovary Resporbtion 
+hist(FinalBehavRank$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+s1 <- glmer(ovRavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(FinalBehavRank$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+s1 <- glmer(ovSavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
+
+model.sel(s0, s1)
+```
+
+## analyze counts of specialists
+ behavior alone significantly predicts number of specialists per nest
+```{r}
+# How many nests total?
+length(unique(FinalBehavRank$nestID))
+
+# How many bees are in each category? 
+paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "nectarforaging",]), "highest counts nectar collectors from ", length(unique(FinalBehavRank$nestID[FinalBehavRank$BehavAssign == "nectarforaging"])), "nests")
+
+paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "pollenforaging",]), "highest counts pollen collectors from ", length(unique(FinalBehavRank$nestID[FinalBehavRank$BehavAssign == "pollenforaging"])), "nests")
+
+paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "feedsbrood",]), "highest counts brood feeders from ", length(unique(FinalBehavRank$nestID[FinalBehavRank$BehavAssign == "feedsbrood"])), "nests")
+
+paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "egglaying",]), "highest counts egg layers from ", length(unique(FinalBehavRank$nestID[FinalBehavRank$BehavAssign == "egglaying"])), "nests")
+
+# How many specialists are in each nest?
+highcounts <- FinalBehavRank
+highcounts_nestSum <- as.data.frame(matrix(0, nrow = length(unique(highcounts$nestID)), ncol = 7))
+names(highcounts_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
+highcounts_nestSum$nestID <- unique(highcounts$nestID)
+
+highcounts$nestTYPE <- as.character(highcounts$nestTYPE)
+
+# summarize by nest
+for (i in 1:nrow(highcounts_nestSum)) {
+  for (j in 1:nrow(highcounts)) {
+    if (highcounts$nestID[j] == highcounts_nestSum$nestID[i]) {
+      highcounts_nestSum$nestTYPE[i] <- highcounts$nestTYPE[j]
+      highcounts_nestSum$natal[i] <- highcounts$natal[j]
+      if (highcounts$BehavAssign[j] == "nectarforaging") {
+        highcounts_nestSum$nf[i] <- highcounts_nestSum$nf[i] + 1
+      }
+      if (highcounts$BehavAssign[j] == "pollenforaging") {
+        highcounts_nestSum$pf[i] <- highcounts_nestSum$pf[i] + 1
+      }
+      if (highcounts$BehavAssign[j] == "feedsbrood") {
+        highcounts_nestSum$bf[i] <- highcounts_nestSum$bf[i] + 1
+      }
+      if (highcounts$BehavAssign[j] == "egglaying") {
+        highcounts_nestSum$el[i] <- highcounts_nestSum$el[i] + 1
+      }
+    }
+  }
+}
+
+# gather df to plot
+highcounts_nestSum <- highcounts_nestSum %>%
+  gather(nf, pf, bf, el, 
+         key = "behav", 
+         value = "number")
+
+highcounts_nestSum$nestTYPE <- ordered(highcounts_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+# plot it
+G1 <- ggplot(highcounts_nestSum, aes(behav, number, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
+  ggtitle("Most frequently performed task") +
+  scale_x_discrete(labels=c("el" = "Egg\nlaying", "bf" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
+G1
+
+# Does number of bees in each category per nest differ based on nest type or behavior?
+# Poisson
+ggdensity(highcounts_nestSum$number)
+qqp(highcounts_nestSum$number, "norm")
+hist(highcounts_nestSum$number)
+
+H0<-glmer(number ~ 1 + (1|natal), data=highcounts_nestSum, family=poisson)
+H1<-glmer(number~ behav + (1|natal), data=highcounts_nestSum, family=poisson)
+H2<-glmer(number~ nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
+H3<-glmer(number~ behav + nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
+H4<-glmer(number~ behav*nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
+
+model.sel(H0, H1, H2, H3, H4)
+
+mymodel <- H1
+summary(mymodel)
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
+```
+
+# PERFECTLY SPECIALIZED 
+use count_3 (exclude workers with <3 obs)
+
+## establish categories
+```{r}
+# subset to look only at perfectly specialized individuals
+perfSpec <- count_3 %>% filter(shannon=="0")
+
+perfgraph<-perfSpec %>% dplyr::select(specBehav, beeID, ovSavg)
+perfgraph <-perfgraph[complete.cases(perfgraph),]
+
+# add perfSpec to count_data
+count_data$perfSpec <- NA
+for (i in 1:nrow(count_data)) {
+  if (is.na(count_data$specProp[i])) {
+  } else if (count_data$specProp[i] == 1) {
+    count_data$perfSpec[i] <- count_data$specBehav[i] 
+    }
+}
+
+perfSpec
+```
+
+
+## body size & ovary development models
+ null models fit best
+```{r}
+#Body Size 
+hist(perfSpec$size)
+
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+hist(perfSpec$ovRavg)
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+hist(perfSpec$ovSavg)
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
+
+model.sel(s0, s1)
+```
+
+## analyze counts of specialists
+ behavior alone significantly predicts number of specialists in a nest
+```{r}
+# How many bees perform more than one task? 
+paste(nrow(perfSpec), "perfectly specialized workers")
+paste(nrow(count_data) - nrow(perfSpec), "workers perform multiple tasks")
+paste(nrow(perfSpec) / nrow(count_data) * 100, "percent perfectly specialized workers")
+paste((1 - nrow(perfSpec)) / nrow(count_data) * 100, "percent of workers perform multiple tasks")
+
+paste(nrow(perfSpec[perfSpec$specBehav == "nectarforaging",]), "perfectly specialized nectar collectors from ", length(unique(perfSpec$nestID[perfSpec$specBehav == "nectarforaging"])), "nests")
+
+paste(nrow(perfSpec[perfSpec$specBehav == "pollenforaging",]), "perfectly specialized pollen collectors ", length(unique(perfSpec$nestID[perfSpec$specBehav == "pollenforaging"])), "nests")
+
+paste(nrow(perfSpec[perfSpec$specBehav == "feedsbrood",]), "perfectly specialized brood feeders ", length(unique(perfSpec$nestID[perfSpec$specBehav == "feedsbrood"])), "nests")
+
+paste(nrow(perfSpec[perfSpec$specBehav == "egglaying",]), "perfectly specialized egg layers ", length(unique(perfSpec$nestID[perfSpec$specBehav == "egglaying"])), "nests")
+
+# How many specialists are in each nest?
+perfSpec_nestSum <- as.data.frame(matrix(0, nrow = length(unique(perfSpec$nestID)), ncol = 7))
+names(perfSpec_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
+perfSpec_nestSum$nestID <- unique(perfSpec$nestID)
+
+perfSpec$nestTYPE <- as.character(perfSpec$nestTYPE)
+
+# summarize by nest
+for (i in 1:nrow(perfSpec_nestSum)) {
+  for (j in 1:nrow(perfSpec)) {
+    if (perfSpec$nestID[j] == perfSpec_nestSum$nestID[i]) {
+      perfSpec_nestSum$nestTYPE[i] <- perfSpec$nestTYPE[j]
+      perfSpec_nestSum$natal[i] <- perfSpec$natal[j]
+      if (perfSpec$specBehav[j] == "nectarforaging") {
+        perfSpec_nestSum$nf[i] <- perfSpec_nestSum$nf[i] + 1
+      }
+      if (perfSpec$specBehav[j] == "pollenforaging") {
+        perfSpec_nestSum$pf[i] <- perfSpec_nestSum$pf[i] + 1
+      }
+      if (perfSpec$specBehav[j] == "feedsbrood") {
+        perfSpec_nestSum$bf[i] <- perfSpec_nestSum$bf[i] + 1
+      }
+      if (perfSpec$specBehav[j] == "egglaying") {
+        perfSpec_nestSum$el[i] <- perfSpec_nestSum$el[i] + 1
+      }
+    }
+  }
+}
+
+# gather df to plot
+perfSpec_nestSum <- perfSpec_nestSum %>%
+  gather(nf, pf, bf, el, 
+         key = "behav", 
+         value = "number")
+
+perfSpec_nestSum$nestTYPE <- ordered(perfSpec_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+G3 <- ggplot(perfSpec_nestSum, aes(behav, number, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
+  ggtitle("Perfect specialization") +
+  scale_x_discrete(labels=c("el" = "Egg\nlaying", "bf" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
+G3
+
+## Models 
+# Poisson
+ggdensity(perfSpec_nestSum$number)
+qqp(perfSpec_nestSum$number, "norm")
+hist(perfSpec_nestSum$number)
+
+head(perfSpec_nestSum)
+p0<-glmer(number~ 1  + (1|natal), data=perfSpec_nestSum, family=poisson)
+p1<-glmer(number~ behav + (1|natal), data=perfSpec_nestSum, family=poisson)
+p2<-glmer(number~ nestTYPE + (1|natal), data=perfSpec_nestSum, family=poisson)
+#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
+p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
+
+model.sel(p0, p1, p2, p4)
+
+mymodel <- p1
+tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
+```
+
+# SINGLE INSTANCE
+use count_3 (exclude workers with <3 obs)
+
+## establish categories
+```{r}
+# subset to look only at nonlazy individuals
+single <- count_3 
+
+# add columns for presence/absence data
+single$NF <- "no"
+single$PF <- "no"
+single$FB <- "no"
+single$EL <- "no"
+
+# go through each individual and update presence/absence data for each behavior
+for (i in 1:nrow(single)) {
+  if (single$nectarforaging[i] > 0) {
+    single$NF[i] <- "yes"
+  }
+  if (single$pollenforaging[i] > 0) {
+    single$PF[i] <- "yes"
+  }
+  if (single$feedsbrood[i] > 0) {
+    single$FB[i] <- "yes"
+  }
+  if (single$egglaying[i] > 0) {
+    single$EL[i] <- "yes"
+  }
+}
+
+count_data$NF <- NA
+count_data$PF <- NA
+count_data$FB <- NA
+count_data$EL <- NA
+
+for(i in 1:nrow(count_data)) {
+  for(j in 1:nrow(single)) {
+    if(count_data$beeID[i] == single$beeID[j]) {
+      count_data$NF[i] <- single$NF[j]
+      count_data$PF[i] <- single$PF[j]
+      count_data$FB[i] <- single$FB[j]
+      count_data$EL[i] <- single$EL[j]
+    }
+  }
+}
+```
+
+## body size & ovary development models 
+ null models fit best
+```{r}
+#Body Size 
+s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
+s1 <- glmer(size ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
+
+model.sel(s0, s1)
+
+#Ovary Resporbtion 
+s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
+s1 <- glmer(ovRavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
+
+model.sel(s0, s1)
+
+#Ovary Stage 
+s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
+s1 <- glmer(ovSavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
+
+model.sel(s0, s1)
+
+# plot model residuals
+plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+```
+
+## analyze counts of specialists
+ behavior alone significantly predicts number of specialists in a nest
+```{r}
+# print the number of bees that performed each task
+print(paste(nrow(single[single$NF == "yes",]), "single instance nectar foragers from", length(unique(single$nestID[single$NF == "yes"])), "nests"))
+print(paste(nrow(single[single$PF == "yes",]), "single instance pollen foragers from", length(unique(single$nestID[single$PF == "yes"])), "nests"))
+print(paste(nrow(single[single$FB == "yes",]), "single instance brood feeders from", length(unique(single$nestID[single$FB == "yes"])), "nests"))
+print(paste(nrow(single[single$EL == "yes",]), "single instance egg layers from", length(unique(single$nestID[single$EL == "yes"])), "nests"))
+
+print(paste(length(unique(single$nestID)), "total nests"))
+
+# How many specialists are in each nest?
+single_nestSum <- as.data.frame(matrix(0, nrow = length(unique(single$nestID)), ncol = 7))
+names(single_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
+single_nestSum$nestID <- unique(single$nestID)
+
+single$nestTYPE <- as.character(single$nestTYPE)
+
+# summarize by nest
+for (i in 1:nrow(single_nestSum)) {
+  for (j in 1:nrow(single)) {
+    if (single$nestID[j] == single_nestSum$nestID[i]) {
+      single_nestSum$nestTYPE[i] <- single$nestTYPE[j]
+      single_nestSum$natal[i] <- single$natal[j]
+      if (single$specBehav[j] == "nectarforaging") {
+        single_nestSum$nf[i] <- single_nestSum$nf[i] + 1
+      }
+      if (single$specBehav[j] == "pollenforaging") {
+        single_nestSum$pf[i] <- single_nestSum$pf[i] + 1
+      }
+      if (single$specBehav[j] == "feedsbrood") {
+        single_nestSum$bf[i] <- single_nestSum$bf[i] + 1
+      }
+      if (single$specBehav[j] == "egglaying") {
+        single_nestSum$el[i] <- single_nestSum$el[i] + 1
+      }
+    }
+  }
+}
+
+# gather df to plot
+single_nestSum <- single_nestSum %>%
+  gather(nf, pf, bf, el, 
+         key = "behav", 
+         value = "number")
+
+single_nestSum$nestTYPE <- ordered(single_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+G5 <- ggplot(single_nestSum, aes(behav, number, color = nestTYPE)) + 
+  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
+  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
+  ggtitle("Task performed at least once") +
+  scale_x_discrete(labels=c("el" = "Egg\nlaying", "bf" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
+G5
+
+## Models 
+# Poisson
+ggdensity(single_nestSum$number)
+qqp(single_nestSum$number, "norm")
+hist(single_nestSum$number)
+
+head(single_nestSum)
+p0<-glmer(number~ 1  + (1|natal), data=single_nestSum, family=poisson)
+p1<-glmer(number~ behav + (1|natal), data=single_nestSum, family=poisson)
+p2<-glmer(number~ nestTYPE + (1|natal), data=single_nestSum, family=poisson)
+#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
+p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
+
+model.sel(p0, p1, p2, p4)
+
+mymodel <- p1
+tab_model(mymodel)
+```
 
 # KMEANS
 use count_data (include workers with <3 obs)
@@ -472,6 +918,10 @@ k3 <- lmer(size ~ cluster + (1|natal) + (1|nestTYPE:nestID),
             data = count_data)
 model.sel(k2, k3)
 
+summary(k3)
+posthoc1 <- glht(k3, linfct = mcp(cluster = "Tukey"))
+summary(posthoc1)
+
 k4<-lmer(ovRavg~1+ (1|natal) + (1|nestTYPE:nestID),
             data = count_data)
 
@@ -483,8 +933,9 @@ model.sel(k4, k5)
 ## analyze counts of specialists
  cluster and nest type significantly predict number of specialists per nest
 ```{r}
-paste(nrow(count_data[count_data$cluster == "1",]), "kmeans cluster 1")
-paste(nrow(count_data[count_data$cluster == "2",]), "kmeans cluster 2")
+paste(nrow(count_data[count_data$cluster == "1",]), "kmeans cluster 1 from", length(unique(count_data$nestID[count_data$cluster == "1"])), "nests")
+
+paste(nrow(count_data[count_data$cluster == "2",]), "kmeans cluster 2 from", length(unique(count_data$nestID[count_data$cluster == "2"])), "nests")
 
 # How many specialists are in each nest?
 kdata <- count_data
@@ -524,8 +975,8 @@ G4 <- ggplot(kdata_nestSum, aes(x = cluster, y = number, color = nestTYPE)) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
   scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("K-means clustering") +
-  scale_x_discrete(labels=c("one" = "one", "two" = "two")) +
+  ggtitle("K-means categorization") +
+  scale_x_discrete(labels=c("one" = "One\n(Generalists)", "two" = "Two\n(Pollen collection)")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Cluster") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
 G4
@@ -547,6 +998,9 @@ model.sel(H0, H1, H2, H3, H4)
 mymodel <- H3
 summary(mymodel)
 tab_model(mymodel)
+
+posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc1)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
@@ -588,12 +1042,18 @@ model.sel(s0, s1)
 ## analyze counts of specialists
  behavior alone significantly predicts number of specialists per nest
 ```{r}
-paste(nrow(count_data[count_data$specBehav == "nectarforaging",]), "shannon nectar collectors")
-paste(nrow(count_data[count_data$specBehav == "pollenforaging",]), "shannon pollen collectors")
-paste(nrow(count_data[count_data$specBehav == "feedsbrood",]), "shannon brood feeders")
-paste(nrow(count_data[count_data$specBehav == "egglaying",]), "shannon egg layers")
-paste(nrow(count_data[count_data$specBehav == "generalist",]), "shannon generalists")
-paste(nrow(count_data[count_data$specBehav == "lazy",]), "shannon other")
+paste(nrow(count_data[count_data$specBehav == "nectarforaging",]), "shannon nectar collectors from", length(unique(count_data$nestID[count_data$specBehav == "nectarforaging"])), "nests")
+
+paste(nrow(count_data[count_data$specBehav == "pollenforaging",]), "shannon pollen collectors from", length(unique(count_data$nestID[count_data$specBehav == "pollenforaging"])), "nests")
+
+paste(nrow(count_data[count_data$specBehav == "feedsbrood",]), "shannon brood feeders from", length(unique(count_data$nestID[count_data$specBehav == "feedsbrood"])), "nests")
+
+paste(nrow(count_data[count_data$specBehav == "egglaying",]), "shannon egg layers from", length(unique(count_data$nestID[count_data$specBehav == "egglaying"])), "nests")
+
+paste(nrow(count_data[count_data$specBehav == "generalist",]), "shannon generalists from", length(unique(count_data$nestID[count_data$specBehav == "generalist"])), "nests")
+
+paste(nrow(count_data[count_data$specBehav == "lazy",]), "shannon other from", length(unique(count_data$nestID[count_data$specBehav == "lazy"])), "nests")
+
 paste(nrow(count_data), "total shannon categorized")
 
 # How many specialists are in each nest?
@@ -625,7 +1085,7 @@ for (i in 1:nrow(shanBehav_nestSum)) {
       if (shanBehav$specBehav[j] == "generalist") {
         shanBehav_nestSum$gen[i] <- shanBehav_nestSum$gen[i] + 1
       }
-      if (shanBehav$specBehav[j] == "other") {
+      if (shanBehav$specBehav[j] == "lazy") {
         shanBehav_nestSum$oth[i] <- shanBehav_nestSum$oth[i] + 1     
       }
     }
@@ -639,6 +1099,7 @@ shanBehav_nestSum <- shanBehav_nestSum %>%
          value = "number")
 
 shanBehav_nestSum$nestTYPE <- ordered(shanBehav_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+shanBehav_nestSum$behav <- ordered(shanBehav_nestSum$behav, levels = c("el", "bf", "nf", "pf", "gen", "oth"))
 
 # plot it
 G2 <- ggplot(shanBehav_nestSum, aes(behav, number, color = nestTYPE)) + 
@@ -646,11 +1107,13 @@ G2 <- ggplot(shanBehav_nestSum, aes(behav, number, color = nestTYPE)) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
   scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Shannon-based threshold") +
-  scale_x_discrete(labels=c("el" = "Egg\nlaying", "fb" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection", "gen" = "Generalist", "oth" = "Other")) +
+  ggtitle("Shannon-threshold categorization") +
+  scale_x_discrete(labels=c("el" = "Egg\nlaying", "bf" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection", "gen" = "Generalist", "oth" = "Other")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
 G2
+
+shanBehav_nestSum$behav <- as.character(shanBehav_nestSum$behav)
 
 # Does number of bees in each category per nest differ based on nest type or behavior?
 # Poisson
@@ -666,432 +1129,22 @@ H4<-glmer(number~ behav*nestTYPE + (1|natal), data=shanBehav_nestSum, family=poi
 
 model.sel(H0, H1, H2, H3, H4)
 
-mymodel <- H1
+mymodel <- H3
 summary(mymodel)
 tab_model(mymodel)
 
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
+G2
 
-# MOST FREQUENTLY PERFORMED TASK
-use count_3 (exclude workers with <3 obs)
+posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
+summary(posthoc1)
 
- Analysis based on highest number of tasks workers perform 
-
-## establish categories
-```{r}
-#filter so all bees have >= 3 behaviors (exclude lazies)
-high_behav<-count_3
-
-highbehav<-high_behav %>% dplyr::select(beeID, nectarforaging, 
-                                 feedsbrood, pollenforaging, egglaying)
-
-hbdf<-highbehav %>% pivot_longer(!beeID, names_to="Behavior", values_to="count")
-
-#Sort each bee by which behavior they do the most and then assign that bee to that behavior
-BehavAssign<-hbdf %>% group_by(beeID) %>% arrange(beeID, desc(count)) %>% slice_head() %>% mutate(BehavAssign=Behavior) %>% dplyr::select(beeID, BehavAssign)
-
-#Merge back into original dataframe
-FinalBehavRank<-left_join(high_behav, BehavAssign, by="beeID")
-FinalBehavRank$BehavAssign <-as.factor(FinalBehavRank$BehavAssign)
-
-#add highest count to count_data
-count_data <- left_join(count_data, BehavAssign, by="beeID")
-```
-
-## body size & ovary development models
- null models fit best
-```{r}
-#Body Size 
-hist(FinalBehavRank$size)
-head(FinalBehavRank)
-
-s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-s1 <- glmer(size ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-
-model.sel(s0, s1)
-# Behavioral group not included in best model 
-
-#Ovary Resporbtion 
-hist(FinalBehavRank$ovRavg)
-s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-s1 <- glmer(ovRavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-
-model.sel(s0, s1)
-
-#Ovary Stage 
-hist(FinalBehavRank$ovSavg)
-s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-s1 <- glmer(ovSavg ~ BehavAssign + (1|natal) + (1|nestTYPE:nestID), data = FinalBehavRank)
-
-model.sel(s0, s1)
-```
-
-## analyze counts of specialists
- behavior alone significantly predicts number of specialists per nest
-```{r}
-# How many bees are in each category? 
-paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "nectarforaging",]), "highest counts nectar collectors")
-paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "pollenforaging",]), "highest counts pollen collectors")
-paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "feedsbrood",]), "highest counts brood feeders")
-paste(nrow(FinalBehavRank[FinalBehavRank$BehavAssign == "egglaying",]), "highest counts egg layers")
-
-# How many specialists are in each nest?
-highcounts <- FinalBehavRank
-highcounts_nestSum <- as.data.frame(matrix(0, nrow = length(unique(highcounts$nestID)), ncol = 7))
-names(highcounts_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
-highcounts_nestSum$nestID <- unique(highcounts$nestID)
-
-highcounts$nestTYPE <- as.character(highcounts$nestTYPE)
-
-# summarize by nest
-for (i in 1:nrow(highcounts_nestSum)) {
-  for (j in 1:nrow(highcounts)) {
-    if (highcounts$nestID[j] == highcounts_nestSum$nestID[i]) {
-      highcounts_nestSum$nestTYPE[i] <- highcounts$nestTYPE[j]
-      highcounts_nestSum$natal[i] <- highcounts$natal[j]
-      if (highcounts$BehavAssign[j] == "nectarforaging") {
-        highcounts_nestSum$nf[i] <- highcounts_nestSum$nf[i] + 1
-      }
-      if (highcounts$BehavAssign[j] == "pollenforaging") {
-        highcounts_nestSum$pf[i] <- highcounts_nestSum$pf[i] + 1
-      }
-      if (highcounts$BehavAssign[j] == "feedsbrood") {
-        highcounts_nestSum$bf[i] <- highcounts_nestSum$bf[i] + 1
-      }
-      if (highcounts$BehavAssign[j] == "egglaying") {
-        highcounts_nestSum$el[i] <- highcounts_nestSum$el[i] + 1
-      }
-    }
-  }
-}
-
-# gather df to plot
-highcounts_nestSum <- highcounts_nestSum %>%
-  gather(nf, pf, bf, el, 
-         key = "behav", 
-         value = "number")
-
-highcounts_nestSum$nestTYPE <- ordered(highcounts_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-
-# plot it
-G1 <- ggplot(highcounts_nestSum, aes(behav, number, color = nestTYPE)) + 
-  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Most frequently performed task") +
-  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection", "pollenforaging" = "Pollen\ncollection")) +
-  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
-  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
-G1
-
-# Does number of bees in each category per nest differ based on nest type or behavior?
-# Poisson
-ggdensity(highcounts_nestSum$number)
-qqp(highcounts_nestSum$number, "norm")
-hist(highcounts_nestSum$number)
-
-H0<-glmer(number ~ 1 + (1|natal), data=highcounts_nestSum, family=poisson)
-H1<-glmer(number~ behav + (1|natal), data=highcounts_nestSum, family=poisson)
-H2<-glmer(number~ nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
-H3<-glmer(number~ behav + nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
-H4<-glmer(number~ behav*nestTYPE + (1|natal), data=highcounts_nestSum, family=poisson)
-
-model.sel(H0, H1, H2, H3, H4)
-
-mymodel <- H1
-summary(mymodel)
-tab_model(mymodel)
+posthoc2 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
+summary(posthoc2)
 
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
-
-# PERFECTLY SPECIALIZED 
-use count_3 (exclude workers with <3 obs)
-
-## establish categories
-```{r}
-# subset to look only at perfectly specialized individuals
-perfSpec <- count_3 %>% filter(shannon=="0")
-
-perfgraph<-perfSpec %>% dplyr::select(specBehav, beeID, ovSavg)
-perfgraph <-perfgraph[complete.cases(perfgraph),]
-
-# add perfSpec to count_data
-count_data$perfSpec <- NA
-for (i in 1:nrow(count_data)) {
-  if (is.na(count_data$specProp[i])) {
-  } else if (count_data$specProp[i] == 1) {
-    count_data$perfSpec[i] <- count_data$specBehav[i] 
-    }
-}
-```
-
-
-## body size & ovary development models
- null models fit best
-```{r}
-#Body Size 
-hist(perfSpec$size)
-
-s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-s1 <- glmer(size ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-
-model.sel(s0, s1)
-
-#Ovary Resporbtion 
-hist(perfSpec$ovRavg)
-s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-s1 <- glmer(ovRavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-
-model.sel(s0, s1)
-
-#Ovary Stage 
-hist(perfSpec$ovSavg)
-s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-s1 <- glmer(ovSavg ~ specBehav + (1|natal) + (1|nestTYPE:nestID), data = perfSpec)
-
-model.sel(s0, s1)
-```
-
-## analyze counts of specialists
- behavior alone significantly predicts number of specialists in a nest
-```{r}
-# How many bees perform more than one task? 
-paste(nrow(perfSpec), "perfectly specialized workers")
-paste(nrow(count_data) - nrow(perfSpec), "workers perform multiple tasks")
-paste(nrow(perfSpec) / nrow(count_data) * 100, "percent perfectly specialized workers")
-paste((1 - nrow(perfSpec)) / nrow(count_data) * 100, "percent of workers perform multiple tasks")
-
-paste(nrow(perfSpec[perfSpec$specBehav == "nectarforaging",]), "perfectly specialized nectar collectors")
-paste(nrow(perfSpec[perfSpec$specBehav == "pollenforaging",]), "perfectly specialized pollen collectors")
-paste(nrow(perfSpec[perfSpec$specBehav == "feedsbrood",]), "perfectly specialized brood feeders")
-paste(nrow(perfSpec[perfSpec$specBehav == "egglaying",]), "perfectly specialized egg layers")
-
-# How many specialists are in each nest?
-perfSpec_nestSum <- as.data.frame(matrix(0, nrow = length(unique(perfSpec$nestID)), ncol = 7))
-names(perfSpec_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
-perfSpec_nestSum$nestID <- unique(perfSpec$nestID)
-
-perfSpec$nestTYPE <- as.character(perfSpec$nestTYPE)
-
-# summarize by nest
-for (i in 1:nrow(perfSpec_nestSum)) {
-  for (j in 1:nrow(perfSpec)) {
-    if (perfSpec$nestID[j] == perfSpec_nestSum$nestID[i]) {
-      perfSpec_nestSum$nestTYPE[i] <- perfSpec$nestTYPE[j]
-      perfSpec_nestSum$natal[i] <- perfSpec$natal[j]
-      if (perfSpec$specBehav[j] == "nectarforaging") {
-        perfSpec_nestSum$nf[i] <- perfSpec_nestSum$nf[i] + 1
-      }
-      if (perfSpec$specBehav[j] == "pollenforaging") {
-        perfSpec_nestSum$pf[i] <- perfSpec_nestSum$pf[i] + 1
-      }
-      if (perfSpec$specBehav[j] == "feedsbrood") {
-        perfSpec_nestSum$bf[i] <- perfSpec_nestSum$bf[i] + 1
-      }
-      if (perfSpec$specBehav[j] == "egglaying") {
-        perfSpec_nestSum$el[i] <- perfSpec_nestSum$el[i] + 1
-      }
-    }
-  }
-}
-
-# gather df to plot
-perfSpec_nestSum <- perfSpec_nestSum %>%
-  gather(nf, pf, bf, el, 
-         key = "behav", 
-         value = "number")
-
-perfSpec_nestSum$nestTYPE <- ordered(perfSpec_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-
-G3 <- ggplot(perfSpec_nestSum, aes(behav, number, color = nestTYPE)) + 
-  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Perfect specialization") +
-  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection")) +
-  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
-  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
-G3
-
-## Models 
-# Poisson
-ggdensity(perfSpec_nestSum$number)
-qqp(perfSpec_nestSum$number, "norm")
-hist(perfSpec_nestSum$number)
-
-head(perfSpec_nestSum)
-p0<-glmer(number~ 1  + (1|natal), data=perfSpec_nestSum, family=poisson)
-p1<-glmer(number~ behav + (1|natal), data=perfSpec_nestSum, family=poisson)
-p2<-glmer(number~ nestTYPE + (1|natal), data=perfSpec_nestSum, family=poisson)
-#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
-p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
-
-model.sel(p0, p1, p2, p4)
-
-mymodel <- p1
-tab_model(mymodel)
-```
-
-# SINGLE INSTANCE
-use count_3 (exclude workers with <3 obs)
-
-## establish categories
-```{r}
-# subset to look only at nonlazy individuals
-single <- count_3 
-
-# add columns for presence/absence data
-single$NF <- "no"
-single$PF <- "no"
-single$FB <- "no"
-single$EL <- "no"
-
-# go through each individual and update presence/absence data for each behavior
-for (i in 1:nrow(single)) {
-  if (single$nectarforaging[i] > 0) {
-    single$NF[i] <- "yes"
-  }
-  if (single$pollenforaging[i] > 0) {
-    single$PF[i] <- "yes"
-  }
-  if (single$feedsbrood[i] > 0) {
-    single$FB[i] <- "yes"
-  }
-  if (single$egglaying[i] > 0) {
-    single$EL[i] <- "yes"
-  }
-}
-
-count_data$NF <- NA
-count_data$PF <- NA
-count_data$FB <- NA
-count_data$EL <- NA
-
-for(i in 1:nrow(count_data)) {
-  for(j in 1:nrow(single)) {
-    if(count_data$beeID[i] == single$beeID[j]) {
-      count_data$NF[i] <- single$NF[j]
-      count_data$PF[i] <- single$PF[j]
-      count_data$FB[i] <- single$FB[j]
-      count_data$EL[i] <- single$EL[j]
-    }
-  }
-}
-```
-
-## body size & ovary development models 
- null models fit best
-```{r}
-#Body Size 
-s0 <- glmer(size ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
-s1 <- glmer(size ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
-
-model.sel(s0, s1)
-
-#Ovary Resporbtion 
-s0 <- glmer(ovRavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
-s1 <- glmer(ovRavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
-
-model.sel(s0, s1)
-
-#Ovary Stage 
-s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = single)
-s1 <- glmer(ovSavg ~ FB + PF + NF + EL + (1|natal) + (1|nestTYPE:nestID), data = single)
-
-model.sel(s0, s1)
-
-# plot model residuals
-plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
-```
-
-## analyze counts of specialists
- behavior alone significantly predicts number of specialists in a nest
-```{r}
-# print the number of bees that performed each task
-print(paste(nrow(single[single$NF == "yes",]), "single instance nectar foragers from", length(unique(single$nestID[single$NF == "yes"])), "nests"))
-print(paste(nrow(single[single$PF == "yes",]), "single instance pollen foragers from", length(unique(single$nestID[single$PF == "yes"])), "nests"))
-print(paste(nrow(single[single$FB == "yes",]), "single instance brood feeders from", length(unique(single$nestID[single$FB == "yes"])), "nests"))
-print(paste(nrow(single[single$EL == "yes",]), "single instance egg layers from", length(unique(single$nestID[single$EL == "yes"])), "nests"))
-
-print(paste(length(unique(single$nestID)), "total nests"))
-
-# How many specialists are in each nest?
-single_nestSum <- as.data.frame(matrix(0, nrow = length(unique(single$nestID)), ncol = 7))
-names(single_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
-single_nestSum$nestID <- unique(single$nestID)
-
-single$nestTYPE <- as.character(single$nestTYPE)
-
-# summarize by nest
-for (i in 1:nrow(single_nestSum)) {
-  for (j in 1:nrow(single)) {
-    if (single$nestID[j] == single_nestSum$nestID[i]) {
-      single_nestSum$nestTYPE[i] <- single$nestTYPE[j]
-      single_nestSum$natal[i] <- single$natal[j]
-      if (single$specBehav[j] == "nectarforaging") {
-        single_nestSum$nf[i] <- single_nestSum$nf[i] + 1
-      }
-      if (single$specBehav[j] == "pollenforaging") {
-        single_nestSum$pf[i] <- single_nestSum$pf[i] + 1
-      }
-      if (single$specBehav[j] == "feedsbrood") {
-        single_nestSum$bf[i] <- single_nestSum$bf[i] + 1
-      }
-      if (single$specBehav[j] == "egglaying") {
-        single_nestSum$el[i] <- single_nestSum$el[i] + 1
-      }
-    }
-  }
-}
-
-# gather df to plot
-single_nestSum <- single_nestSum %>%
-  gather(nf, pf, bf, el, 
-         key = "behav", 
-         value = "number")
-
-single_nestSum$nestTYPE <- ordered(single_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
-
-G5 <- ggplot(single_nestSum, aes(behav, number, color = nestTYPE)) + 
-  geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
-  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
-  scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Single instance of task") +
-  scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection")) +
-  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
-  guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
-G5
-
-## Models 
-# Poisson
-ggdensity(single_nestSum$number)
-qqp(single_nestSum$number, "norm")
-hist(single_nestSum$number)
-
-head(single_nestSum)
-p0<-glmer(number~ 1  + (1|natal), data=single_nestSum, family=poisson)
-p1<-glmer(number~ behav + (1|natal), data=single_nestSum, family=poisson)
-p2<-glmer(number~ nestTYPE + (1|natal), data=single_nestSum, family=poisson)
-#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
-p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
-
-model.sel(p0, p1, p2, p4)
-
-mymodel <- p1
-tab_model(mymodel)
 ```
 
 # GRAPH COUNTS OF SPECIALISTS
@@ -1167,9 +1220,8 @@ nmds_worker$nestTYPE <- ordered(nmds_worker$nestTYPE, levels = c("NT", "QT", "NF
 
 # plot ovary stage onto nmds
 p3 <- ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = caste, color = ovSavg), size = 2.5, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, color = ovSavg), size = 2.5, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
   scale_colour_gradient(low = "yellow", high = "blue") + 
-  scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2.5) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.3, 1.3)) +
   labs(shape = "Caste", color = "Ovary stage") +
@@ -1186,9 +1238,8 @@ ggsave("../figures/eggOVARY.jpg")
 
 # plot body size onto nmds
 p4 <- ggplot() + 
-  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = caste, color = size), size = 2.5, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
+  geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, color = size), size = 2.5, position = position_jitter(width=0.05, height=0.05), alpha = 0.7) + 
   scale_colour_gradient(low = "yellow", high = "red") + 
-  scale_shape_manual(values = c(21, 16), labels = c("Queen", "Worker")) +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2.5) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.3, 1.3)) +
   labs(shape = "Caste", color = "Body size") +
@@ -1208,7 +1259,9 @@ nmds_data$perfSpec <- ordered(nmds_data$specBehav, levels = c("egglaying", "feed
 nmds_data$BehavAssign <- ordered(nmds_data$BehavAssign, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
 nmds_data$cluster <- as.factor(nmds_data$cluster)
 nmds_data
-behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+#behav_scores$behav <- ordered(behav_scores$behav, levels = c("egglaying", "feedsbrood", "nectarforaging", "pollenforaging", "generalist"))
+
+behav_scores
 
 #add highest counts behavAssign to nmds
 nmds_data$BehavAssign <- NA
@@ -1218,17 +1271,17 @@ nmds_data$BehavAssign <- colnames(nmds_data[nmds_data$nBehavs > 0, c("egglaying"
 p2 <- ggplot() + 
   geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = BehavAssign, fill = specBehav), 
              size = 2.5, position = position_jitter(width=0.05, height=0.05)) + 
-  scale_shape_manual(values = c(25, 24, 21), 
-                     labels = c("1 - Generalist", "2 - Resource collection")) +
-  scale_fill_manual(values = alpha(c("#7CAE00", "#F8766D", "#FFFFFF", "#00BFC4"), 0.5), 
+  scale_shape_manual(values = c(21, 25), 
+                     labels = c("1 - Generalist", "2 - Pollen collection")) +
+  scale_fill_manual(values = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "#FFFFFF"), 0.5), 
                     labels = c("Egg laying", "Brood feeding", "Nectar collection", "Generalist")) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"), 
                      labels = c("Egg laying", "Brood feeding", "Nectar collection", "Pollen collection"))  +
-  geom_circle(data = as.data.frame(matrix(data = c(0.53, 0.84), nrow = 1)), # brood feeding 
+  geom_circle(data = as.data.frame(matrix(data = c(0.53, 0.8), nrow = 1)), # brood feeding 
               aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
-  geom_circle(data = as.data.frame(matrix(data = c(-1.2, 0.2), nrow = 1)), # nectar collection
+  geom_circle(data = as.data.frame(matrix(data = c(-1.2, 0.25), nrow = 1)), # nectar collection
               aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
-  geom_circle(data = as.data.frame(matrix(data = c(1.43, -0.92), nrow = 1)), # egg laying
+  geom_circle(data = as.data.frame(matrix(data = c(1.4, -0.95), nrow = 1)), # egg laying
               aes(x0 = V1, y0 = V2, r = 0.13), color = "gray") +
   geom_text(data=behav_scores, aes(x=NMDS1, y=NMDS2, label=behav), size = 2.5) +
   coord_cartesian(xlim=c(-1.5, 1.5), ylim=c(-1.3, 1.3)) +
@@ -1331,14 +1384,12 @@ ggsave("../figures/shannonBeeTime.jpg", width=4.5, height=6.5)
 # look at how many bees it's actually plotting here -- ~10 per nestTYPE
 print(paste(nrow(count_time[!is.na(count_time$shanDist),]), "known bees have over the threshold number of behaviors at both the early and late timepoints, and will therefore be included in shannon distance analyses", sep = " "))
 
-nonNA_time <- count_time[!is.na(count_time$shannon),] 
-print(paste(nrow(nonNA_time[nonNA_time$timepoint == "early",]), "early bees that meet the shannon threshold", sep = " "))
-print(paste(nrow(nonNA_time[nonNA_time$timepoint == "late",]), "late bees that meet the shannon threshold", sep = " "))
+count_3Time <- count_time[!is.na(count_time$shannon),] 
+print(paste(nrow(count_3Time[count_3Time$timepoint == "early",]), "early bees that meet the shannon threshold", sep = " "))
+print(paste(nrow(count_3Time[count_3Time$timepoint == "late",]), "late bees that meet the shannon threshold", sep = " "))
 
 count_time[!is.na(count_time$shanDist),]
-nonNA_time
-
-count_3Time <- count_time[count_time$nBehav >= 3,]
+count_3Time
 ```
 
 ## average timepoint models
@@ -1360,15 +1411,15 @@ hist(count_3Time$shannon)
 count_3Time
 
 # model 0 vs. >0 shannon values
-ps1 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps1 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
-ps4 <- glmer(shan0 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps4 <- glmer(shan0 ~ timepoint*nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
-ps2 <- glmer(shan0 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps2 <- glmer(shan0 ~ timepoint + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
-ps3 <- glmer(shan0 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps3 <- glmer(shan0 ~ nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
-ps0 <- glmer(shan0 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps0 <- glmer(shan0 ~ 1 + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
 
 model.sel(ps0, ps1, ps2, ps3, ps4)
@@ -1388,21 +1439,22 @@ Pt. 2: timepoint significantly predicts degree of specialization
 ```{r}
 # make a new column that contains only shannon for bees with shannon > 0
 count_3Time$shan1 <- NA
+count_3Time
 count_3Time$shan1[count_3Time$shannon > 0] <- count_3Time$shannon[count_3Time$shannon > 0]
 # it's mostly normal  - i think so!
 hist(count_3Time$shan1)
 qqp(count_3Time$shan1, "norm")
 
 # model >0 shannon values
-ps1 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps1 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
-ps4 <- glmer(shan1 ~ timepoint*nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps4 <- glmer(shan1 ~ timepoint*nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
-ps2 <- glmer(shan1 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps2 <- glmer(shan1 ~ timepoint + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
-ps3 <- glmer(shan1 ~ nestTYPE + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps3 <- glmer(shan1 ~ nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
-ps0 <- glmer(shan1 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
+ps0 <- glmer(shan1 ~ 1 + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
 
 model.sel(ps0, ps1, ps2, ps3, ps4)
@@ -1563,9 +1615,8 @@ namesbeesfilt<-as.list(beestime)
 rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
 
 rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
-
-#pivot longer for graphs :) 
-# rpt_graphs<-rpttime %>% pivot_longer(!c(nestID, nestTYPE, beeID, timepoint), names_to="Behavior", values_to="Counts")
+nrow(count_3Time)
+count_3Time
 ```
 
 ## run rptr analyses
