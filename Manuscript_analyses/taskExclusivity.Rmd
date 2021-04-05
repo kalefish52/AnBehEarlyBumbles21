@@ -37,7 +37,7 @@ taskShan
 ```
 
 # behavior & nest type models
- glmms on pooled shannon across nestTYPEs
+ full model significant (intx between behavior and nest type + number of behaviors)
 ```{r}
 # much closer to normal than bee shannons, maybe okay to do a single model rather than two-part? I think so 
 ggdensity(taskShan$shannon)
@@ -66,6 +66,7 @@ model.sel(ps0, ps1, ps2, ps3, ps4, ps5, ps6, ps7, ps8)
 
 mymodel <- ps1
 summary(mymodel)
+tab_model(mymodel)
 
 posthoc1 <- glht(mymodel, linfct = mcp(nestTYPE = "Tukey"))
 summary(posthoc1)
@@ -76,5 +77,4 @@ summary(posthoc2)
 # plot model residuals
 plot(fitted(mymodel), residuals(mymodel), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
