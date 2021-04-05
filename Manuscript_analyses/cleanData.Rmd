@@ -7,12 +7,8 @@ output:
     code_folding: "hide"
 ---
 
-# seup figure size
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) # use only to create multipanel shannon task plot
-#knitr::opts_chunk$set(fig.width=2.5, fig.height=4.5) # use only to create multipanel shannon bee plot
-# knitr::opts_chunk$set(fig.width=3, fig.height=3.5) # use only to create multipanel change in shannon plot
 ```
 # Load Packages
 ```{r}
@@ -1757,7 +1753,6 @@ notLazyBFers
 
 # look at all brood feeders, including lazy bees
 allBFers <- count_data[count_data$feedsbrood > 0,]
-allBFers
 
 # look at body size distributions
 workers <- count_data[count_data$caste == "W",]
