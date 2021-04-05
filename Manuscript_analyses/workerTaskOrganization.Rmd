@@ -252,11 +252,16 @@ ggplot(nSpec, aes(nBeesPerNest, specBehav)) +
 ggsave("../figures/nSpecialists.jpg")
 ```
 
+## make count_3 dfs
+```{r}
+count_3 <- count_data[count_data$lazy == "notLazy",]
+count_3Time <- count_time[count_time$lazy == "notLazy",]
+```
+
 ## nest type models
  Two part model: How specialized are individuals? 
 ```{r}
 # use workers with >=3 behaviors only
-
 nrow(count_3)
 # make a new column for over or under 0
 count_3$shan0 <- NA
@@ -356,12 +361,6 @@ s0 <- glmer(ovSavg ~ 1 + (1|natal) + (1|nestTYPE:nestID), data = count_3)
 s1 <- glmer(ovSavg ~ shannon + (1|natal) + (1|nestTYPE:nestID), data = count_3)
 
 model.sel(s0, s1)
-```
-
-## make count_3 dfs
-```{r}
-count_3 <- count_data[count_data$lazy == "notLazy",]
-count_3Time <- count_time[count_time$lazy == "notLazy",]
 ```
 
 #.
@@ -492,6 +491,7 @@ kdata <- count_data
 kdata_nestSum <- as.data.frame(matrix(0, nrow = length(unique(kdata$nestID)), ncol = 5))
 names(kdata_nestSum) <- c("nestTYPE", "natal", "nestID", "one", "two")
 kdata_nestSum$nestID <- unique(kdata$nestID)
+kdata$nestTYPE <- as.character(kdata$nestTYPE)
 
 # summarize by nest
 for (i in 1:nrow(kdata_nestSum)) {
@@ -516,14 +516,17 @@ kdata_nestSum <- kdata_nestSum %>%
          value = "number")
 
 # plot it
-G4 <- ggplot(kdata_nestSum, aes(cluster, number, color = nestTYPE)) + 
+
+kdata_nestSum$nestTYPE <- ordered(kdata_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
+G4 <- ggplot(kdata_nestSum, aes(x = cluster, y = number, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
   scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Most frequently performed task") +
-  scale_x_discrete(labels=c("el" = "Egg\nlaying", "fb" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection", "gen" = "Generalist", "oth" = "Other")) +
-  labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
+  ggtitle("K-means clustering") +
+  scale_x_discrete(labels=c("one" = "one", "two" = "two")) +
+  labs(color="Social configuration", y = "Number of individuals per nest", x = "Cluster") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
 G4
 
@@ -599,6 +602,8 @@ shanBehav_nestSum <- as.data.frame(matrix(0, nrow = length(unique(shanBehav$nest
 names(shanBehav_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el", "gen", "oth")
 shanBehav_nestSum$nestID <- unique(shanBehav$nestID)
 
+shanBehav$nestTYPE <- as.character(shanBehav$nestTYPE)
+
 # summarize by nest
 for (i in 1:nrow(shanBehav_nestSum)) {
   for (j in 1:nrow(shanBehav)) {
@@ -633,13 +638,15 @@ shanBehav_nestSum <- shanBehav_nestSum %>%
          key = "behav", 
          value = "number")
 
+shanBehav_nestSum$nestTYPE <- ordered(shanBehav_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
 # plot it
 G2 <- ggplot(shanBehav_nestSum, aes(behav, number, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
   scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Most frequently performed task") +
+  ggtitle("Shannon-based threshold") +
   scale_x_discrete(labels=c("el" = "Egg\nlaying", "fb" = "Brood\nfeeding", "nf" = "Nectar\ncollection", "pf" = "Pollen\ncollection", "gen" = "Generalist", "oth" = "Other")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
@@ -738,6 +745,8 @@ highcounts_nestSum <- as.data.frame(matrix(0, nrow = length(unique(highcounts$ne
 names(highcounts_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
 highcounts_nestSum$nestID <- unique(highcounts$nestID)
 
+highcounts$nestTYPE <- as.character(highcounts$nestTYPE)
+
 # summarize by nest
 for (i in 1:nrow(highcounts_nestSum)) {
   for (j in 1:nrow(highcounts)) {
@@ -765,6 +774,8 @@ highcounts_nestSum <- highcounts_nestSum %>%
   gather(nf, pf, bf, el, 
          key = "behav", 
          value = "number")
+
+highcounts_nestSum$nestTYPE <- ordered(highcounts_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
 # plot it
 G1 <- ggplot(highcounts_nestSum, aes(behav, number, color = nestTYPE)) + 
@@ -869,6 +880,8 @@ perfSpec_nestSum <- as.data.frame(matrix(0, nrow = length(unique(perfSpec$nestID
 names(perfSpec_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
 perfSpec_nestSum$nestID <- unique(perfSpec$nestID)
 
+perfSpec$nestTYPE <- as.character(perfSpec$nestTYPE)
+
 # summarize by nest
 for (i in 1:nrow(perfSpec_nestSum)) {
   for (j in 1:nrow(perfSpec)) {
@@ -897,6 +910,8 @@ perfSpec_nestSum <- perfSpec_nestSum %>%
          key = "behav", 
          value = "number")
 
+perfSpec_nestSum$nestTYPE <- ordered(perfSpec_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
 G3 <- ggplot(perfSpec_nestSum, aes(behav, number, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
@@ -918,10 +933,10 @@ head(perfSpec_nestSum)
 p0<-glmer(number~ 1  + (1|natal), data=perfSpec_nestSum, family=poisson)
 p1<-glmer(number~ behav + (1|natal), data=perfSpec_nestSum, family=poisson)
 p2<-glmer(number~ nestTYPE + (1|natal), data=perfSpec_nestSum, family=poisson)
-p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
+#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
 p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=perfSpec_nestSum, family=poisson)
 
-model.sel(p0, p1, p2, p3, p4)
+model.sel(p0, p1, p2, p4)
 
 mymodel <- p1
 tab_model(mymodel)
@@ -1017,6 +1032,8 @@ single_nestSum <- as.data.frame(matrix(0, nrow = length(unique(single$nestID)), 
 names(single_nestSum) <- c("nestTYPE", "natal", "nestID", "nf", "pf", "bf", "el")
 single_nestSum$nestID <- unique(single$nestID)
 
+single$nestTYPE <- as.character(single$nestTYPE)
+
 # summarize by nest
 for (i in 1:nrow(single_nestSum)) {
   for (j in 1:nrow(single)) {
@@ -1045,12 +1062,14 @@ single_nestSum <- single_nestSum %>%
          key = "behav", 
          value = "number")
 
+single_nestSum$nestTYPE <- ordered(single_nestSum$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
+
 G5 <- ggplot(single_nestSum, aes(behav, number, color = nestTYPE)) + 
   geom_point(position = position_jitter(width=.2, height=0.2), alpha = 0.7) +
   scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
   stat_summary(fun = mean, geom = "point", size = 4, shape = 21, aes(fill = nestTYPE), color = "black") +
   scale_fill_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99")) +
-  ggtitle("Perfect specialization") +
+  ggtitle("Single instance of task") +
   scale_x_discrete(labels=c("egglaying" = "Egg\nlaying", "feedsbrood" = "Brood\nfeeding", "nectarforaging" = "Nectar\ncollection")) +
   labs(color="Social configuration", y = "Number of individuals per nest", x = "Task") +
   guides(fill=FALSE, color = guide_legend(override.aes = list(size = 5)))
@@ -1066,10 +1085,10 @@ head(single_nestSum)
 p0<-glmer(number~ 1  + (1|natal), data=single_nestSum, family=poisson)
 p1<-glmer(number~ behav + (1|natal), data=single_nestSum, family=poisson)
 p2<-glmer(number~ nestTYPE + (1|natal), data=single_nestSum, family=poisson)
-p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
+#p3<-glmer(number~ behav + nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
 p4<-glmer(number~ behav*nestTYPE  + (1|natal), data=single_nestSum, family=poisson)
 
-model.sel(p0, p1, p2, p3, p4)
+model.sel(p0, p1, p2, p4)
 
 mymodel <- p1
 tab_model(mymodel)
@@ -1200,8 +1219,8 @@ p2 <- ggplot() +
   geom_point(data=nmds_data, aes(x=NMDS1, y=NMDS2, shape = cluster, color = BehavAssign, fill = specBehav), 
              size = 2.5, position = position_jitter(width=0.05, height=0.05)) + 
   scale_shape_manual(values = c(25, 24, 21), 
-                     labels = c("3 - Resource collection", "2 - Egg laying", "1 - Generalist")) +
-  scale_fill_manual(values = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "white"), 0.5), 
+                     labels = c("1 - Generalist", "2 - Resource collection")) +
+  scale_fill_manual(values = alpha(c("#7CAE00", "#F8766D", "#FFFFFF", "#00BFC4"), 0.5), 
                     labels = c("Egg laying", "Brood feeding", "Nectar collection", "Generalist")) +
   scale_color_manual(values = c("#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"), 
                      labels = c("Egg laying", "Brood feeding", "Nectar collection", "Pollen collection"))  +
@@ -1217,7 +1236,7 @@ p2 <- ggplot() +
   theme(text = element_text(size = 8)) +
   guides(color = guide_legend(override.aes = list(shape = 22, size = 5)), 
          fill = guide_legend(override.aes = list(shape = 22, size = 5, 
-                                                 colors = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "grey88"), 0.4))))
+                                                 fill = alpha(c("#F8766D", "#7CAE00", "#00BFC4", "#FFFFFF"), 0.4))))
 
 p2
 ggsave("../figures/nmdsFrameworks.jpg")
