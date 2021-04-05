@@ -909,7 +909,7 @@ behav_scores$behav <- c("Brood feeding", "Nectar collection", "Pollen collection
 
 # merge bee NMDS info into nmds_data
 nmds_scores <- as.data.frame(scores(nmds_scores))
-nmds_data <- cbind(count_kmeans, nmds_scores)
+nmds_data <- cbind(count_3, nmds_scores)
 
 nmds_data$nestTYPE <- ordered(nmds_data$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
@@ -929,7 +929,7 @@ ggsave("../figures/nmdsAll.jpg")
 ## plot body size & ovary stage onto nmds
 ```{r}
 # # we only want known bees with >=3 observations (unknown bees and bees <3 obs have NA shannon)
-nmds_worker <- count_kmeans[!is.na(count_kmeans$shannon),]
+nmds_worker <- count_3
 # 
 # # make matrix of only behavior counts for all timepoints
 nmds_wM <- as.matrix(nmds_worker[, c("feedsbrood", "nectarforaging", "pollenforaging", "egglaying")]) 
