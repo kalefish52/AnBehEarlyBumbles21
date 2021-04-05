@@ -1710,7 +1710,6 @@ count_time<-count_scaled
 
 #.
 #.
-#.
 
 # Calculate Shannon Indices
 
@@ -2285,67 +2284,66 @@ ggsave("../figures/nSpecialistsTIME.jpg")
 
 # .
 # .
-# .
 
 # Calculate Proportions
 ## convert count_bees to proportions
 write prop_bees
 ```{r}
-# remove unidentified bees and bees with fewer than threshold number of observations (they have NA shannon values)
-count_bees <- count_data[!is.na(count_data$shannon),]
-
-# rename to prop_bees to describe more accurately
-prop_bees <- count_bees
-
-# for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
-for (i in 1:nrow(prop_bees)) {
-  prop_bees$nectarforaging[i] <- prop_bees$nectarforaging[i] / prop_bees$nBehavs[i]
-  prop_bees$pollenforaging[i] <- prop_bees$pollenforaging[i] / prop_bees$nBehavs[i]
-  prop_bees$feedsbrood[i] <- prop_bees$feedsbrood[i] / prop_bees$nBehavs[i]
-  prop_bees$egglaying[i] <- prop_bees$egglaying[i] / prop_bees$nBehavs[i]
-  prop_bees$allforaging[i] <- prop_bees$allforaging[i] / prop_bees$nBehavs[i]
-}
-
-# save for later analyses
-write.csv(prop_bees, "../Data/filtData/prop_bees.csv")
-
-prop_bees
-prop_gen <- prop_bees[prop_bees$specBehav == "generalist", c("beeID", "nectarforaging", "feedsbrood", "pollenforaging", "egglaying", "nBehavs", "shannon", "specBehav")]
-max(prop_gen$nectarforaging)
-max(prop_gen$pollenforaging)
-max(prop_gen$feedsbrood)
-max(prop_gen$egglaying)
-
-min(prop_gen$nectarforaging[prop_gen$nectarforaging > 0])
-min(prop_gen$pollenforaging[prop_gen$pollenforaging > 0])
-min(prop_gen$feedsbrood[prop_gen$feedsbrood > 0])
-min(prop_gen$egglaying[prop_gen$egglaying > 0])
+# # remove unidentified bees and bees with fewer than threshold number of observations (they have NA shannon values)
+# count_bees <- count_data[!is.na(count_data$shannon),]
+# 
+# # rename to prop_bees to describe more accurately
+# prop_bees <- count_bees
+# 
+# # for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
+# for (i in 1:nrow(prop_bees)) {
+#   prop_bees$nectarforaging[i] <- prop_bees$nectarforaging[i] / prop_bees$nBehavs[i]
+#   prop_bees$pollenforaging[i] <- prop_bees$pollenforaging[i] / prop_bees$nBehavs[i]
+#   prop_bees$feedsbrood[i] <- prop_bees$feedsbrood[i] / prop_bees$nBehavs[i]
+#   prop_bees$egglaying[i] <- prop_bees$egglaying[i] / prop_bees$nBehavs[i]
+#   prop_bees$allforaging[i] <- prop_bees$allforaging[i] / prop_bees$nBehavs[i]
+# }
+# 
+# # save for later analyses
+# write.csv(prop_bees, "../Data/filtData/prop_bees.csv")
+# 
+# prop_bees
+# prop_gen <- prop_bees[prop_bees$specBehav == "generalist", c("beeID", "nectarforaging", "feedsbrood", "pollenforaging", "egglaying", "nBehavs", "shannon", "specBehav")]
+# max(prop_gen$nectarforaging)
+# max(prop_gen$pollenforaging)
+# max(prop_gen$feedsbrood)
+# max(prop_gen$egglaying)
+# 
+# min(prop_gen$nectarforaging[prop_gen$nectarforaging > 0])
+# min(prop_gen$pollenforaging[prop_gen$pollenforaging > 0])
+# min(prop_gen$feedsbrood[prop_gen$feedsbrood > 0])
+# min(prop_gen$egglaying[prop_gen$egglaying > 0])
 ```
 ## convert count_beesTime to proportions
 write prop_beesTime
 ```{r}
-# remove unidentified bees and bees with fewer than threshold number of observations (they have NA shannon values)
-count_beesTime <- count_time[is.na(count_time$shannon),]
-
-# rename to prop_bees to describe more accurately
-prop_beesTime <- count_beesTime
-
-# for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
-for (i in 1:nrow(prop_beesTime)) {
-  prop_beesTime$nectarforaging[i] <- prop_beesTime$nectarforaging[i] / prop_beesTime$nBehavs[i]
-  prop_beesTime$pollenforaging[i] <- prop_beesTime$pollenforaging[i] / prop_beesTime$nBehavs[i]
-  prop_beesTime$feedsbrood[i] <- prop_beesTime$feedsbrood[i] / prop_beesTime$nBehavs[i]
-  prop_beesTime$allforaging[i] <- prop_beesTime$allforaging[i] / prop_beesTime$allforaging[i]
-
-}
-
-# save for later analyses
-write.csv(prop_beesTime, "../Data/filtData/prop_beesTime.csv")
+# # remove unidentified bees and bees with fewer than threshold number of observations (they have NA shannon values)
+# count_beesTime <- count_time[is.na(count_time$shannon),]
+# 
+# # rename to prop_bees to describe more accurately
+# prop_beesTime <- count_beesTime
+# 
+# # for each bee, rewrite the counts as the count of a given behavior divided by total number of behaviors carried out by that bee
+# for (i in 1:nrow(prop_beesTime)) {
+#   prop_beesTime$nectarforaging[i] <- prop_beesTime$nectarforaging[i] / prop_beesTime$nBehavs[i]
+#   prop_beesTime$pollenforaging[i] <- prop_beesTime$pollenforaging[i] / prop_beesTime$nBehavs[i]
+#   prop_beesTime$feedsbrood[i] <- prop_beesTime$feedsbrood[i] / prop_beesTime$nBehavs[i]
+#   prop_beesTime$allforaging[i] <- prop_beesTime$allforaging[i] / prop_beesTime$allforaging[i]
+# 
+# }
+# 
+# # save for later analyses
+# write.csv(prop_beesTime, "../Data/filtData/prop_beesTime.csv")
 ```
 
 #.
 #.
-#.
+
 # Random extras
 ```{r}
 # summarize the total number of observations
