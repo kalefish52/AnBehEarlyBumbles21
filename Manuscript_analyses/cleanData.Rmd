@@ -1738,10 +1738,6 @@ count_data %>% dplyr::select(nestID, egglaying) %>% group_by(nestID) %>% mutate(
   dplyr::select(nestID, sum) %>% unique() %>% ungroup() %>% 
   mutate(avg=mean(sum)) %>% mutate(se=sd(sum)/43)
 
-
-# check number of bees in count_time analyses
-count_time[!is.na(count_time$shanDist),] %>% nrow()
-
 # check that count_scaled proportions are similar across nests
 sumNests <- count_data %>% dplyr::group_by(nestID) %>% dplyr::summarise(nectarforaging = sum(nectarforaging),
                                                              pollenforaging = sum(pollenforaging),
@@ -1771,7 +1767,6 @@ hist(workers$size, binsize = 0.1)
 
 min(workers$size, na.rm = TRUE)
 max(workers$size, na.rm = TRUE)
-
 ```
 
 ```{r}
