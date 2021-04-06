@@ -275,6 +275,7 @@ videos_data$hourID <- sapply(strsplit(videos_data$obsID, "\t"),
                             x[4]
                             } )
 ```
+
 subset data to only include nests and behaviors of interest for analyses
 ```{r}
 # remove unusable nests from master_data first, then subset other dataframes to include only those nests we want to keep
@@ -391,6 +392,7 @@ egglaying_data$nestTYPE <- substr(egglaying_data$nestID, start = 1, stop = 2)
 ovary_data$nestTYPE <- substr(ovary_data$nestID, start = 1, stop = 2)
 size_data$nestTYPE <- substr(size_data$nestID, start = 1, stop = 2)
 ```
+
 ## remove bad observations
 remove foraging events less than 10 seconds long (poop trips) and remove nest video data after first 5 minutes (errors)
 ```{r}
@@ -578,8 +580,8 @@ for (i in 1:nrow(obs_data)) {
 }
 ```
 
-## make count_data df with counts of each behavior observed for each bee
-output df with each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values - all bees
+## make count_data
+output df with counts of each behavior observed for each bee: each bee as a single row, behaviors as columns, count of frequency of each behavior per bee as values - all bees
 ```{r}
 # collapse the dataframe to count the number of instances doing each behavior
   # this outputs a new dataframe with columns nestID, nestTYPE, beeID, caste, natal, nectarforaging, feedsbrood, pollenforaging 
@@ -617,6 +619,7 @@ count_data <- count_data[ , !names(count_data) %in% c("NA")]
 count_data[c("nectarforaging", "pollenforaging", "feedsbrood")] [is.na(count_data[c("nectarforaging", "pollenforaging", "feedsbrood")])] <- 0
 count_data
 ```
+
 ## add egg laying data to count_data
 ```{r}
 # make new column in count_data to include egglaying
@@ -642,6 +645,7 @@ if (nrow(count_data) - nrow(unknownBees) == nrow(masterBees)) {
   print(paste("All bees are not properly accounted for. There are", nrow(count_data), "bees accounted for, but the master datasheet has", nrow(masterBees), "bees", sep = " "))
 }
 ```
+
 ## add body size data to count_data
 ```{r}
 count_data$size <- NA
@@ -654,6 +658,7 @@ for (i in 1:nrow(count_data)) {
 }
 count_data
 ```
+
 ## add ovary development data to count_data (workers only)
 ```{r}
 # OVARY LENGTH - missing lots of values
@@ -778,7 +783,8 @@ for (i in 1:nrow(count_data)) {
 
 count_data
 ```
-## add number of bees and queen status to count_data
+
+## #####add number of bees and queen status to count_data
 ```{r}
 # first add queen factor
 count_data$queen <- NA
@@ -806,9 +812,11 @@ count_data[count_data$nestTYPE == "NT", "nBees"] <- 3
 count_data
 ```
 
+#.
+
 # Visualize Data
 
-## graph the number of observations per camera type per nest 
+## number of observations per camera type per nest 
 These files are updated as more video observations are done. Video observations are performed by many different observers. Check how many observations have been recorded for each project for foraging and nest, at the two different time points. 
 ```{r}
 # summarize the data to look at the total number of observations per nest
@@ -831,7 +839,7 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=Observations, fill=camID)) +
 sumsTYPE
 sumsTOTAL
 ```
-## graph the number of observations per behavior per nest
+## number of observations per behavior per nest
 ```{r}
 # graph the number of behaviors we have per nest
 data_sum <- count_data %>% dplyr::select(nestID, nestTYPE, nectarforaging, pollenforaging, feedsbrood, egglaying) %>% arrange(nestID)
@@ -866,7 +874,6 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y=pollenforaging, fill=nestTYPE)) +
 
 # summarize avg number of behaviors for each nestTYPE
 # first summarize by nestID
-data_sum
 sumBehav <- ddply(sumsTYPE, 
                 c("nestID", "nestTYPE"), 
                 summarise,
@@ -907,7 +914,7 @@ sumFB
 sumEL
 
 ```
-## calculate and graph total duration of video watched per nest
+## duration of video watched per nest
 ```{r}
 # select only the obsID, nestID, and totalLen columns
 # subset to only the unique combinations (ie. remove duplicate videos so we don't count more time than we watched)
@@ -939,7 +946,6 @@ for (i in 1:length(unique(totalLen_data$nestID))) {
   totalSum <- sum(sub_data$totalLen)                                           # sum the video duration of all videos
   camDur <- rbind(camDur, c(sub_data$nestID[1], sub_data$nestTYPE[1], forSum, nestSum, totalSum))    # add the sum totals to the camDur df
 }
-camDur
 
 # remove NA row initially created
 camDur <- camDur[2:nrow(camDur),]
@@ -961,7 +967,6 @@ for (i in 1:nrow(camDur)) {
 
 # check to see how much video was watched for each nest and for each treatment
 # must be equal + ratio must be 1 to compare
-camDur
 camDur <- camDur[order(camDur$nestID),]
 
 # graph total duration of video watched for each nestID
@@ -1021,9 +1026,7 @@ for (i in 1:nrow(camDur)) {
   print(paste(camDur$nestID[i], ": we watched a total of", round(camDur$nestLen[i]/60/60, digits = 1), "hours of NEST and", round(camDur$forLen[i]/60/60, digits = 1), "hours of FOR", sep = " "))
 }
 
-camDur
 sumVideo <- camDur
-sumVideo
 
 meanFor <- mean(camDur$forLen)
 semFor <- sd(camDur$forLen)/sqrt(length(camDur$forLen))
@@ -1032,18 +1035,16 @@ semNest <- sd(camDur$nestLen)/sqrt(length(camDur$nestLen))
 meanTotal <- mean(camDur$totalLen)
 semTotal <- sd(camDur$totalLen)/sqrt(length(camDur$totalLen))
 
-meanFor/60/60
-semFor/60/60
-meanNest/60/60
-semNest/60/60
-meanTotal/60/60
-semTotal
+# summarize how much we watched
+paste("we watched an average of ", meanFor/60/60, " +/- ", semFor/60/60, " s.e.m. hours of foraging video")
+paste("we watched an average of ", meanNest/60/60, " +/- ", semNest/60/60, " s.e.m. hours of nest video")
+paste("we watched an average of ", meanTotal/60/60, " +/- ", semTotal/60/60, " s.e.m. hours of video overall")
 ```
-## calculate and graph total duration of video watched at each of the two timepoints (late and early) per nest
+
+## duration of video watched at each of the two timepoints (late and early) per nest
 ```{r}
 # rename it so i can manipulate from here
 totalLen_time <- totalLen_data
-totalLen_time
 
 # format date as date to do math on it
 totalLen_time$dateID <- as.Date(totalLen_time$dateID, "%Y%m%d")
@@ -1054,7 +1055,6 @@ totalLen_time$timepoint <- NA
 # sort by nestID, then dateID
 totalLen_time <- totalLen_time[order(totalLen_time$dateID),]
 totalLen_time <- totalLen_time[order(totalLen_time$nestID),]
-totalLen_time
 
 # make empty early df
 early_data <- data.frame(matrix(NA, nrow = 0, ncol = ncol(totalLen_time)))
@@ -1090,7 +1090,7 @@ for(i in 1:length(unique(totalLen_time$nestID))) {
 early_data$timepoint <- "early"
 late_data$timepoint <- "late"
 totalLen_time <- rbind(early_data, late_data)
-totalLen_time
+
 # create empty dataframe to put length into
 camDurTime <- data.frame(nestID = NA,
                       nestTYPE = NA,
@@ -1098,6 +1098,7 @@ camDurTime <- data.frame(nestID = NA,
                       late_forSum = NA,
                       early_nestSum = NA,
                       late_nestSum = NA)
+
 # for each unique nest, subset the data to look at one nest at a time. then split out foraging and nest videos
 for (i in 1:length(unique(totalLen_time$nestID))) {
   sub_data <- subset(totalLen_time, nestID == unique(totalLen_time$nestID)[i])       # subset to look at a single nest
@@ -1118,7 +1119,6 @@ for (i in 1:length(unique(totalLen_time$nestID))) {
 
 # remove NA row initially created
 camDurTime <- camDurTime[2:nrow(camDurTime),]
-camDurTime
 
 # combine with camDur df and save for future analyses
 camDur$earlyLen <- NA
@@ -1204,7 +1204,11 @@ ggplot(sumsTYPE, aes(x=nestTYPE, y = length, fill = videoType)) +
 ```
 
 
-## split count data by timepoint
+#.
+
+# Filter data & Scale to number of behaviors in each nest
+
+## split count data by time point
 obs_time and count_time have same format as obs_data and count_data but data split out by timepoint (early/late), excluding egg laying data
 ```{r}
 # rename to clarify that this will be time-related
@@ -1283,7 +1287,7 @@ count_time <- count_time %>%
   pivot_wider(id_cols = c("nestID", "nestTYPE", "beeID", "caste", "natal", "beeType", "addDate", "diedDate", "timepoint", "behav"),
               names_from = rand, 
               values_from = count) 
-count_time
+
 # add column to fill with sum of counts for each behav
 countCol1 <- 11 # firstcolumn containing counts
 count_time$totCount <- rowSums(count_time[countCol1:ncol(count_time)], na.rm = TRUE)
@@ -1346,10 +1350,10 @@ for (i in 1:nrow(count_time)){
 
 # subset count_time to look only at early timepoint
 count_timeEarly <- count_time[count_time$timepoint == "early",]
-count_timeEarly
+
 # pull out bee info from count_data for those bees that do not have observatitons at the early timepoint (this will bring in observations from late timepoint, remove those below)
 count_noObsBeesEarly <- count_data %>% subset(!beeID %in% count_timeEarly$beeID)
-count_noObsBeesEarly
+
 # set timepoint for these bees to early
 count_noObsBeesEarly$timepoint <- "early"
 # subset count_time to look at only late timepoint
@@ -1398,28 +1402,11 @@ print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late
 
 ```
 
-#.
-# Scale data to nestBehavs and Filter Data
-## label lazy workers
-```{r}
-# define lazy threshold
-obsThres <- 3
-
-# count_data
-count_data$lazy <- NA
-count_data$lazy[count_data$nBehavs < obsThres] <- "lazy"
-count_data$lazy[count_data$nBehavs >= obsThres] <- "notLazy"
-count_data
-
-# count_time
-count_time$lazy <- NA
-count_time$lazy[count_time$nBehavs < obsThres] <- "lazy"
-count_time$lazy[count_time$nBehavs >= obsThres] <- "notLazy"
-count_time
-```
-
-## filter all data based on nest with threshold duration of video watched
+## ?????filter data based on video duration
     filter to include only nests that have passed a threshold amount of video watched
+    
+    ??? does we need this? if so, need to do this before summarizaing duration of video watched for each nest. if all nests are enough, remove this. i think we left it at 0 b/c the nests with low duration are filtered out based on # of behaviors?
+    
 ```{r}
 # set threshold for required seconds of foraging video watched
 forThres <- 0
@@ -1435,12 +1422,8 @@ camDur_filt
 print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
 ```
 
-### visualize and filter obs, count, and camDur data based on duration
-write obs_data
-write obs_time
-*write count_data
-*write count_time
-write camDur
+filter & write obs_data, obs_time, camDur,
+filter count_data & count_time
 ```{r}
 # graph amount of video watched from only fitered nests
 sumsTOTAL <- sumsTOTAL %>% subset(nestID %in% camDur_filt$nestID)
@@ -1452,11 +1435,24 @@ ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
 
 # FILTER
 
-# filter obs_data and save for future analyses
-obs_data <- obs_data %>% subset(nestID %in% camDur_filt$nestID)
-write.csv(obs_data, "../Data/filtData/obs_data.csv")
-# each observation is a single row
-# every bee (including unknown and unobserved bees) is accounted for
+# # filter obs_data and save for future analyses
+# obs_data <- obs_data %>% subset(nestID %in% camDur_filt$nestID)
+# write.csv(obs_data, "../Data/filtData/obs_data.csv")
+# # each observation is a single row
+# # every bee (including unknown and unobserved bees) is accounted for
+# 
+# # filter obs_time
+# obs_time <- obs_time %>% subset(nestID %in% camDur_filt$nestID)
+# write.csv(obs_time, "../Data/filtData/obs_time.csv")
+# # obs_time split out by timepoint
+# # each bee has 0-many rows
+# # only includes bees with at least one observation (including unknown bees)
+# # columns same as obs_data
+# 
+# # save already filtered camDur for future analyses
+# write.csv(camDur_filt, "../Data/filtData/camDur.csv")
+# # each nest is a row
+# # columns include foraging length, nest length, total length, F:N ratio, and nestTYPE
 
 # filter count_data and save for future analyses
 count_data <- count_data %>% subset(nestID %in% camDur_filt$nestID)
@@ -1466,25 +1462,32 @@ count_data$nestTYPE <- ordered(count_data$nestTYPE, levels = c("NT", "NF", "QT",
 # filter count_time
 count_time <- count_time %>% subset(nestID %in% camDur_filt$nestID)
 count_time$nestTYPE <- ordered(count_time$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-
-# filter obs_time
-obs_time <- obs_time %>% subset(nestID %in% camDur_filt$nestID)
-write.csv(obs_time, "../Data/filtData/obs_time.csv")
-# obs_time split out by timepoint
-# each bee has 0-many rows
-# only includes bees with at least one observation (including unknown bees)
-# columns same as obs_data
-
-# save already filtered camDur for future analyses
-write.csv(camDur_filt, "../Data/filtData/camDur.csv")
-# each nest is a row
-# columns include foraging length, nest length, total length, F:N ratio, and nestTYPE
 ```
 
-## filter nest data based on number of observations
-for nest-level analyses (eg., task specialization): filter out nests below threshold number of observations each of brood feeding and foraging behaviors, includes unknown worker observations
+## filter data based on number of behaviors
+
+### label lazy workers
+```{r}
+# define lazy threshold (fewer than # behaviors to exclude from subset of analyses)
+obsThres <- 3
+
+# count_data
+count_data$lazy <- NA
+count_data$lazy[count_data$nBehavs < obsThres] <- "lazy"
+count_data$lazy[count_data$nBehavs >= obsThres] <- "notLazy"
+
+# count_time
+count_time$lazy <- NA
+count_time$lazy[count_time$nBehavs < obsThres] <- "lazy"
+count_time$lazy[count_time$nBehavs >= obsThres] <- "notLazy"
+```
+
+### filter & write count_nests
+Filter nest data based on number of observations (>=3 obs per nest)
+
+for nest-level analyses (eg., task exclusivity): filter out nests below threshold number of observations each of brood feeding and foraging behaviors, includes unknown worker observations
 write obs_nests
-write count_nests
+***write count_nests (for taskExlusivity script)
 ```{r}
 # first combine pollen and nectar foraging into a single value
 count_data$allforaging <- count_data$nectarforaging + count_data$pollenforaging
@@ -1515,14 +1518,15 @@ filtNests <- length(unique(count_nests$nestID))
 print(paste("the following", initNests - filtNests, "nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
 unique(rmNests$nestID)
 
-# save for future analyses
+# save for future analyses - taskExclusivity
 write.csv(count_nests, "../Data/filtData/count_nests.csv")
-
-# filter obs_data to obs_nests for future analyses
-obs_nests <- obs_data %>% subset(nestID %in% count_nests$nestID)
-write.csv(obs_nests, "../Data/filtData/obs_nests.csv")
+# 
+# # filter obs_data to obs_nests for future analyses
+# obs_nests <- obs_data %>% subset(nestID %in% count_nests$nestID)
+# write.csv(obs_nests, "../Data/filtData/obs_nests.csv")
 ```
-### visualize filtered count_nests
+
+ visualize filtered count_nests
 ```{r}
 # gather all behaviors into a single column
 countsFilt_gathered <- count_nests %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
@@ -1566,11 +1570,8 @@ statsallBehavFilt <- ddply(allFilt_gathered,
                 sem = sd(count)/sqrt(length(count)))
 
 statsallBehavFilt
-
-
-
 ```
-## filter nest data at early and late timepoints
+### #####filter & write count_nestsTime
 nests with threshold number of observations at early OR late timepoints
 write count_nestsTime
 ```{r}
@@ -1614,13 +1615,18 @@ unique(rmNestsEarly$nestID)
 print(paste("the following", initNestsLate - filtNestsLate, "late nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
 unique(rmNestsLate$nestID)
 
-# save for future analyses
-count_nestsTime <- rbind(count_nestsEarly, count_nestsLate)
-write.csv(count_nestsTime, "../Data/filtData/count_nestsTime.csv")
+# # save for future analyses
+# count_nestsTime <- rbind(count_nestsEarly, count_nestsLate)
+# write.csv(count_nestsTime, "../Data/filtData/count_nestsTime.csv")
 ```
-## Scale count_data
+
+## scale data based on number of behaviors
+
+### scale & write count_data
+scale behaviors based on number of observations per nest
+
+**write count_data (for worker task organization analyses)
 ```{r}
-count_data
 # Calculate number of each behavior for each nest 
 countsNestscale<-count_data %>% group_by(nestID) %>% 
   mutate(nestnectar=sum(nectarforaging)) %>% 
@@ -1659,9 +1665,13 @@ count_scaled
 
 count_data<-count_scaled 
 count_data
+write.csv(count_data, "../Data/filtData/count_data.csv")
 ```
 
-## Scale count_time
+### scale & write count_time
+filter based on number of behaviors carried out in each nest at each timepoint
+
+***write count_time (for repeatability analyses)
 ```{r}
 # Calculate number of each behavior for each nest 
 # Did not group by time too because we want to scale by total for the nest, the same as above
@@ -1703,6 +1713,7 @@ count_scaled<-count_scaled %>% rowwise() %>% mutate(nBehavs=sum(nectarforaging, 
 count_scaled
 # Save as count_time again so we use this for all future analyses # # #
 count_time<-count_scaled
+write.csv(count_time, "../Data/filtData/count_time.csv")
 ```
 
 #.
@@ -1778,55 +1789,4 @@ totalforagers<-count_data %>% filter(allforaging>0) %>% nrow()
 # How many bees collected both? 
 (count_data %>% filter(nectarforaging>0 & pollenforaging>0) %>% nrow()) / totalforagers   
 ```
-
-
-```{r}
-# ggplot(sumNests, aes(x = nestTYPE, y = nectarforaging/nBehavs)) +
-#   geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
-#   stat_summary(fun = mean, geom = "point", size = 5)
-# 
-# ggplot(sumNests, aes(x = nestTYPE, y = pollenforaging/nBehavs)) +
-#   geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
-#   stat_summary(fun = mean, geom = "point", size = 5)
-# 
-# ggplot(sumNests, aes(x = nestTYPE, y = feedsbrood/nBehavs)) +
-#   geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
-#   stat_summary(fun = mean, geom = "point", size = 5)
-# 
-# ggplot(sumNests, aes(x = nestTYPE, y = egglaying/nBehavs)) +
-#   geom_point(position = position_jitter(width=0.05, height=0), alpha = 0.5) +
-#   stat_summary(fun = mean, geom = "point", size = 5)
-# 
-# # calculate the proportions of all behaviors carried out
-# # scale to nf because there are the most of that
-# nf <- sum(count_data$nectarforaging) / sum(count_data$nectarforaging)
-# pf <- sum(count_data$pollenforaging) / sum(count_data$nectarforaging)
-# el <- sum(count_data$egglaying) / sum(count_data$nectarforaging)
-# fb <- sum(count_data$feedsbrood) / sum(count_data$nectarforaging)
-# 
-# count_scaled <- count_data
-# count_scaled$pollenforaging <- count_scaled$pollenforaging / pf
-# count_scaled$egglaying <- count_scaled$egglaying / el
-# count_scaled$feedsbrood <- count_scaled$feedsbrood / fb
-# 
-# write.csv(count_scaled, "../Data/filtData/count_scaled.csv")
-#
-# # in order to run below code, must rerun cleanData with 0 threshold for creating count_nests 
-# task_nectarforaging <- taskShan[taskShan$behav == "nectarforaging",]
-# mean(task_nectarforaging$nBehav)
-# sd(task_nectarforaging$nBehav)/sqrt(nrow(task_nectarforaging))
-# 
-# task_pollenforaging <- taskShan[taskShan$behav == "pollenforaging",]
-# mean(task_pollenforaging$nBehav)
-# sd(task_pollenforaging$nBehav)/sqrt(nrow(task_pollenforaging))
-# 
-# task_feedsbrood <- taskShan[taskShan$behav == "feedsbrood",]
-# mean(task_feedsbrood$nBehav)
-# sd(task_feedsbrood$nBehav)/sqrt(nrow(task_feedsbrood))
-# 
-# task_egglaying <- taskShan[taskShan$behav == "egglaying",]
-# mean(task_egglaying$nBehav)
-# sd(task_egglaying$nBehav)/sqrt(nrow(task_egglaying))
-```
-
 
