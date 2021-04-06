@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # knitr::opts_chunk$set(fig.width=3, fig.height=3.5) 
 
 # # multipanel rptr plot
-knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) 
+# knitr::opts_chunk$set(fig.width=2.5, fig.height=3.5) 
 ```
 
 # load packages
@@ -52,7 +52,7 @@ library(ggforce)  # circles on graphs
 
 # load data
 ```{r}
-# pooled data across timepoints, values are counts
+# pooled data across timepoints, values are scaled counts
 count_data <- read.csv("../Data/filtData/count_data.csv")
   # remove queens, make separate df with only workers with >=3 observations workers
 count_data <- count_data[count_data$caste == "W",]
@@ -1504,7 +1504,7 @@ Look at NMDS at two time points
 # Look at NMDS at two points
 nmds_time<- count_3Time %>% 
   dplyr::select(nestID, nestTYPE, beeID, caste,  
-         specBehav, timepoint, nectarforaging, feedsbrood, pollenforaging, lazy)
+         timepoint, nectarforaging, feedsbrood, pollenforaging, lazy)
 
 #Filter so that we only use beeIDs that have observations at both time points 
 timen<-nmds_time %>% 
