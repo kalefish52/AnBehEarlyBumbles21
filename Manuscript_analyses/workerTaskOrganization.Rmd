@@ -64,7 +64,9 @@ count_time <- count_time[count_time$caste == "W",]
 
 #.
 
-# SHANNON VALUE
+# -SPECIALIZATION-
+
+# 1. SHANNON VALUE
 use count_data (include workers with <3 obs as shannon = NA)
  shannon calcluated in cleanData script
 
@@ -379,7 +381,9 @@ model.sel(s0, s1)
 
 # -CATEGORICAL TASK FRAMEWORKS-
 
-# MOST FREQUENTLY PERFORMED TASK
+2. SINGLE TASK FRAMEWORKS
+
+# 2.1 MOST FREQUENTLY PERFORMED TASK
 use count_3 (exclude workers with <3 obs)
 
  Analysis based on highest number of tasks workers perform 
@@ -525,7 +529,7 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# PERFECTLY SPECIALIZED 
+# 2.2 PERFECTLY SPECIALIZED 
 use count_3 (exclude workers with <3 obs)
 
 ## establish categories
@@ -579,7 +583,7 @@ model.sel(s0, s1)
  behavior alone significantly predicts number of specialists in a nest
 ```{r}
 # How many bees perform more than one task? 
-paste(nrow(perfSpec), "perfectly specialized workers")
+paste(nrow(perfSpec), "perfectly specialized workers total from ", length(unique(perfSpec$nestID)), " nests")
 paste(nrow(count_data) - nrow(perfSpec), "workers perform multiple tasks")
 paste(nrow(perfSpec) / nrow(count_data) * 100, "percent perfectly specialized workers")
 paste((1 - nrow(perfSpec)) / nrow(count_data) * 100, "percent of workers perform multiple tasks")
@@ -662,7 +666,7 @@ posthoc1 <- glht(mymodel, linfct = mcp(behav = "Tukey"))
 summary(posthoc1)
 ```
 
-# SINGLE INSTANCE
+# 2.3 SINGLE INSTANCE
 use count_3 (exclude workers with <3 obs)
 
 ## establish categories
@@ -813,7 +817,9 @@ mymodel <- p1
 tab_model(mymodel)
 ```
 
-# KMEANS
+3. MULTI-TASK FRAMEWORKS
+
+# 3.1 KMEANS
 use count_data (include workers with <3 obs)
 
 K Means Cluster Analyses -- determine whether points cluster into two or more groups
@@ -1008,7 +1014,7 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# SHANNON THRESHOLD
+# 3.2 SHANNON THRESHOLD
 use count_data (include workers with <3 obs)
  threshold specialization (specBehav) calculated in cleanData script
 
@@ -1147,19 +1153,20 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# GRAPH COUNTS OF SPECIALISTS
+# plot # of bees in each category
 ```{r}
 #Put all graphs in one figure 
 ggarrange(G1, G3, G5, G4, G2, nrow = 3, ncol=2, common.legend = TRUE, legend="bottom", labels=c("A", "B", "C", "D", "E"))
 ggsave("../figures/specializationdistsgraph.jpg")
 
 ```
+
 #.
 
 # -NMDS-
 use count_3 (exclude workers with <3 obs)
 
-# NMDS clustering
+# 3.3 NMDS clustering
 ```{r}
 # pooled data across timepoints, values are counts
 # includes only known bees (rewrite count_3 to include all categorical frameworks for plots)
@@ -1299,19 +1306,253 @@ ggarrange(p1, p2, nrow = 2, labels = c("A", "B"))
 ggsave("../figures/nmdsPanelAll.jpg")
 ```
 
-
-
-
-
-
-
-
+4. CORRELATIONS BETWEEN BEHAVIOR & BODY SIZE / OVARY DEV -- included above in categorical task frameworks
+    "body size & ovary development models" chunks
 
 #.
 
 # -REPEATABILITY-
 
-# SHANNON VALUES
+# 5.1 RPTR
+use count_3Time (exclude workers with <3 obs)
+
+
+Repeatability measurements and interpretation instructions:
+
+https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
+If 95% confidence intervals of random effect does not reach 0, this suggests that the behavior is repeatable 
+Individuals=grouping factor in our case 
+R^2 quantifies the proportion of variance explained by fixed effects 
+R=0 no variation is explained by the fixed effect 
+Adjusted repeatability: controls for fixed effects - any variance that is explained by the fixed effect is excluded from the denominator 
+
+## prep dataframe
+```{r}
+rptdata <- count_3Time %>% dplyr::select(nestID, nestTYPE, beeID, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, lazy)
+
+rpttime<-rptdata %>% 
+  dplyr::select(timepoint, nestTYPE, nestID, beeID, feedsbrood, 
+                nectarforaging, pollenforaging) %>% 
+  pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
+
+rpttime$Dist <- NA
+rpttime$propDist <- NA
+
+# calculate change in number of behaviors over time and add to Dist column
+for (i in 1:nrow(rpttime)) {              
+# for each row in the dataset
+  if(rpttime$timepoint[i] == "late") {                
+  # look at the the late bees only
+    for (j in 1:nrow(rpttime)) {                     
+    # then iterate back through the dataset
+      if(rpttime$timepoint[j] == "early" & rpttime$beeID[j] == rpttime$beeID[i] & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
+      # and find the early entry with the same behav
+        rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
+        # calculate distance
+        rpttime$propDist[i] <- (rpttime$Counts[i] - rpttime$Counts[j]) / rpttime$Counts[j]
+        # calculate the percent change (late - early) / early
+      }
+    }
+  }
+}
+
+# Filter out individuals that do not have observations at both timepoints
+rpttime<-rpttime[complete.cases(rpttime),]
+
+# Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
+beestime<-rpttime %>% dplyr::select(beeID) %>% unique()
+
+namesbeesfilt<-as.list(beestime)
+rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
+
+rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
+nrow(count_3Time)
+count_3Time
+```
+
+## run rptr analyses
+
+ brood feeding
+```{r}
+hist(rptdata$feedsbrood)
+
+# rptr analysis is very slow - uncomment to run
+
+# wfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+#             grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
+#             datatype = "Gaussian", nboot = 1000, npermut = 0)
+# summary(wfb)
+# print(wfb)
+# plot(wfb, cex.main = 1)
+
+#Check model fit - residuals looks ok 
+lmfb<-lmer(feedsbrood~timepoint+(1|beeID)+(1|nestID),  
+           data=rptdata)
+
+summary(lmfb)
+hist(residuals(lmfb))
+plot(fitted(lmfb), residuals(lmfb), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
+```
+
+ nectar foraging
+```{r}
+hist(rptdata$nectarforaging)
+
+# rptr analysis is very slow - uncomment to run
+
+# wnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+#             grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
+#             datatype = "Gaussian", nboot = 1000, npermut = 0)
+# summary(wnf)
+# print(wnf) 
+# plot(wnf, cex.main = 1)
+
+#Check model fit - nectar foraging
+lmnf<-lmer(nectarforaging~timepoint+(1|beeID)+(1|nestID),  
+           data=rptdata)
+
+summary(lmnf)
+hist(residuals(lmnf))
+plot(fitted(lmnf), residuals(lmnf), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmnf), residuals(lmnf)))
+head(rpt_data)
+
+```
+ 
+ pollen foraging
+```{r}
+hist(rptdata$pollenforaging)
+
+# rptr analysis is very slow - uncomment to run
+
+# wf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
+#             grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
+#             datatype = "Gaussian", nboot = 1000, npermut = 0)
+# summary(wf)
+# print(wf)
+# plot(wf, cex.main = 1)
+
+#Check model fit - pollen foraging - these look pretty off 
+lmpf<-lmer(pollenforaging~timepoint+(1|beeID)+(1|nestID),  
+           data=rptdata)
+
+summary(lmpf)
+hist(residuals(lmpf))
+plot(fitted(lmpf), residuals(lmpf), xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, lty = 2)
+lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
+```
+
+## plots 
+ change in individuals from early to late
+```{r}
+# plot the change from early to late
+
+# make inf 18.1 (larger than any others)
+# add a new value for graphing infinities separately
+rpttime$inf <- "no"
+for(i in 1:nrow(rpttime)) {
+  if(rpttime$propDist[i] == Inf) {
+    rpttime$propDist[i] <- 1
+    rpttime$inf[i] <- "yes"
+  }
+  if(rpttime$propDist[i] == -Inf) {
+    rpttime$propDist[i] <- -1
+    rpttime$inf[i] <- "yes"
+  }
+  # make -100% change also be infinity 
+  if(rpttime$Counts[i] == 0) {
+    rpttime$inf[i] <- "yes"
+  }
+}
+
+rpttime$propDist <- rpttime$propDist * 100
+
+rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+
+# recode propDist
+
+R1<-ggplot(rpttime, aes(Dist, Behavior)) +
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7, aes(color = nestTYPE, size = abs(propDist), shape = inf)) +
+  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
+  #stat_summary(fun = mean, geom = "point", size = 3) +
+  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
+       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
+  theme(legend.position="bottom", legend.box = "vertical") + 
+  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
+         size = guide_legend(order=2),
+         shape = guide_legend(order = 3))#+
+
+R1
+
+ggsave("../figures/rptDistBehav.jpg")
+```
+
+ change in nest from early to late
+```{r}
+# summarize by nest
+rptnest <- rpttime %>% group_by(Behavior, nestID, nestTYPE) %>% 
+  mutate(nestDist=sum(Dist),
+         nestCounts=sum(Counts))  %>% 
+  dplyr::select(Behavior, nestID, nestTYPE, nestDist, nestCounts) %>% unique()
+
+# calculate nestPropDist on summary data
+rptnest$nestPropDist <- NA
+for(i in 1:nrow(rptnest)) {
+  rptnest$nestPropDist[i] <- rptnest$nestDist[i] / (rptnest$nestCounts[i] - rptnest$nestDist[i])
+}
+
+rptnest$inf <- "no"
+for(i in 1:nrow(rptnest)) {
+  # make +infinity change infinity
+  if(rptnest$nestPropDist[i] == Inf) {
+    rptnest$nestPropDist[i] <- 1
+    rptnest$inf[i] <- "yes"
+  }
+  if(rptnest$nestPropDist[i] == -Inf) {
+    rptnest$nestPropDist[i] <- -1
+    rptnest$inf[i] <- "yes"
+  }
+  # make -100% change also be infinity 
+  if(rptnest$nestCounts[i] == 0) {
+    rptnest$inf[i] <- "yes"
+  }
+}
+
+# multiply proportion by 100 to turn it into a percent
+rptnest$nestPropDist <- rptnest$nestPropDist * 100
+
+R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
+  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7,
+             aes(color = nestTYPE, size = abs(nestPropDist), shape = inf)) +
+  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
+  #stat_summary(fun = mean, geom = "point", size = 3) +
+  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
+  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
+  labs(x = "Change in number of behaviors performed by each nest", y = "Task", 
+       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
+  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
+  theme(legend.position="bottom", legend.box = "vertical") + 
+  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
+         size = guide_legend(order=2),
+         shape = guide_legend(order = 3))#+
+R2
+ggsave("../figures/rptNEST.jpg")
+
+
+# graph together
+ggarrange(R1, R2, nrow=2, common.legend = TRUE, legend="bottom", labels=c('A', 'B'))
+
+ggsave("../figures/repeatability.jpg")
+```
+
+# 5.2 & 5.3 SHANNON VALUES
 use count_time (include workers with <3 obs) <- to assign NA shannon to these workers
 
 ### calculate shannon at early and late
@@ -1392,7 +1633,7 @@ count_time[!is.na(count_time$shanDist),]
 count_3Time
 ```
 
-## average timepoint models
+## 5.2 average shannon
  two part glmm on early vs. late shannons:
 
 Pt. 1: nothing significant
@@ -1411,20 +1652,14 @@ hist(count_3Time$shannon)
 count_3Time
 
 # model 0 vs. >0 shannon values
-ps1 <- glmer(shan0 ~ timepoint + nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
+ps1 <- glmer(shan0 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
-ps4 <- glmer(shan0 ~ timepoint*nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps2 <- glmer(shan0 ~ timepoint + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps3 <- glmer(shan0 ~ nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time, family = binomial(link = "logit"))
-ps0 <- glmer(shan0 ~ 1 + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
+ps0 <- glmer(shan0 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time, family = binomial(link = "logit"))
 
-model.sel(ps0, ps1, ps2, ps3, ps4)
+model.sel(ps0, ps1)
 
-mymodel <- ps3
+mymodel <- ps0
 tab_model(mymodel)
 summary(mymodel)
 
@@ -1446,20 +1681,14 @@ hist(count_3Time$shan1)
 qqp(count_3Time$shan1, "norm")
 
 # model >0 shannon values
-ps1 <- glmer(shan1 ~ timepoint + nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
+ps1 <- glmer(shan1 ~ timepoint + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
-ps4 <- glmer(shan1 ~ timepoint*nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps2 <- glmer(shan1 ~ timepoint + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps3 <- glmer(shan1 ~ nestTYPE + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
-              data = count_3Time)
-ps0 <- glmer(shan1 ~ 1 + (1|nestID:beeID) + (1|natal) + (1|nBehavs),
+ps0 <- glmer(shan1 ~ 1 + (1|nestTYPE:nestID:beeID) + (1|natal) + (1|nBehavs),
               data = count_3Time)
 
-model.sel(ps0, ps1, ps2, ps3, ps4)
+model.sel(ps0, ps1)
 
-mymodel <- ps2
+mymodel <- ps0
 tab_model(mymodel)
 summary(mymodel)
 plot_model(mymodel)
@@ -1472,7 +1701,7 @@ lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
 
-## change in shannon models
+## 5.3 change in shannon
  null model fits best
 ```{r}
 #how many bees are at both early and late timepoints? 
@@ -1496,7 +1725,7 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# ANOSIM
+# 5.4 ANOSIM
 use count_3Time (exclude workers with <3 obs)
 
 Look at NMDS at two time points 
@@ -1559,235 +1788,8 @@ nmds_dataT$nestTYPE <- ordered(nmds_dataT$nestTYPE, levels = c("NT", "QT", "NF",
 
 #Run analysis of similarity to see if variation is greater between time points than within time points
 anotime = anosim(nmds_mT, nmds_dataT$timepoint, distance = "euclidean", permutations = 9999)
-#ANOSIM is significant - to see where run anosims between different groups 
+#ANOSIM is not significant
 anotime
-```
-
-Repeatability measurements and interpretation instructions:
-
-https://cran.r-project.org/web/packages/rptR/vignettes/rptR.html
-If 95% confidence intervals of random effect does not reach 0, this suggests that the behavior is repeatable 
-Individuals=grouping factor in our case 
-R^2 quantifies the proportion of variance explained by fixed effects 
-R=0 no variation is explained by the fixed effect 
-Adjusted repeatability: controls for fixed effects - any variance that is explained by the fixed effect is excluded from the denominator 
-
-# RPTR
-use count_3Time (exclude workers with <3 obs)
-
-## prep dataframe
-```{r}
-rptdata <- count_3Time %>% dplyr::select(nestID, nestTYPE, beeID, timepoint, nectarforaging, feedsbrood, pollenforaging, nBehavs, specBehav, lazy)
-
-rpttime<-rptdata %>% 
-  dplyr::select(timepoint, nestTYPE, nestID, beeID, feedsbrood, 
-                nectarforaging, pollenforaging) %>% 
-  pivot_longer(!c(timepoint, beeID, nestTYPE, nestID), names_to="Behavior", values_to="Counts")  
-
-rpttime$Dist <- NA
-rpttime$propDist <- NA
-
-# calculate change in number of behaviors over time and add to Dist column
-for (i in 1:nrow(rpttime)) {              
-# for each row in the dataset
-  if(rpttime$timepoint[i] == "late") {                
-  # look at the the late bees only
-    for (j in 1:nrow(rpttime)) {                     
-    # then iterate back through the dataset
-      if(rpttime$timepoint[j] == "early" & rpttime$beeID[j] == rpttime$beeID[i] & rpttime$Behavior[j] == rpttime$Behavior[i]) {   
-      # and find the early entry with the same behav
-        rpttime$Dist[i] <- rpttime$Counts[i] - rpttime$Counts[j] 
-        # calculate distance
-        rpttime$propDist[i] <- (rpttime$Counts[i] - rpttime$Counts[j]) / rpttime$Counts[j]
-        # calculate the percent change (late - early) / early
-      }
-    }
-  }
-}
-
-# Filter out individuals that do not have observations at both timepoints
-rpttime<-rpttime[complete.cases(rpttime),]
-
-# Select all beeIDs from rpttime that had a reciprocal timepoint and filter rptDist so both timepoints are in dataframe
-beestime<-rpttime %>% dplyr::select(beeID) %>% unique()
-
-namesbeesfilt<-as.list(beestime)
-rpt_data<-rptdata %>% filter(beeID %in% namesbeesfilt$beeID)
-
-rpt_data %>% dplyr::select(beeID) %>% unique() %>% nrow()
-nrow(count_3Time)
-count_3Time
-```
-
-## run rptr analyses
-**THIS IS VERY SLOW - DON'T RUN UNLESS YOU NEED TO
-```{r}
-hist(rptdata$feedsbrood)
-wfb<- rpt(feedsbrood ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wfb)
-print(wfb)
-plot(wfb, cex.main = 1)
-
-#Check model fit - residuals looks ok 
-lmfb<-lmer(feedsbrood~timepoint+(1|beeID)+(1|nestID),  
-           data=rptdata)
-
-summary(lmfb)
-hist(residuals(lmfb))
-plot(fitted(lmfb), residuals(lmfb), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(lmfb), residuals(lmfb)))
-```
-
- nectar foraging
-```{r}
-hist(rptdata$nectarforaging)
-wnf<- rpt(nectarforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wnf)
-print(wnf) 
-plot(wnf, cex.main = 1)
-
-#Check model fit - nectar foraging
-lmnf<-lmer(nectarforaging~timepoint+(1|beeID)+(1|nestID),  
-           data=rptdata)
-
-summary(lmnf)
-hist(residuals(lmnf))
-plot(fitted(lmnf), residuals(lmnf), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(lmnf), residuals(lmnf)))
-head(rpt_data)
-
-```
- 
- pollen foraging
-```{r}
-hist(rptdata$pollenforaging)
-wf<- rpt(pollenforaging ~ timepoint+(1|beeID)+(1|nestID)+(1|nestTYPE),
-            grname = c("beeID", "nestID", "nestTYPE"), data = rptdata, 
-            datatype = "Gaussian", nboot = 1000, npermut = 0)
-summary(wf)
-print(wf)
-plot(wf, cex.main = 1)
-
-#Check model fit - pollen foraging - these look pretty off 
-lmpf<-lmer(pollenforaging~timepoint+(1|beeID)+(1|nestID),  
-           data=rptdata)
-
-summary(lmpf)
-hist(residuals(lmpf))
-plot(fitted(lmpf), residuals(lmpf), xlab = "Fitted Values", ylab = "Residuals")
-abline(h = 0, lty = 2)
-lines(smooth.spline(fitted(lmpf), residuals(lmpf)))
-```
-
-## plots 
- change in individuals from early to late
-```{r}
-# plot the change from early to late
-
-# make inf 18.1 (larger than any others)
-# add a new value for graphing infinities separately
-rpttime$inf <- "no"
-for(i in 1:nrow(rpttime)) {
-  if(rpttime$propDist[i] == Inf) {
-    rpttime$propDist[i] <- 1
-    rpttime$inf[i] <- "yes"
-  }
-  if(rpttime$propDist[i] == -Inf) {
-    rpttime$propDist[i] <- -1
-    rpttime$inf[i] <- "yes"
-  }
-  # make -100% change also be infinity 
-  if(rpttime$Counts[i] == 0) {
-    rpttime$inf[i] <- "yes"
-  }
-}
-
-rpttime$propDist <- rpttime$propDist * 100
-
-rpttime$nestTYPE <- ordered(rpttime$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-
-# recode propDist
-
-R1<-ggplot(rpttime, aes(Dist, Behavior)) +
-  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7, aes(color = nestTYPE, size = abs(propDist), shape = inf)) +
-  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
-  #stat_summary(fun = mean, geom = "point", size = 3) +
-  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
-  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Change in number of behaviors performed by each individual", y = "Task", 
-       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
-  theme(legend.position="bottom", legend.box = "vertical") + 
-  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
-         size = guide_legend(order=2),
-         shape = guide_legend(order = 3))#+
-
-R1
-
-ggsave("../figures/rptDistBehav.jpg")
-```
-
-nest
-```{r}
-# summarize by nest
-rptnest <- rpttime %>% group_by(Behavior, nestID, nestTYPE) %>% 
-  mutate(nestDist=sum(Dist),
-         nestCounts=sum(Counts))  %>% 
-  dplyr::select(Behavior, nestID, nestTYPE, nestDist, nestCounts) %>% unique()
-
-# calculate nestPropDist on summary data
-rptnest$nestPropDist <- NA
-for(i in 1:nrow(rptnest)) {
-  rptnest$nestPropDist[i] <- rptnest$nestDist[i] / (rptnest$nestCounts[i] - rptnest$nestDist[i])
-}
-
-rptnest$inf <- "no"
-for(i in 1:nrow(rptnest)) {
-  # make +infinity change infinity
-  if(rptnest$nestPropDist[i] == Inf) {
-    rptnest$nestPropDist[i] <- 1
-    rptnest$inf[i] <- "yes"
-  }
-  if(rptnest$nestPropDist[i] == -Inf) {
-    rptnest$nestPropDist[i] <- -1
-    rptnest$inf[i] <- "yes"
-  }
-  # make -100% change also be infinity 
-  if(rptnest$nestCounts[i] == 0) {
-    rptnest$inf[i] <- "yes"
-  }
-}
-
-rptnest$nestPropDist <- rptnest$nestPropDist * 100
-
-R2<-ggplot(rptnest, aes(nestDist, Behavior)) +
-  geom_point(position = position_jitter(width=2, height=0.3), alpha = 0.7,
-             aes(color = nestTYPE, size = abs(nestPropDist), shape = inf)) +
-  scale_shape_manual(values = c(19, 21), labels = c("yes", "no")) +
-  #stat_summary(fun = mean, geom = "point", size = 3) +
-  geom_vline(aes(xintercept = 0), color = "gray70", size = 0.6) +
-  scale_color_manual(values = c("#fdb863", "#e66101", "#b2abd2", "#5e3c99"), labels = c("W3", "W5", "QW3", "QW5")) +
-  labs(x = "Change in number of behaviors performed by each nest", y = "Task", 
-       size = "Percent change", color = "Social configuration", shape = ">0 observations at both timeframes") +
-  scale_y_discrete(labels=c("pollenforaging" = "Pollen\ncollection", "nectarforaging" = "Nectar\ncollection", "feedsbrood" = "Brood\nfeeding")) + 
-  theme(legend.position="bottom", legend.box = "vertical") + 
-  guides(color = guide_legend(order = 1, override.aes = list(shape = 15, size = 5)),
-         size = guide_legend(order=2),
-         shape = guide_legend(order = 3))#+
-R2
-ggsave("../figures/rptNEST.jpg")
-
-
-# graph together
-ggarrange(R1, R2, nrow=2, common.legend = TRUE, legend="bottom", labels=c('A', 'B'))
-
-ggsave("../figures/repeatability.jpg")
 ```
 
 
