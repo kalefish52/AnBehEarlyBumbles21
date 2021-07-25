@@ -1153,7 +1153,34 @@ abline(h = 0, lty = 2)
 lines(smooth.spline(fitted(mymodel), residuals(mymodel)))
 ```
 
-# plot # of bees in each category
+## replacement nests different?
+is there a difference between bees in nests with or without replacements?
+```{r} 
+# define nests with replacement bees
+shanBehav$replaceNest <- 0
+
+for(i in 1:nrow(shanBehav)) {
+  for(j in 1:nrow(shanBehav)) {
+    if(shanBehav$nestID[i] == shanBehav$nestID[j]) {
+      if(!is.na(shanBehav$addDate[j])) {
+        shanBehav$replaceNest[i] <- 1
+      }
+    }
+  }
+}
+
+# does shannon threshold specialization category differ in original vs. replacement bees?
+chisq.test(shanBehav$specBehav, shanBehav$beeType)
+ 
+# remove replacement bees from next analysis
+shanBehav_orig <- shanBehav[is.na(shanBehav$addDate),]
+
+# Does shannon threshold specialization category of original bees 
+# differ based on whether there was a replacement of a dead bee in the nest?
+chisq.test(shanBehav_orig$specBehav, shanBehav_orig$replaceNest)
+```
+
+# PLOT # of bees in each category
 ```{r}
 #Put all graphs in one figure 
 ggarrange(G1, G3, G5, G4, G2, nrow = 3, ncol=2, common.legend = TRUE, legend="bottom", labels=c("A", "B", "C", "D", "E"))
@@ -1786,11 +1813,12 @@ nmds_dataT <- cbind(nmdsTIME, nmds_scoresT)
 
 nmds_dataT$nestTYPE <- ordered(nmds_dataT$nestTYPE, levels = c("NT", "QT", "NF", "QF"))
 
-#Run analysis of similarity to see if variation is greater between time points than within time points
+# Run analysis of similarity to see if variation is greater between time points than within time points
 anotime = anosim(nmds_mT, nmds_dataT$timepoint, distance = "euclidean", permutations = 9999)
-#ANOSIM is not significant
+# ANOSIM is not significant
 anotime
 ```
+
 
 
 
