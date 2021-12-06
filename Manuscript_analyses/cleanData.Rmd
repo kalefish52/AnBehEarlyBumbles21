@@ -784,7 +784,7 @@ for (i in 1:nrow(count_data)) {
 count_data
 ```
 
-## #####add number of bees and queen status to count_data
+## add number of bees and queen status to count_data
 ```{r}
 # first add queen factor
 count_data$queen <- NA
@@ -808,7 +808,7 @@ count_data$nBees <- as.numeric(count_data$nBees)
 count_data[count_data$nestTYPE == "QF", "nBees"] <- 6
 count_data[count_data$nestTYPE == "QT", "nBees"] <- 4
 count_data[count_data$nestTYPE == "NF", "nBees"] <- 5
-count_data[count_data$nestTYPE == "NT", "nBees"] <- 3 
+count_data[count_data$nestTYPE == "NT", "nBees"] <- 3
 count_data
 ```
 
@@ -1402,67 +1402,67 @@ print(paste(sum(count_time[count_time$timepoint == "late", "feedsbrood"]), "late
 
 ```
 
-## ?????filter data based on video duration
-    filter to include only nests that have passed a threshold amount of video watched
-    
-    ??? does we need this? if so, need to do this before summarizaing duration of video watched for each nest. if all nests are enough, remove this. i think we left it at 0 b/c the nests with low duration are filtered out based on # of behaviors?
-    
-```{r}
-# set threshold for required seconds of foraging video watched
-forThres <- 0
-# set threshold for required seconds of nest video watched
-nestThres <- 0
+<!-- ## ?????filter data based on video duration -->
+<!--     filter to include only nests that have passed a threshold amount of video watched -->
 
-# filter camDur to include nests that pass both thresholds
-camDur_filt <- camDur[camDur$forLen >= forThres, ]
-# and a minimum of 2000 nest
-camDur_filt <- camDur_filt[camDur_filt$nestLen >= nestThres, ]
-camDur_filt
-# check how many nests were removed
-print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " "))
-```
+<!--     ??? does we need this? if so, need to do this before summarizaing duration of video watched for each nest. if all nests are enough, remove this. i think we left it at 0 b/c the nests with low duration are filtered out based on # of behaviors? -->
 
-filter & write obs_data, obs_time, camDur,
-filter count_data & count_time
-```{r}
-# graph amount of video watched from only fitered nests
-sumsTOTAL <- sumsTOTAL %>% subset(nestID %in% camDur_filt$nestID)
-ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) +
-  geom_bar(stat ="identity") + 
-  scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) +
-  theme(axis.text.x = element_text(angle = 90), legend.position = "top") + 
-  ggtitle("duration of video watched for nests with video duration above threshold")
+<!-- ```{r} -->
+<!-- # set threshold for required seconds of foraging video watched -->
+<!-- forThres <- 0 -->
+<!-- # set threshold for required seconds of nest video watched -->
+<!-- nestThres <- 0 -->
 
-# FILTER
+<!-- # filter camDur to include nests that pass both thresholds -->
+<!-- camDur_filt <- camDur[camDur$forLen >= forThres, ] -->
+<!-- # and a minimum of 2000 nest -->
+<!-- camDur_filt <- camDur_filt[camDur_filt$nestLen >= nestThres, ] -->
+<!-- camDur_filt -->
+<!-- # check how many nests were removed -->
+<!-- print(paste(nrow(camDur) - nrow(camDur_filt), "out of", nrow(camDur), "nests were removed due to insufficient video length, leaving", nrow(camDur_filt), "remaining nests for analyses", sep = " ")) -->
+<!-- ``` -->
 
-# # filter obs_data and save for future analyses
-# obs_data <- obs_data %>% subset(nestID %in% camDur_filt$nestID)
-# write.csv(obs_data, "../Data/filtData/obs_data.csv")
-# # each observation is a single row
-# # every bee (including unknown and unobserved bees) is accounted for
-# 
-# # filter obs_time
-# obs_time <- obs_time %>% subset(nestID %in% camDur_filt$nestID)
-# write.csv(obs_time, "../Data/filtData/obs_time.csv")
-# # obs_time split out by timepoint
-# # each bee has 0-many rows
-# # only includes bees with at least one observation (including unknown bees)
-# # columns same as obs_data
-# 
-# # save already filtered camDur for future analyses
-# write.csv(camDur_filt, "../Data/filtData/camDur.csv")
-# # each nest is a row
-# # columns include foraging length, nest length, total length, F:N ratio, and nestTYPE
+<!-- filter & write obs_data, obs_time, camDur, -->
+<!-- filter count_data & count_time -->
+<!-- ```{r} -->
+<!-- # graph amount of video watched from only fitered nests -->
+<!-- sumsTOTAL <- sumsTOTAL %>% subset(nestID %in% camDur_filt$nestID) -->
+<!-- ggplot(sumsTOTAL, aes(x = nestID, y = length, fill = videoType)) + -->
+<!--   geom_bar(stat ="identity") +  -->
+<!--   scale_fill_manual(values = c("blue", "darkblue", "green", "darkgreen")) + -->
+<!--   theme(axis.text.x = element_text(angle = 90), legend.position = "top") +  -->
+<!--   ggtitle("duration of video watched for nests with video duration above threshold") -->
 
-# filter count_data and save for future analyses
-count_data <- count_data %>% subset(nestID %in% camDur_filt$nestID)
-# make nestTYPE a factor
-count_data$nestTYPE <- ordered(count_data$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
+<!-- # FILTER -->
 
-# filter count_time
-count_time <- count_time %>% subset(nestID %in% camDur_filt$nestID)
-count_time$nestTYPE <- ordered(count_time$nestTYPE, levels = c("NT", "NF", "QT", "QF"))
-```
+<!-- # # filter obs_data and save for future analyses -->
+<!-- # obs_data <- obs_data %>% subset(nestID %in% camDur_filt$nestID) -->
+<!-- # write.csv(obs_data, "../Data/filtData/obs_data.csv") -->
+<!-- # # each observation is a single row -->
+<!-- # # every bee (including unknown and unobserved bees) is accounted for -->
+<!-- #  -->
+<!-- # # filter obs_time -->
+<!-- # obs_time <- obs_time %>% subset(nestID %in% camDur_filt$nestID) -->
+<!-- # write.csv(obs_time, "../Data/filtData/obs_time.csv") -->
+<!-- # # obs_time split out by timepoint -->
+<!-- # # each bee has 0-many rows -->
+<!-- # # only includes bees with at least one observation (including unknown bees) -->
+<!-- # # columns same as obs_data -->
+<!-- #  -->
+<!-- # # save already filtered camDur for future analyses -->
+<!-- # write.csv(camDur_filt, "../Data/filtData/camDur.csv") -->
+<!-- # # each nest is a row -->
+<!-- # # columns include foraging length, nest length, total length, F:N ratio, and nestTYPE -->
+
+<!-- # filter count_data and save for future analyses -->
+<!-- count_data <- count_data %>% subset(nestID %in% camDur_filt$nestID) -->
+<!-- # make nestTYPE a factor -->
+<!-- count_data$nestTYPE <- ordered(count_data$nestTYPE, levels = c("NT", "NF", "QT", "QF")) -->
+
+<!-- # filter count_time -->
+<!-- count_time <- count_time %>% subset(nestID %in% camDur_filt$nestID) -->
+<!-- count_time$nestTYPE <- ordered(count_time$nestTYPE, levels = c("NT", "NF", "QT", "QF")) -->
+<!-- ``` -->
 
 ## filter data based on number of behaviors
 
@@ -1571,59 +1571,11 @@ statsallBehavFilt <- ddply(allFilt_gathered,
 
 statsallBehavFilt
 ```
-### #####filter & write count_nestsTime
-nests with threshold number of observations at early OR late timepoints
-write count_nestsTime
-```{r}
-# first combine pollen and nectar foraging into a single value
-count_time$allforaging <- count_time$nectarforaging + count_time$pollenforaging
-
-# gather broodfeeding and foraging behaviors into a single column so we can summarize based on number of observations
-counts_gatheredTime <- count_time %>% gather("feedsbrood", "allforaging", key = "behav", value = "count")
-
-# summarize the number of observations per nest to enable filtering
-sumNestTime <- ddply(counts_gatheredTime, 
-                c("nestID", "behav", "timepoint"), 
-                summarise,
-                nObs = sum(count),
-                mean = mean(count), 
-                sd = sd(count),
-                sem = sd(count)/sqrt(length(count)))
-
-# split into early and late
-sumNestEarly <- sumNestTime[sumNestTime$timepoint == "early",]
-sumNestLate <- sumNestTime[sumNestTime$timepoint == "late",]
-
-# remove nests with fewer than threshold number of observations of both foraging and brood feeding
-
-# count how many nests we start with before filtering
-initNestsEarly <- length(unique(sumNestEarly$nestID))
-initNestsLate <- length(unique(sumNestLate$nestID))
-# set the threshold below which we remove data
-obsThres <- 3
-# subset which nests have < threshold brood feeding or foraging
-rmNestsEarly <- sumNestEarly[sumNestEarly$nObs < obsThres,]
-rmNestsLate <- sumNestLate[sumNestLate$nObs < obsThres,]
-# filter out those nests with < threshold
-count_nestsEarly <- count_time[count_time$timepoint == "early",] %>% filter(!nestID %in% rmNestsEarly$nestID)
-count_nestsLate <- count_time[count_time$timepoint == "late",] %>% filter(!nestID %in% rmNestsLate$nestID)
-# count and print how many nests we have after filtering
-filtNestsEarly <- length(unique(count_nestsEarly$nestID))
-filtNestsLate <- length(unique(count_nestsLate$nestID))
-print(paste("the following", initNestsEarly - filtNestsEarly, "early nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
-unique(rmNestsEarly$nestID)
-print(paste("the following", initNestsLate - filtNestsLate, "late nests were filtered out of the data because they have fewer than the threshold number of brood feeding or foraging behaviors recorded", sep = " "))
-unique(rmNestsLate$nestID)
-
-# # save for future analyses
-# count_nestsTime <- rbind(count_nestsEarly, count_nestsLate)
-# write.csv(count_nestsTime, "../Data/filtData/count_nestsTime.csv")
-```
 
 ## scale data based on number of behaviors
 
 ### scale & write count_data
-scale behaviors based on number of observations per nest
+scale behaviors based on number of observations per nestn
 
 **write count_data (for worker task organization analyses)
 ```{r}
