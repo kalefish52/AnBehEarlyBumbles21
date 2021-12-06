@@ -1,7 +1,9 @@
 # SarroFisher
 
 CleanData 
-  this script must be run first. (found in the manuscript analyses folder). this script was a joint effort between Erica & Kaleigh. 
-  it imports the data and pepares the data for all future analyses
+  this script must be run first. it imports the data and pepares the data for all future analyses
+  
+taskExclusivity & workerTaskOrganization 
+    these scripts are independent from one another, and correspond to manuscript analyses
 
 
